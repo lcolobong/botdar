@@ -261,7 +261,7 @@ export function confidenceNoteFor(
   }
   return sourcesMissing
     .map((tier) => missingTierNote(tier, sourcesAvailable.includes(tier)))
-    .join("; ");
+    .join(". ");
 }
 
 /** Every fixed string that can reach the hover card, for the wording-rule test. */
