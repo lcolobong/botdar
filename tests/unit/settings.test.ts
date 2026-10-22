@@ -30,7 +30,6 @@ function customSettings(): Settings {
     labelStyle: "sus",
     showLikelyHuman: true,
     redditCommentLabels: "label",
-    eagerLookups: true,
   };
 }
 
@@ -39,14 +38,13 @@ beforeEach(() => {
 });
 
 describe("defaultSettings", () => {
-  it("has every platform on, conservative mode off, plain labels, glyph comments and no eager lookups", () => {
+  it("has every platform on, conservative mode off, plain labels and glyph comments", () => {
     expect(defaultSettings).toEqual({
       platforms: { x: true, reddit: true, bluesky: true },
       conservativeMode: false,
       labelStyle: "plain",
       showLikelyHuman: false,
       redditCommentLabels: "glyph",
-      eagerLookups: false,
     });
     expect(Object.isFrozen(defaultSettings.platforms)).toBe(true);
   });
@@ -71,13 +69,16 @@ describe("parseSettings", () => {
       labelStyle: "emoji",
       showLikelyHuman: "yes",
       redditCommentLabels: 2,
-      eagerLookups: true,
     });
     expect(parsed).toEqual({
       ...defaultSettings,
       platforms: { x: true, reddit: false, bluesky: true },
-      eagerLookups: true,
     });
+  });
+
+  it("drops the retired eagerLookups key from older stored settings", () => {
+    const parsed: Settings = parseSettings({ ...customSettings(), eagerLookups: true });
+    expect(parsed).toEqual(customSettings());
   });
 
   it("drops unknown keys", () => {

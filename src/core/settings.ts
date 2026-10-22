@@ -18,8 +18,6 @@ export interface Settings {
   labelStyle: LabelStyle;
   showLikelyHuman: boolean;
   redditCommentLabels: RedditCommentLabels;
-  /** Tier 2 lookups on first view instead of on hover. */
-  eagerLookups: boolean;
 }
 
 export const SETTINGS_STORAGE_KEY = "settings.v1";
@@ -33,7 +31,6 @@ export const defaultSettings: Settings = deepFreeze({
   labelStyle: "plain",
   showLikelyHuman: false,
   redditCommentLabels: "glyph",
-  eagerLookups: false,
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -72,7 +69,6 @@ export function parseSettings(stored: unknown): Settings {
       REDDIT_COMMENT_LABELS,
       defaultSettings.redditCommentLabels,
     ),
-    eagerLookups: booleanOr(record.eagerLookups, defaultSettings.eagerLookups),
   });
 }
 

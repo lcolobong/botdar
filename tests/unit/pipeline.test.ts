@@ -1,6 +1,11 @@
 import { TtlLruCache } from "@/src/core/cache";
 import type { BadgeHandle, MergeableSignals, Scorer } from "@/src/core/pipeline";
-import { AccountResolver, TIER2_CACHE_TTL_MS, mergeSignals } from "@/src/core/pipeline";
+import {
+  AccountResolver,
+  MAX_TRACKED_ACCOUNTS,
+  TIER2_CACHE_TTL_MS,
+  mergeSignals,
+} from "@/src/core/pipeline";
 import { RateLimitedError, RateLimiter } from "@/src/core/ratelimit";
 import type {
   AccountRef,
@@ -62,7 +67,7 @@ interface Harness {
 
 const makeHarness = (
   tiers: { t1: boolean; t2: boolean } = { t1: true, t2: true },
-  options: { eagerLookups?: boolean; cache?: TtlLruCache<string, PartialSignals> } = {},
+  options: { cache?: TtlLruCache<string, PartialSignals> } = {},
 ): Harness => {
   let emit: SignalEmitter = () => undefined;
   const stopPassive = vi.fn(() => {
@@ -102,7 +107,6 @@ const makeHarness = (
     config: config(tiers),
     limiter,
     cache,
-    eagerLookups: options.eagerLookups ?? false,
   });
   return {
     resolver,
@@ -309,11 +313,28 @@ describe("AccountResolver", () => {
     expect(resolve).toHaveBeenCalledTimes(1);
   });
 
-  it("runs the lookup on attach when eager lookups are on", async () => {
-    const { resolver, resolve } = makeHarness({ t1: true, t2: true }, { eagerLookups: true });
+  it("never runs a lookup on attach; Tier 2 waits for hover", async () => {
+    const { resolver, resolve } = makeHarness();
     resolver.attach(post());
     await vi.runAllTimersAsync();
-    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
+  it("bounds the account map under a flood of passive emissions, keeping attached accounts", () => {
+    const { resolver, emit } = makeHarness();
+    const mounted: BadgeHandle = resolver.attach(post("mounted"));
+    for (let index = 0; index < 5000; index += 1) {
+      emit(ref(`flood${index}`), { followers: index });
+    }
+
+    expect(resolver.trackedAccountCount).toBeLessThanOrEqual(MAX_TRACKED_ACCOUNTS);
+    expect(resolver.trackedAccountCount).toBeGreaterThan(MAX_TRACKED_ACCOUNTS / 2);
+    emit(ref("mounted"), { declaredAutomated: true });
+    expect(mounted.current().tier).toBe("declared");
+    // The newest emissions survive; the oldest idle handles are the ones evicted.
+    emit(ref("flood4999"), { declaredAutomated: true });
+    expect(resolver.attach(post("flood4999")).current().tier).toBe("declared");
+    expect(resolver.attach(post("flood0")).current().sourcesUsed).toEqual([0]);
   });
 
   it("returns the same handle for a post attached twice", () => {
