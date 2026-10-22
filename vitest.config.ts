@@ -6,6 +6,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    // Without this vitest stubs every CSS module, including `tokens.css?raw`, with an empty string.
+    css: true,
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
   },
 });
