@@ -14,7 +14,12 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import type { BrowserContext, Worker } from "playwright";
 import type { FixtureServer } from "./fixtureServer.ts";
-import { hostResolverRules, smokePlatforms, startFixtureServer } from "./fixtureServer.ts";
+import {
+  hostResolverRules,
+  smokeFeedScenes,
+  smokePlatformIds,
+  startFixtureServer,
+} from "./fixtureServer.ts";
 import type { SceneGroup, SceneRecord, SmokeTheme } from "./scenes.ts";
 import { captureExtensionPage, captureFeed, extensionPageScenes, feedViewport } from "./scenes.ts";
 
@@ -27,10 +32,7 @@ interface SmokeOptions {
 
 const buildDir: string = fileURLToPath(new URL("../../.output/chrome-mv3/", import.meta.url));
 const serviceWorkerWaitMs = 15_000;
-const allGroups: readonly SceneGroup[] = [
-  ...smokePlatforms.map((platform) => platform.id),
-  "pages",
-];
+const allGroups: readonly SceneGroup[] = [...smokePlatformIds, "pages"];
 
 function flagValue(argv: readonly string[], flag: string): string | undefined {
   const index: number = argv.indexOf(flag);
@@ -106,9 +108,11 @@ async function captureAll(
         }
         continue;
       }
-      const platform = smokePlatforms.find((candidate) => candidate.id === group);
-      if (platform === undefined) continue;
-      records.push(...(await captureFeed(context, platform, theme, options.outDir)));
+      for (const feedScene of smokeFeedScenes) {
+        if (feedScene.platform === group) {
+          records.push(...(await captureFeed(context, feedScene, theme, options.outDir)));
+        }
+      }
     }
   }
   return records;
