@@ -131,6 +131,54 @@ describe("app tag", () => {
     expect(refOf(plain).nativeLabel).toBeUndefined();
     expect(extractDomSignals(refOf(plain))).not.toHaveProperty("declaredAutomated");
   });
+
+  it("finds a bare APP leaf in the author row", () => {
+    const tagged: Element = snippet(`
+      <shreddit-comment author="Leaf_Bot_2">
+        <div slot="commentMeta">
+          <a href="/user/Leaf_Bot_2/">Leaf_Bot_2</a>
+          <span><span> APP </span></span>
+        </div>
+      </shreddit-comment>`);
+    expect(refOf(tagged).nativeLabel).toBe("automated");
+  });
+
+  it("searches for the tag once per item and trusts the PostRef afterwards", () => {
+    const tagged: Element = snippet(`
+      <shreddit-post author="Leaf_Bot_3">
+        <div slot="credit-bar">
+          <a href="/user/Leaf_Bot_3/">u/Leaf_Bot_3</a>
+          <span>APP</span>
+        </div>
+      </shreddit-post>`);
+    const leafWalks = vi.spyOn(Element.prototype, "querySelectorAll");
+    const ref: RedditPostRef = refOf(tagged);
+    const signals = extractDomSignals(ref);
+    const walks: number = leafWalks.mock.calls.filter(([selector]) => selector === "*").length;
+    leafWalks.mockRestore();
+
+    expect(walks).toBe(1);
+    expect(signals.declaredAutomated).toBe(true);
+    const { nativeLabel, ...unlabelled } = ref;
+    expect(nativeLabel).toBe("automated");
+    expect(extractDomSignals(unlabelled)).not.toHaveProperty("declaredAutomated");
+  });
+
+  it("skips the leaf walk when the row text has no APP in it", () => {
+    const untagged: Element = snippet(`
+      <shreddit-post author="Quiet_User_4">
+        <div slot="credit-bar">
+          <a href="/user/Quiet_User_4/">u/Quiet_User_4</a>
+          <span>5h ago</span>
+        </div>
+      </shreddit-post>`);
+    const leafWalks = vi.spyOn(Element.prototype, "querySelectorAll");
+    extractDomSignals(refOf(untagged));
+    const walks: number = leafWalks.mock.calls.filter(([selector]) => selector === "*").length;
+    leafWalks.mockRestore();
+
+    expect(walks).toBe(0);
+  });
 });
 
 describe("old.reddit", () => {
