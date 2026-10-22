@@ -216,6 +216,28 @@ describe("mountBadge", () => {
     expect(remounted).not.toBe(mounted);
     expect(render).toHaveBeenCalledTimes(2);
   });
+
+  it("releases its invalidation listener on remove so a removed post is not retained", async () => {
+    const listeners = new Set<() => void>();
+    const context = {
+      options: {},
+      onInvalidated: (callback: () => void) => {
+        listeners.add(callback);
+        return () => listeners.delete(callback);
+      },
+    } as unknown as ContentScriptContext;
+    const { render, unmount } = trackedRender();
+    const kept: MountedUi = await mountBadge(context, makeAnchor(), render, "light", BADGE_CSS);
+    const removed: MountedUi = await mountBadge(context, makeAnchor(), render, "light", BADGE_CSS);
+    expect(listeners.size).toBe(2);
+
+    removed.remove();
+    expect(listeners.size).toBe(1);
+
+    for (const listener of listeners) listener();
+    expect(kept.shadowHost.isConnected).toBe(false);
+    expect(unmount).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("shadowStyles", () => {
