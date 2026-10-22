@@ -76,7 +76,7 @@ follow ratios). They will move after the calibration pass.
 | `x.newAndBlue` | verification | 0.8 | `verified === 'blue'` and age < 90 d | bool, 0.8 | both known |
 | `x.replyShare` | content | 0.8 | `replyShare.ratio` | `[0,0.9)→0` `[0.9,∞)→0.8` | `replyShare.n ≥ 20` |
 | `x.usernameChanges` | profile | 0.6 | count from About | `[0,3)→0` `[3,∞)→0.6` | Tier 2 delivered |
-| `x.countryLocaleMismatch` | geo | 0.4 | About country differs from the account's bio language region | bool, 0.4 | Tier 2 delivered; weak and error-prone (VPNs, travel) |
+| `x.countryLocaleMismatch` (weight 0 until v1.1: the current code compares the account country with the viewer's browser region, not the account's own language; see docs/adversarial-evasion.md) | geo | 0.4 | About country differs from the account's bio language region | bool, 0.4 | Tier 2 delivered; weak and error-prone (VPNs, travel) |
 
 Group caps: `handle` 1.2, `profile` 1.2. Prior `-2.5`. Confidence weights `{0: 0.25, 1: 0.55, 2: 0.20}`.
 

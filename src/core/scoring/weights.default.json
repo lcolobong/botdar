@@ -113,9 +113,9 @@
         },
         "x.countryLocaleMismatch": {
           "group": "geo",
-          "cap": 0.4,
+          "cap": 0,
           "kind": "bool",
-          "weight": 0.4
+          "weight": 0
         }
       }
     },
