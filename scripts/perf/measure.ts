@@ -6,6 +6,7 @@
  * out of the deltas.
  */
 import type { BrowserContext, CDPSession, Page } from "playwright";
+import type { CpuProfile } from "./profile.ts";
 
 /** Flat per-run numbers; null when a run has nothing to report, such as badge times on a bare run. */
 export type RunMetrics = Record<string, number | null>;
@@ -14,6 +15,8 @@ export interface RunResult {
   readonly metrics: RunMetrics;
   /** Longest gap between animation frames in each of the ten scroll steps, in ms. */
   readonly scrollStepFrameGapsMs: number[];
+  /** The CPU profile from navigation to settle, when the run asked for one. */
+  readonly profile?: CpuProfile;
 }
 
 export interface MeasureOptions {
@@ -22,6 +25,8 @@ export interface MeasureOptions {
   readonly cpuThrottleRate: number;
   /** Markup appended to `insertInto` after settling, to time badges on live insertion. */
   readonly liveInsertion?: { readonly markup: string; readonly insertInto: string };
+  /** Samples the renderer's CPU profile every 100 µs from navigation until the badges settle. */
+  readonly profile?: boolean;
 }
 
 interface ProbeState {
@@ -58,6 +63,7 @@ const SETTLE_POLL_MS = 100;
 const SCROLL_STEPS = 10;
 const SCROLL_PAUSE_MS = 300;
 const LONG_TASK_BLOCKING_MS = 50;
+const PROFILE_SAMPLING_US = 100;
 
 /** Serialised into the page by addInitScript, so it must not reference anything outside itself. */
 function installProbe(pollMs: number): void {
@@ -262,6 +268,11 @@ export async function measureRun(
       await session.send("Emulation.setCPUThrottlingRate", { rate: options.cpuThrottleRate });
     }
     await page.addInitScript(installProbe, BADGE_POLL_MS);
+    if (options.profile === true) {
+      await session.send("Profiler.enable");
+      await session.send("Profiler.setSamplingInterval", { interval: PROFILE_SAMPLING_US });
+      await session.send("Profiler.start");
+    }
     await page.goto(options.url, { waitUntil: "load" });
     const navigation = await page.evaluate(() => {
       const [entry] = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
@@ -275,6 +286,8 @@ export async function measureRun(
       navigation.load,
       MIN_SETTLE_AFTER_LOAD_MS,
     );
+    const profile: CpuProfile | undefined =
+      options.profile === true ? (await session.send("Profiler.stop")).profile : undefined;
     const counters: Record<string, number> = await cdpCounters(session);
     await session.send("HeapProfiler.collectGarbage");
     const heapUsed: number = (await cdpCounters(session))["JSHeapUsedSize"] ?? 0;
@@ -304,6 +317,7 @@ export async function measureRun(
         ...insertion,
       },
       scrollStepFrameGapsMs: scroll.gaps,
+      ...(profile === undefined ? {} : { profile }),
     };
   } finally {
     await page.close();

@@ -6,8 +6,11 @@
  * run and results.md with the medians and the extension-minus-bare deltas. It builds nothing: run
  * `pnpm build` first.
  *
+ * With --profile, one more extension run per fixture records a CPU profile from navigation to
+ * settle and writes <fixture>.cpuprofile (opens in Chrome DevTools) and <fixture>-profile.md.
+ *
  *   pnpm perf -- [--out <dir>] [--runs 5] [--only <fixture id>] [--cpu-throttle 4] [--headed]
- *                  [--build <dir>]
+ *                  [--build <dir>] [--profile]
  */
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { cpus, platform, release, tmpdir, totalmem } from "node:os";
@@ -19,6 +22,7 @@ import { buildDir, flagValue, launchChrome, resolveExtensionId } from "../smoke/
 import { perfHomeTimelinePath, redditFeedPosts } from "./generateFixtures.ts";
 import type { MeasureOptions, RunMetrics, RunResult } from "./measure.ts";
 import { measureRun } from "./measure.ts";
+import { extensionCosts, profileReport } from "./profile.ts";
 
 type Condition = "extension" | "bare";
 
@@ -34,6 +38,7 @@ interface PerfOptions {
   readonly headed: boolean;
   readonly buildDir: string;
   readonly cpuThrottleRate: number;
+  readonly profile: boolean;
 }
 
 interface SceneResults {
@@ -109,6 +114,7 @@ function parseOptions(argv: readonly string[]): PerfOptions {
     headed: argv.includes("--headed"),
     buildDir: resolve(flagValue(argv, "--build") ?? buildDir),
     cpuThrottleRate: Number(flagValue(argv, "--cpu-throttle") ?? "1"),
+    profile: argv.includes("--profile"),
   };
 }
 
@@ -234,6 +240,14 @@ async function measureScene(
       process.stdout.write(
         `${scene.scene} ${condition} run ${run}: load ${format(loadMs)} ms, TBT ${format(tbtMs)} ms, ${badges} badges\n`,
       );
+    }
+  }
+  if (options.profile) {
+    const { profile } = await measureRun(contexts.extension, { ...measure, profile: true });
+    if (profile !== undefined) {
+      writeFileSync(join(options.outDir, `${scene.scene}.cpuprofile`), JSON.stringify(profile));
+      const report: string = profileReport(scene.scene, extensionCosts(profile));
+      writeFileSync(join(options.outDir, `${scene.scene}-profile.md`), report);
     }
   }
   return {
