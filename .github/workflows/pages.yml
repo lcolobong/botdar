@@ -1,0 +1,40 @@
+name: Pages
+# Verify-then-deploy: the signed policy is checked against the baked public keys before anything
+# is published, and this workflow never signs, so a tampered policy/dist/v1.json cannot reach users.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm policy:verify
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/policy
+          cp -R site/. _site/
+          cp policy/dist/v1.json _site/policy/v1.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
