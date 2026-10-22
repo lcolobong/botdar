@@ -11,6 +11,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import { createServer } from "node:https";
 import type { AddressInfo } from "node:net";
+import { relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export type SmokePlatformId = "x" | "reddit" | "bluesky";
@@ -34,27 +35,40 @@ export const smokePlatforms: readonly SmokePlatform[] = [
 
 export interface FixtureSource {
   readonly path: string;
+  /** The same file relative to the repository root, for the manifest. */
+  readonly file: string;
   readonly kind: "recorded" | "placeholder";
 }
 
 const repoRoot: URL = new URL("../../", import.meta.url);
 const certificateDir: URL = new URL("./cert/", import.meta.url);
 
-/** The first recorded page under tests/fixtures/<platform>/html/ wins; the placeholder is the fallback. */
+/**
+ * Recorded pages in order of preference: a feed over a thread, because a thread's authors all
+ * score typical and draw nothing; X calls its feed a timeline. Anything else serves alphabetically.
+ */
+const preferredRecordedPages: readonly string[] = ["feed.html", "timeline.html"];
+
+function repoRelative(path: string): string {
+  return relative(fileURLToPath(repoRoot), path);
+}
+
+/** The preferred recorded page under tests/fixtures/<platform>/html/; the placeholder is the fallback. */
 export function resolveFixture(platform: SmokePlatformId): FixtureSource {
   const recordedDir: string = fileURLToPath(new URL(`tests/fixtures/${platform}/html/`, repoRoot));
   if (existsSync(recordedDir)) {
-    const recordedPage: string | undefined = readdirSync(recordedDir)
+    const recordedPages: string[] = readdirSync(recordedDir)
       .filter((name) => name.endsWith(".html"))
-      .sort()[0];
+      .sort();
+    const recordedPage: string | undefined =
+      preferredRecordedPages.find((name) => recordedPages.includes(name)) ?? recordedPages[0];
     if (recordedPage !== undefined) {
-      return { path: `${recordedDir}${recordedPage}`, kind: "recorded" };
+      const path = `${recordedDir}${recordedPage}`;
+      return { path, file: repoRelative(path), kind: "recorded" };
     }
   }
-  return {
-    path: fileURLToPath(new URL(`tests/fixtures/smoke/${platform}.html`, repoRoot)),
-    kind: "placeholder",
-  };
+  const path: string = fileURLToPath(new URL(`tests/fixtures/smoke/${platform}.html`, repoRoot));
+  return { path, file: repoRelative(path), kind: "placeholder" };
 }
 
 export function fixtureUrl(platform: SmokePlatform): string {

@@ -9,7 +9,7 @@ missing page or badge is logged and skipped rather than failing the run.
 | Group                         | Scenes                                                        | Viewport (CSS px) |
 | ----------------------------- | ------------------------------------------------------------- | ----------------- |
 | `pages`                       | `popup`, `options`, `onboarding` (each only if in the build)  | 340×470, 720×1010, 640×540 |
-| `x`, `reddit`, `bluesky`      | `feed` (badges mounted), `hover` (first badge hovered, 400 ms) | 600×820           |
+| `x`, `reddit`, `bluesky`      | `feed` (badges mounted), `hover` (a badge hovered, card open)  | 600×820           |
 
 Every scene is captured at 2x in light and dark. Extension pages get `prefers-color-scheme`
 through Playwright's media emulation; feed fixtures additionally get `data-theme` on `<html>`,
@@ -19,8 +19,15 @@ Feed fixtures are served over HTTPS under the real hostnames (`x.com`, `www.redd
 `bsky.app`) by `fixtureServer.ts`, because the extension's host permissions allow nothing else.
 Chrome resolves those names to the local server through `--host-resolver-rules` and accepts the
 test-only certificate under `cert/` through `--ignore-certificate-errors`. The server prefers a
-recorded page under `tests/fixtures/<platform>/html/` and falls back to the placeholder author
-rows under `tests/fixtures/smoke/`.
+recorded page under `tests/fixtures/<platform>/html/` (`feed.html`, then `timeline.html`, then
+the first file) and falls back to the placeholder author rows under `tests/fixtures/smoke/`; the
+manifest names the file each scene was served.
+
+The hover scene hovers the badge's button inside its shadow root (the `botdar-badge` host itself
+lays out as a block, so hovering it would land on empty row space), preferring a badge named
+"Likely bot", then "Unsure", then whichever comes first, and waits up to a second for the
+`botdar-card` host to be displayed before the screenshot. The manifest records which badge was
+hovered and whether the card opened.
 
 ## Running it
 
