@@ -1,0 +1,94 @@
+/* Badge styles from the design system bundle.css; values come from tokens.css. */
+.bd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--badge-height-x);
+  padding: 0 var(--space-2);
+  margin-left: var(--space-1);
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: default;
+  box-sizing: border-box;
+  background: transparent;
+  color: inherit;
+}
+.bd-badge .bd-glyph {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+.bd-badge .bd-eye {
+  fill: var(--bot-eye);
+}
+.bd-badge:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.bd-badge--many {
+  background: var(--tier-many-bg);
+  color: var(--tier-many-fg);
+  border-color: var(--tier-many-line);
+}
+.bd-badge--some {
+  background: var(--tier-some-bg);
+  color: var(--tier-some-fg);
+  border-color: var(--tier-some-line);
+}
+.bd-badge--declared {
+  background: var(--tier-declared-bg);
+  color: var(--tier-declared-fg);
+  border-color: var(--tier-declared-line);
+}
+.bd-badge--human {
+  background: var(--tier-human-bg);
+  color: var(--tier-human-fg);
+  border-color: var(--tier-human-line);
+}
+.bd-badge--hollow {
+  background: transparent;
+}
+.bd-badge--paused {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--tier-unknown-line);
+}
+.bd-badge--loading .bd-glyph {
+  animation: bd-pulse 1.2s ease-in-out infinite;
+}
+@keyframes bd-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bd-badge--loading .bd-glyph {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+.bd-badge--reddit-post {
+  height: var(--badge-height-reddit-post);
+  font-size: 10px;
+  line-height: 12px;
+}
+.bd-badge--reddit-comment {
+  height: var(--badge-height-reddit-comment);
+  padding: 0 6px;
+  font-size: 10px;
+  line-height: 12px;
+}
+.bd-badge--glyph-only {
+  padding: 0 4px;
+}
