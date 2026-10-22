@@ -48,3 +48,25 @@ export function policyStatusLine(status: PolicyStatus, now: number): string {
   if (status.lastAttempt?.ok === false) return POLICY_UPDATE_FAILED;
   return `Policy updated ${describeAge(status.lastKnownGood.fetchedAt, now)}`;
 }
+
+export const POLICY_HOST = "lcolobong.github.io";
+export const POLICY_RESTRICT_ONLY = "It can only turn features off, never on.";
+
+/** The options page's policy row title. */
+export function policyVersionLine(status: PolicyStatus): string {
+  const failed: boolean = status.lastAttempt?.ok === false;
+  if (status.lastKnownGood === null) {
+    return failed ? "Policy update failed; using the build defaults" : POLICY_NOT_FETCHED;
+  }
+  const version: number = status.lastKnownGood.policy.version;
+  return failed
+    ? `Version ${version}, last update failed`
+    : `Version ${version}, signature verified`;
+}
+
+/** The options page's policy row caption. */
+export function policyFetchedLine(status: PolicyStatus, now: number): string {
+  if (status.lastKnownGood === null) return `Using the build defaults. ${POLICY_RESTRICT_ONLY}`;
+  const age: string = describeAge(status.lastKnownGood.fetchedAt, now);
+  return `Fetched ${age} from ${POLICY_HOST}. ${POLICY_RESTRICT_ONLY}`;
+}
