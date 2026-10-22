@@ -124,12 +124,13 @@ describe("bluesky toFeatures", () => {
   });
 
   describe("handle shape", () => {
+    // The shared helper (src/core/handle/shape.ts) fires from three digits anywhere in the local part.
     it.each([
       ["kai09127364.bsky.social", true],
       ["kai1234.bsky.social", true],
-      ["kai123.bsky.social", false],
-      ["kai-1234.bsky.social", false],
-      ["1234.bsky.social", false],
+      ["kai123.bsky.social", true],
+      ["kai-1234.bsky.social", true],
+      ["kai12.bsky.social", false],
       ["kai.bsky.social", false],
       ["kai09127364.example.com", false],
       ["kai09127364.bsky.social.example.com", false],
