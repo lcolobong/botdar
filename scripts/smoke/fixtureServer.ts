@@ -16,21 +16,38 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 export type SmokePlatformId = "x" | "reddit" | "bluesky";
 
-export interface SmokePlatform {
-  readonly id: SmokePlatformId;
-  readonly hostname: string;
-  /** A path the real site uses for a feed, so routing in the content script sees a familiar URL. */
-  readonly feedPath: string;
+export const smokePlatformIds: readonly SmokePlatformId[] = ["x", "reddit", "bluesky"];
+
+/** The hostnames the content scripts are allowed to run on; the server answers for all three. */
+export const smokeHostnames: Readonly<Record<SmokePlatformId, string>> = {
+  x: "x.com",
+  reddit: "www.reddit.com",
+  bluesky: "bsky.app",
+};
+
+export interface SmokeFeedScene {
+  readonly platform: SmokePlatformId;
+  /** Names the capture; "feed" is each platform's primary scene and its hover capture is "hover". */
+  readonly scene: string;
+  /** A path the real site uses for this page, so routing in the content script sees a familiar URL. */
+  readonly path: string;
+  /** A specific recorded page under tests/fixtures/<platform>/html/; otherwise the preferred one. */
+  readonly fixtureFile?: string;
+  /** Carried into the manifest, for a scene that is expected to draw nothing. */
+  readonly note?: string;
 }
 
-export const smokePlatforms: readonly SmokePlatform[] = [
-  { id: "x", hostname: "x.com", feedPath: "/home" },
+export const smokeFeedScenes: readonly SmokeFeedScene[] = [
+  { platform: "x", scene: "feed", path: "/home" },
+  { platform: "reddit", scene: "feed", path: "/" },
   {
-    id: "reddit",
-    hostname: "www.reddit.com",
-    feedPath: "/r/botdarsmoke/comments/sm0ke1/placeholder_thread/",
+    platform: "reddit",
+    scene: "comments",
+    path: "/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/",
+    fixtureFile: "comments.html",
+    note: "quiet feed: every author in the recorded thread scores typical, so no badge is expected",
   },
-  { id: "bluesky", hostname: "bsky.app", feedPath: "/" },
+  { platform: "bluesky", scene: "feed", path: "/" },
 ];
 
 export interface FixtureSource {
@@ -53,15 +70,20 @@ function repoRelative(path: string): string {
   return relative(fileURLToPath(repoRoot), path);
 }
 
-/** The preferred recorded page under tests/fixtures/<platform>/html/; the placeholder is the fallback. */
-export function resolveFixture(platform: SmokePlatformId): FixtureSource {
+/**
+ * The named or else the preferred recorded page under tests/fixtures/<platform>/html/; the
+ * placeholder is the fallback when nothing is recorded.
+ */
+export function resolveFixture(platform: SmokePlatformId, fixtureFile?: string): FixtureSource {
   const recordedDir: string = fileURLToPath(new URL(`tests/fixtures/${platform}/html/`, repoRoot));
   if (existsSync(recordedDir)) {
     const recordedPages: string[] = readdirSync(recordedDir)
       .filter((name) => name.endsWith(".html"))
       .sort();
     const recordedPage: string | undefined =
-      preferredRecordedPages.find((name) => recordedPages.includes(name)) ?? recordedPages[0];
+      fixtureFile ??
+      preferredRecordedPages.find((name) => recordedPages.includes(name)) ??
+      recordedPages[0];
     if (recordedPage !== undefined) {
       const path = `${recordedDir}${recordedPage}`;
       return { path, file: repoRelative(path), kind: "recorded" };
@@ -71,8 +93,8 @@ export function resolveFixture(platform: SmokePlatformId): FixtureSource {
   return { path, file: repoRelative(path), kind: "placeholder" };
 }
 
-export function fixtureUrl(platform: SmokePlatform): string {
-  return `https://${platform.hostname}${platform.feedPath}`;
+export function fixtureUrl(scene: SmokeFeedScene): string {
+  return `https://${smokeHostnames[scene.platform]}${scene.path}`;
 }
 
 export interface ApiFixtureRoute {
@@ -111,8 +133,8 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
  * recorded page's leftover asset URLs fail fast instead of waiting on real DNS and networks.
  */
 export function hostResolverRules(port: number): string {
-  const mappings: string[] = smokePlatforms.map(
-    (platform) => `MAP ${platform.hostname} 127.0.0.1:${port}`,
+  const mappings: string[] = Object.values(smokeHostnames).map(
+    (hostname) => `MAP ${hostname} 127.0.0.1:${port}`,
   );
   return [...mappings, "MAP * ~NOTFOUND"].join(", ");
 }
@@ -122,18 +144,13 @@ export interface FixtureServer {
   close(): Promise<void>;
 }
 
-function platformForRequest(request: IncomingMessage): SmokePlatform | undefined {
-  const hostname: string = (request.headers.host ?? "").split(":")[0] ?? "";
-  return smokePlatforms.find((platform) => platform.hostname === hostname);
-}
-
 function handleRequest(request: IncomingMessage, response: ServerResponse): void {
-  const platform: SmokePlatform | undefined = platformForRequest(request);
+  const hostname: string = (request.headers.host ?? "").split(":")[0] ?? "";
   const requestPath: string = (request.url ?? "/").split("?")[0] ?? "/";
+  const servesRequest = (route: { platform: SmokePlatformId; path: string }): boolean =>
+    smokeHostnames[route.platform] === hostname && route.path === requestPath;
   // GET or POST alike: X posts some GraphQL operations and the interceptor relays both.
-  const apiRoute: ApiFixtureRoute | undefined = apiFixtureRoutes.find(
-    (route) => route.platform === platform?.id && route.path === requestPath,
-  );
+  const apiRoute: ApiFixtureRoute | undefined = apiFixtureRoutes.find(servesRequest);
   if (apiRoute !== undefined) {
     response.writeHead(200, {
       "content-type": "application/json; charset=utf-8",
@@ -142,12 +159,16 @@ function handleRequest(request: IncomingMessage, response: ServerResponse): void
     response.end(readFileSync(new URL(apiRoute.file, repoRoot)));
     return;
   }
-  if (platform === undefined || requestPath !== platform.feedPath) {
+  const scene: SmokeFeedScene | undefined = smokeFeedScenes.find(servesRequest);
+  if (scene === undefined) {
     response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
     response.end("no smoke fixture at this route");
     return;
   }
-  const markup: string = readFileSync(resolveFixture(platform.id).path, "utf8");
+  const markup: string = readFileSync(
+    resolveFixture(scene.platform, scene.fixtureFile).path,
+    "utf8",
+  );
   response.writeHead(200, {
     "content-type": "text/html; charset=utf-8",
     "cache-control": "no-store",
@@ -180,8 +201,14 @@ const runAsScript: boolean =
 if (runAsScript) {
   const server: FixtureServer = await startFixtureServer();
   process.stdout.write(`fixture server on 127.0.0.1:${server.port}\n`);
-  for (const platform of smokePlatforms) {
-    process.stdout.write(`  ${fixtureUrl(platform)} <- ${resolveFixture(platform.id).path}\n`);
+  for (const scene of smokeFeedScenes) {
+    const fixture: FixtureSource = resolveFixture(scene.platform, scene.fixtureFile);
+    process.stdout.write(`  ${fixtureUrl(scene)} <- ${fixture.file}\n`);
+  }
+  for (const route of apiFixtureRoutes) {
+    process.stdout.write(
+      `  https://${smokeHostnames[route.platform]}${route.path} <- ${route.file}\n`,
+    );
   }
   process.stdout.write(`chrome flag: --host-resolver-rules="${hostResolverRules(server.port)}"\n`);
 }

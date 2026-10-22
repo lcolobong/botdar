@@ -5,11 +5,11 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { BrowserContext, Locator, Page } from "playwright";
-import type { FixtureSource, SmokePlatform } from "./fixtureServer.ts";
+import type { FixtureSource, SmokeFeedScene, SmokePlatformId } from "./fixtureServer.ts";
 import { fixtureUrl, resolveFixture } from "./fixtureServer.ts";
 
 export type SmokeTheme = "light" | "dark";
-export type SceneGroup = SmokePlatform["id"] | "pages";
+export type SceneGroup = SmokePlatformId | "pages";
 
 export interface Viewport {
   readonly width: number;
@@ -34,6 +34,8 @@ export interface SceneRecord {
   readonly fixtureFile?: string;
   /** The accessible name of the badge the hover scene hovered. */
   readonly hovered?: string;
+  /** What the scene definition says to expect, e.g. a feed that draws nothing. */
+  readonly note?: string;
 }
 
 interface HoverTarget {
@@ -57,6 +59,8 @@ const preferredBadgeWaitMs = 2_000;
 const cardOpenWaitMs = 1_000;
 const hoverSettleMs = 150;
 const pageSettleMs = 300;
+/** Each platform's primary scene keeps the short "hover" name; other scenes get "<scene>-hover". */
+const primaryFeedScene = "feed";
 
 export const feedViewport: Viewport = { width: 600, height: 820 };
 
@@ -68,6 +72,10 @@ export const extensionPageScenes: readonly ExtensionPageScene[] = [
 
 export function screenshotName(group: SceneGroup, scene: string, theme: SmokeTheme): string {
   return `after-${group}-${scene}-${theme}.png`;
+}
+
+export function hoverSceneName(scene: string): string {
+  return scene === primaryFeedScene ? "hover" : `${scene}-hover`;
 }
 
 async function openThemedPage(
@@ -196,34 +204,36 @@ function waitForCardOpen(page: Page): Promise<CardBox | undefined> {
 
 export async function captureFeed(
   context: BrowserContext,
-  platform: SmokePlatform,
+  feedScene: SmokeFeedScene,
   theme: SmokeTheme,
   outDir: string,
 ): Promise<SceneRecord[]> {
-  const fixture: FixtureSource = resolveFixture(platform.id);
-  const feedFile: string = screenshotName(platform.id, "feed", theme);
-  const hoverFile: string = screenshotName(platform.id, "hover", theme);
+  const fixture: FixtureSource = resolveFixture(feedScene.platform, feedScene.fixtureFile);
+  const hoverScene: string = hoverSceneName(feedScene.scene);
+  const feedFile: string = screenshotName(feedScene.platform, feedScene.scene, theme);
+  const hoverFile: string = screenshotName(feedScene.platform, hoverScene, theme);
   const base = {
-    group: platform.id,
+    group: feedScene.platform,
     theme,
     fixture: fixture.kind,
     fixtureFile: fixture.file,
+    ...(feedScene.note === undefined ? {} : { note: feedScene.note }),
   } as const;
   if (!existsSync(fixture.path)) {
     const reason = `fixture ${fixture.path} is missing`;
     return [
-      { ...base, scene: "feed", file: feedFile, status: "skipped", reason },
-      { ...base, scene: "hover", file: hoverFile, status: "skipped", reason },
+      { ...base, scene: feedScene.scene, file: feedFile, status: "skipped", reason },
+      { ...base, scene: hoverScene, file: hoverFile, status: "skipped", reason },
     ];
   }
   const page: Page = await openThemedPage(context, theme, feedViewport, true);
   try {
-    await page.goto(fixtureUrl(platform), { waitUntil: "domcontentloaded" });
+    await page.goto(fixtureUrl(feedScene), { waitUntil: "domcontentloaded" });
     const badgeMounted: boolean = await waitForBadges(page);
     await page.screenshot({ path: join(outDir, feedFile) });
     const feedRecord: SceneRecord = {
       ...base,
-      scene: "feed",
+      scene: feedScene.scene,
       file: feedFile,
       status: "captured",
       ...(badgeMounted ? {} : { reason: "no badge mounted within the wait; captured bare feed" }),
@@ -234,7 +244,7 @@ export async function captureFeed(
         feedRecord,
         {
           ...base,
-          scene: "hover",
+          scene: hoverScene,
           file: hoverFile,
           status: "skipped",
           reason: "no badge to hover",
@@ -259,7 +269,7 @@ export async function captureFeed(
       feedRecord,
       {
         ...base,
-        scene: "hover",
+        scene: hoverScene,
         file: hoverFile,
         status: "captured",
         hovered: target.name,
