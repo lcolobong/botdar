@@ -5,10 +5,10 @@
  * kid for one release so a policy signed before the rotation still verifies.
  */
 export const trustedKeys: Record<string, JsonWebKey> = {
-  placeholder: {
+  "2026-10": {
     kty: "EC",
     crv: "P-256",
-    x: "MK-aG4kQrlWBqrKOwuACAzRBYudnVrOG5yy30Q3bbmg",
-    y: "G_EeNmd-g7tXxAtuwIWPjq8kJ29CQ0DLDjyrj6zT1Qk",
+    x: "gg7xE9YpnO8NP_SzB0qF-1V-lX6Lp4AhwHYIbCmfk5E",
+    y: "EYcXxOK2Zf3zupaioCyU29KncpcAErTiIC3vglxs1fc",
   },
 };
