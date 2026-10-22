@@ -1,0 +1,38 @@
+{
+  "profiles": [
+    {
+      "did": "did:plc:hhhhhhhhhhhhhhhhhhhhhhhh",
+      "handle": "odd.types.example",
+      "displayName": 404,
+      "avatar": "   ",
+      "labels": "bot",
+      "createdAt": "last tuesday",
+      "verification": "valid",
+      "description": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "followersCount": "12",
+      "followsCount": -3,
+      "postsCount": 8900.5
+    },
+    {
+      "did": "not-a-did",
+      "handle": "missing.did.example",
+      "followersCount": 1
+    },
+    {
+      "did": "did:plc:iiiiiiiiiiiiiiiiiiiiiiii",
+      "handle": ""
+    },
+    {
+      "did": "did:plc:jjjjjjjjjjjjjjjjjjjjjjjj",
+      "handle": ["array.handle"]
+    },
+    null,
+    "a string where a profile should be",
+    {
+      "did": "did:plc:kkkkkkkkkkkkkkkkkkkkkkkk",
+      "handle": "Mixed.Case.Example ",
+      "labels": [{ "src": "did:plc:kkkkkkkkkkkkkkkkkkkkkkkk", "val": "bot" }, "not a label", null],
+      "verification": { "verifiedStatus": 1 }
+    }
+  ]
+}

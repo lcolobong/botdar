@@ -1,0 +1,175 @@
+{
+  "feed": [
+    {
+      "post": {
+        "uri": "at://did:plc:cccccccccccccccccccccccc/app.bsky.feed.post/3mz1aaaaaaaa2a",
+        "cid": "bafyreiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+        "author": {
+          "did": "did:plc:cccccccccccccccccccccccc",
+          "handle": "kai09127364.bsky.social",
+          "associated": {
+            "chat": { "allowIncoming": "following" },
+            "activitySubscription": { "allowSubscriptions": "followers" }
+          },
+          "labels": [
+            {
+              "src": "did:plc:cccccccccccccccccccccccc",
+              "uri": "at://did:plc:cccccccccccccccccccccccc/app.bsky.actor.profile/self",
+              "cid": "bafyreiffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "val": "bot",
+              "cts": "2026-10-01T00:00:00.000Z"
+            }
+          ],
+          "createdAt": "2026-10-01T09:12:45.000Z",
+          "verification": {
+            "verifications": [],
+            "verifiedStatus": "none",
+            "trustedVerifierStatus": "none"
+          }
+        },
+        "record": {
+          "$type": "app.bsky.feed.post",
+          "createdAt": "2026-10-22T07:00:01.000Z",
+          "embed": {
+            "$type": "app.bsky.embed.record",
+            "record": {
+              "cid": "bafyreigggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+              "uri": "at://did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/app.bsky.feed.post/3myfsmerpmk2z"
+            }
+          },
+          "langs": ["en"],
+          "text": "Daily digest: 14 new posts"
+        },
+        "embed": {
+          "$type": "app.bsky.embed.record#view",
+          "record": {
+            "$type": "app.bsky.embed.record#viewRecord",
+            "uri": "at://did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/app.bsky.feed.post/3myfsmerpmk2z",
+            "cid": "bafyreigggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+            "author": {
+              "did": "did:plc:bbbbbbbbbbbbbbbbbbbbbbbb",
+              "handle": "alice.example.com",
+              "displayName": "Alice Example",
+              "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/bafkreidddddddddddddddddddddddddddddddddddddddddddddddddddddddd@jpeg",
+              "labels": [],
+              "createdAt": "2023-04-14T18:12:06.575Z",
+              "verification": {
+                "verifications": [],
+                "verifiedStatus": "valid",
+                "trustedVerifierStatus": "none"
+              }
+            },
+            "value": {
+              "$type": "app.bsky.feed.post",
+              "createdAt": "2026-10-21T18:44:55.442Z",
+              "langs": ["en"],
+              "text": "🔜"
+            },
+            "labels": [],
+            "likeCount": 459,
+            "replyCount": 30,
+            "repostCount": 40,
+            "quoteCount": 10,
+            "indexedAt": "2026-10-21T18:44:56.549Z",
+            "embeds": []
+          }
+        },
+        "replyCount": 0,
+        "repostCount": 0,
+        "likeCount": 0,
+        "quoteCount": 0,
+        "indexedAt": "2026-10-22T07:00:01.500Z",
+        "labels": []
+      }
+    },
+    {
+      "post": {
+        "uri": "at://did:plc:dddddddddddddddddddddddd/app.bsky.feed.post/3mz2bbbbbbbb2b",
+        "cid": "bafyreijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+        "author": {
+          "did": "did:plc:dddddddddddddddddddddddd",
+          "handle": "newsroom.example.org",
+          "displayName": "Example Newsroom",
+          "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:dddddddddddddddddddddddd/bafkreikkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk@jpeg",
+          "associated": { "labeler": false },
+          "labels": [
+            {
+              "src": "did:plc:labelerlabelerlabelerlab",
+              "uri": "at://did:plc:dddddddddddddddddddddddd/app.bsky.actor.profile/self",
+              "val": "bot",
+              "cts": "2026-05-05T00:00:00.000Z"
+            }
+          ],
+          "createdAt": "2024-02-29T12:00:00.000Z",
+          "verification": {
+            "verifications": [],
+            "verifiedStatus": "invalid",
+            "trustedVerifierStatus": "none"
+          }
+        },
+        "record": {
+          "$type": "app.bsky.feed.post",
+          "createdAt": "2026-10-22T06:30:00.000Z",
+          "reply": {
+            "parent": {
+              "cid": "bafyreigggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+              "uri": "at://did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/app.bsky.feed.post/3myfsmerpmk2z"
+            },
+            "root": {
+              "cid": "bafyreigggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+              "uri": "at://did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/app.bsky.feed.post/3myfsmerpmk2z"
+            }
+          },
+          "text": "Looking forward to it."
+        },
+        "replyCount": 0,
+        "repostCount": 0,
+        "likeCount": 2,
+        "quoteCount": 0,
+        "indexedAt": "2026-10-22T06:30:00.400Z",
+        "labels": []
+      },
+      "reply": {
+        "root": {
+          "$type": "app.bsky.feed.defs#postView",
+          "uri": "at://did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/app.bsky.feed.post/3myfsmerpmk2z",
+          "cid": "bafyreigggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+          "author": {
+            "did": "did:plc:bbbbbbbbbbbbbbbbbbbbbbbb",
+            "handle": "alice.example.com",
+            "displayName": "Alice Example",
+            "labels": [],
+            "createdAt": "2023-04-14T18:12:06.575Z"
+          },
+          "record": {
+            "$type": "app.bsky.feed.post",
+            "createdAt": "2026-10-21T18:44:55.442Z",
+            "text": "🔜"
+          },
+          "indexedAt": "2026-10-21T18:44:56.549Z",
+          "labels": []
+        },
+        "parent": {
+          "$type": "app.bsky.feed.defs#postView",
+          "uri": "at://did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/app.bsky.feed.post/3myfsmerpmk2z",
+          "cid": "bafyreigggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+          "author": {
+            "did": "did:plc:bbbbbbbbbbbbbbbbbbbbbbbb",
+            "handle": "alice.example.com",
+            "displayName": "Alice Example",
+            "labels": [],
+            "createdAt": "2023-04-14T18:12:06.575Z"
+          },
+          "record": {
+            "$type": "app.bsky.feed.post",
+            "createdAt": "2026-10-21T18:44:55.442Z",
+            "text": "🔜"
+          },
+          "indexedAt": "2026-10-21T18:44:56.549Z",
+          "labels": []
+        }
+      }
+    }
+  ],
+  "cursor": "2026-10-22T06:30:00.400Z"
+}
