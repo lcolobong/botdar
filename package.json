@@ -18,6 +18,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "bigrams:build": "node --experimental-strip-types scripts/build-bigrams.ts",
+    "policy:keygen": "node --experimental-strip-types scripts/policy-keygen.ts",
+    "policy:sign": "node --experimental-strip-types scripts/policy-sign.ts",
+    "policy:verify": "node --experimental-strip-types scripts/policy-verify.ts",
     "postinstall": "wxt prepare"
   },
   "packageManager": "pnpm@12.14.0",
