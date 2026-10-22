@@ -1,7 +1,8 @@
 /**
  * The restrict-only merge: build defaults narrowed by a verified policy. Every rule here is a
- * one-way door; a valid, correctly signed policy can switch things off, lower caps and limits and
- * move the prior toward "typical", but never the reverse. A leaked signing key or a hijacked host
+ * one-way door; a valid, correctly signed policy can switch things off, lower caps and limits, raise
+ * thresholds, weaken feature contributions and move the prior toward "typical", but never the
+ * reverse. A leaked signing key or a hijacked host
  * therefore gets a kill switch and nothing more (ADR-0007, docs/architecture.md "Threat model").
  */
 import type { EffectivePlatformConfig, FeatureId, PlatformId } from "../types.ts";
@@ -81,15 +82,34 @@ function mergePlatformConfig(
   return config;
 }
 
+/** Thresholds only move up: a higher bar for "some" or "many" means fewer accounts get flagged. */
 function mergeThresholds(build: Thresholds, override: PolicyThresholds | undefined): Thresholds {
   if (override === undefined) return { ...build };
-  const some: number = clamp(
-    override.some ?? build.some,
-    THRESHOLD_MIN,
-    THRESHOLD_MAX - THRESHOLD_GAP,
+  const some: number = Math.max(
+    build.some,
+    clamp(override.some ?? build.some, THRESHOLD_MIN, THRESHOLD_MAX - THRESHOLD_GAP),
   );
-  const many: number = clamp(override.many ?? build.many, some + THRESHOLD_GAP, THRESHOLD_MAX);
+  const many: number = Math.max(
+    build.many,
+    clamp(override.many ?? build.many, THRESHOLD_MIN, THRESHOLD_MAX),
+    some + THRESHOLD_GAP,
+  );
   return { some, many };
+}
+
+/**
+ * The most a policy bin may contribute: the build's value for the same bin, or zero when the policy
+ * redrew the boundaries, so a replaced bin can weaken or neutralise a feature but never strengthen it.
+ */
+function binCeiling(
+  buildBins: PolicyBin[],
+  index: number,
+  lo: number | null,
+  hi: number | null,
+): number {
+  const buildBin: PolicyBin | undefined = buildBins[index];
+  if (buildBin === undefined || buildBin[0] !== lo || buildBin[1] !== hi) return 0;
+  return buildBin[2];
 }
 
 function mergeFeature(
@@ -99,14 +119,19 @@ function mergeFeature(
   const cap: number = override?.cap === undefined ? build.cap : Math.min(build.cap, override.cap);
   const merged: FeatureWeights = { ...build, cap };
   // A policy cannot change a feature's kind: bins only replace bins, a weight only replaces a weight.
-  const bins: PolicyBin[] | undefined =
-    build.bins === undefined ? undefined : (override?.bins ?? build.bins);
-  if (bins !== undefined) {
-    merged.bins = bins.map(([lo, hi, logOdds]): PolicyBin => [lo, hi, clamp(logOdds, -cap, cap)]);
+  const buildBins: PolicyBin[] | undefined = build.bins;
+  if (buildBins !== undefined) {
+    const bins: PolicyBin[] = override?.bins ?? buildBins;
+    merged.bins = bins.map(([lo, hi, logOdds], index): PolicyBin => [
+      lo,
+      hi,
+      clamp(logOdds, -cap, Math.min(cap, binCeiling(buildBins, index, lo, hi))),
+    ]);
   }
-  const weight: number | undefined =
-    build.weight === undefined ? undefined : (override?.weight ?? build.weight);
-  if (weight !== undefined) merged.weight = clamp(weight, -cap, cap);
+  const buildWeight: number | undefined = build.weight;
+  if (buildWeight !== undefined) {
+    merged.weight = clamp(override?.weight ?? buildWeight, -cap, Math.min(cap, buildWeight));
+  }
   return merged;
 }
 
