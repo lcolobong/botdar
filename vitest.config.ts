@@ -9,5 +9,6 @@ export default defineConfig({
     // Without this vitest stubs every CSS module, including `tokens.css?raw`, with an empty string.
     css: true,
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
+    setupFiles: ["tests/setup/intersectionObserver.ts"],
   },
 });
