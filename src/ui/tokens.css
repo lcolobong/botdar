@@ -1,4 +1,4 @@
-/* Botdar design tokens, generated from the design system tokens.json (https://claude.ai/artifact/2jacALGXFe96ubLp62qRAe). */
+/* Botdar design tokens, generated from the design system's tokens.json. */
 /* The badge and card live in shadow roots, so :host carries the tokens; data-theme on the host picks the theme. */
 
 :host,

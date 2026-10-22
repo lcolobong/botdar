@@ -441,6 +441,7 @@ user opt-in. What must never change:
 | Leaked signing key | Publish a valid policy that disables platforms or lowers caps | Enable anything, exfiltrate data, run code | Same restrict-only merge. Response: rotate `kid` in a release |
 | Malicious recorded fixture | Crash a parser in tests | Affect users | Parsers are fixture-tested to return partials; fixtures are anonymised and reviewed |
 | Fingerprinting site | Detect the extension if it exposed resources | Detect it through bundled files | No `web_accessible_resources` |
+| Page inspecting the MAIN-world patches | Notice that `fetch`/`XMLHttpRequest` are wrapped by reading `fetch.toString()`, `fetch.name` or `fetch.length` | Read or change anything beyond detecting the extension's presence | Residual risk is fingerprinting only. Mitigated by native-looking `name`/`length` (to be set by the interceptors); detection through `toString()` is accepted as the cost of ADR-0011 |
 | Platform rate limiting or account lock | Throttle the user's session when Tier 2 is noisy | Affect Tier 0 or Tier 1 | Limiter with backoff and circuit breaker; policy can switch Tier 2 off for everyone within a day |
 
 ## Day-one validations
