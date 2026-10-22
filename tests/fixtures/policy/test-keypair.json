@@ -1,0 +1,11 @@
+{
+  "_comment": "TEST-ONLY keypair for the policy signature tests. Never bake this public key into publicKey.ts and never sign a real policy with this private key.",
+  "kid": "test-2026",
+  "publicJwk": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "AfLc_X6WbG0UTpT_BSGUzLgPn1c65uc9k1Ms3duApQ8",
+    "y": "wa183yWp2gUrF5fbr3E4hhr7Q8G4oNz4BCE0pdBh_ao"
+  },
+  "privateKeyPem": "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg3EkMmi8wuYgt1tdb\nWyyMTm4hrmjxfV6TSPNCxLhHVvKhRANCAAQB8tz9fpZsbRROlP8FIZTMuA+fVzrm\n5z2TUyzd24ClD8GtfN8lqdoFKxeX269xOIYa+0PBuKDc+AQhNKXQYf2q\n-----END PRIVATE KEY-----\n"
+}
