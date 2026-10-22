@@ -44,7 +44,7 @@ describe("observeFeed", () => {
     const { onPost, stop } = start();
     expect(onPost).not.toHaveBeenCalled();
     await settle();
-    expect(handles(onPost)).toEqual(["alice_example", "kai09127364", "maria_dev"]);
+    expect(handles(onPost)).toEqual(["alice_example", "kai09127364", "maria_dev", "mila48213907"]);
     stop();
   });
 
@@ -57,11 +57,11 @@ describe("observeFeed", () => {
     document.body.append(document.createElement("div"));
     document.body.append(document.createElement("div"));
     await settle();
-    expect(onPost).toHaveBeenCalledTimes(3);
+    expect(onPost).toHaveBeenCalledTimes(4);
 
     document.body.append(document.createElement("div"));
     await settle();
-    expect(onPost).toHaveBeenCalledTimes(3);
+    expect(onPost).toHaveBeenCalledTimes(4);
     stop();
   });
 
@@ -92,7 +92,13 @@ describe("observeFeed", () => {
 
     document.body.insertAdjacentHTML("afterbegin", html);
     await settle();
-    expect(handles(onPost)).toEqual(["alice_example", "kai09127364", "maria_dev", "alice_example"]);
+    expect(handles(onPost)).toEqual([
+      "alice_example",
+      "kai09127364",
+      "maria_dev",
+      "mila48213907",
+      "alice_example",
+    ]);
     stop();
   });
 

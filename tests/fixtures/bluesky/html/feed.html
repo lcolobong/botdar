@@ -4,9 +4,39 @@
   src/platforms/bluesky/dom.ts relies on: post containers with a `feedItem-by-<handle>` or
   `postThreadItem-by-<handle>` test id, `/profile/<handle>` links for avatar, name and handle, the
   avatar component's test ids, and the robot badge next to a declared bot. Handles match the JSON
-  fixtures in the parent directory.
+  fixtures in the parent directory; the last row is a ten-day-old name-plus-digits account with
+  no avatar whose counts arrive through the recorded getProfiles body, so it scores Likely bot.
 -->
 <html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /* The web app's stylesheets are not recorded; this keeps a served capture legible. */
+      body {
+        font-family: system-ui, sans-serif;
+        font-size: 15px;
+        margin: 12px;
+      }
+      svg {
+        width: 20px;
+        height: 20px;
+        vertical-align: middle;
+      }
+      [data-testid="userAvatarImage"] {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      [data-testid^="feedItem-by-"],
+      [data-testid^="postThreadItem-by-"] {
+        padding: 8px 0;
+      }
+    </style>
+  </head>
   <body>
     <div data-testid="feedItem-by-alice.example.com">
       <div class="post-header">
@@ -75,5 +105,36 @@
     <div data-testid="feedItem-by-">
       <a href="/profile/did:plc:zzzzzzzzzzzzzzzzzzzzzzzz"><span>@handle.invalid</span></a>
     </div>
+
+    <div data-testid="feedItem-by-mila48213907.bsky.social">
+      <div class="post-header">
+        <a href="/profile/mila48213907.bsky.social" aria-label="Mila's avatar">
+          <div data-testid="userAvatarFallback"><svg viewBox="0 0 24 24"></svg></div>
+        </a>
+        <div class="author-row">
+          <a href="/profile/mila48213907.bsky.social"><span>Mila</span></a>
+          <a href="/profile/mila48213907.bsky.social"><span>@mila48213907.bsky.social</span></a>
+          <span>&middot; 1m</span>
+        </div>
+      </div>
+      <div class="post-body">Follow for daily picks 🔥</div>
+    </div>
+    <script>
+      // Served by scripts/smoke: fetching the recorded timeline and profiles bodies the way the
+      // web app does lets the extension's MAIN-world interceptor relay them to Tier 1. The content
+      // script only subscribes after document_idle, so the requests are repeated a few times.
+      window.addEventListener("load", () => {
+        for (const delay of [0, 400, 1200, 2500]) {
+          setTimeout(() => {
+            for (const path of [
+              "/xrpc/app.bsky.feed.getTimeline",
+              "/xrpc/app.bsky.actor.getProfiles",
+            ]) {
+              fetch(path).catch(() => undefined);
+            }
+          }, delay);
+        }
+      });
+    </script>
   </body>
 </html>

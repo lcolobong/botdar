@@ -39,12 +39,12 @@ beforeEach(() => {
 
 describe("post selectors", () => {
   it("finds feed and thread items, and skips marked ones when asked", () => {
-    expect(document.querySelectorAll(POST_SELECTOR)).toHaveLength(6);
+    expect(document.querySelectorAll(POST_SELECTOR)).toHaveLength(7);
     const unmarked: string[] = [...document.querySelectorAll(UNMARKED_POST_SELECTOR)].map(
       (element) => element.getAttribute("data-testid") ?? "",
     );
     expect(unmarked).not.toContain("feedItem-by-marked.example.com");
-    expect(unmarked).toHaveLength(5);
+    expect(unmarked).toHaveLength(6);
   });
 });
 
