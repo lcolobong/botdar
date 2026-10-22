@@ -19,6 +19,19 @@ const popupViewport: Viewport = { width: 340, height: 470 };
 const pageSettleMs = 300;
 const hoverSettleMs = 150;
 const badgeWaitMs = 5_000;
+/** The slice of the extension API the seeding page script uses; Playwright runs it in the page. */
+interface ChromeStorageApi {
+  storage: { local: { set(items: Record<string, unknown>): Promise<void> } };
+}
+
+/** The storage keys and shapes of src/core/policy/loader.ts; the harness cannot import extension code. */
+const policyLastKnownGoodKey = "policy.lkg";
+const policyLastAttemptKey = "policy.lastAttempt";
+const policyKeyId = "2026-10";
+const signedPolicyPath = "policy/dist/v1.json";
+/** Scrolls the options page so the Lookups heading sits this far from the top, keeping Badges and Policy in frame. */
+const optionsHeadingTopOffset = 24;
+const scrollRoomPx = 400;
 
 interface StoreFeedScene {
   readonly file: string;
@@ -100,17 +113,71 @@ async function captureFeedWithCard(
   }
 }
 
+/**
+ * Stores a fetched policy the way the service worker does after a successful refresh, so the popup
+ * header reads "Policy updated today" and the options Policy section reads "Version 1, signature
+ * verified". Written from an extension page because only extension contexts reach chrome.storage.
+ */
+async function seedFetchedPolicy(
+  context: BrowserContext,
+  extensionId: string,
+  viewport: Viewport,
+): Promise<void> {
+  const envelope: { payload: string } = JSON.parse(
+    await readFile(new URL(`../../${signedPolicyPath}`, import.meta.url), "utf8"),
+  );
+  const now: number = Date.now();
+  const page: Page = await openThemedPage(context, "light", viewport, false);
+  try {
+    await page.goto(`chrome-extension://${extensionId}/options.html`, { waitUntil: "load" });
+    await page.evaluate(
+      async (stored: Record<string, unknown>): Promise<void> => {
+        const extensionApi = globalThis as unknown as { chrome: ChromeStorageApi };
+        await extensionApi.chrome.storage.local.set(stored);
+      },
+      {
+        [policyLastKnownGoodKey]: {
+          policy: JSON.parse(envelope.payload),
+          fetchedAt: now,
+          kid: policyKeyId,
+        },
+        [policyLastAttemptKey]: { at: now, ok: true },
+      },
+    );
+  } finally {
+    await page.close();
+  }
+}
+
 /** Screenshots an extension page and returns its background color. */
 async function captureExtensionPageAt(
   context: BrowserContext,
   url: string,
   viewport: Viewport,
   path: string,
+  scrollToHeading?: string,
 ): Promise<string> {
   const page: Page = await openThemedPage(context, "light", viewport, false);
   try {
     await page.goto(url, { waitUntil: "load" });
     await page.waitForTimeout(pageSettleMs);
+    if (scrollToHeading !== undefined) {
+      // The page is barely taller than the viewport, so it cannot scroll far enough to put the
+      // heading near the top; extra space below the last section lets it, without touching the app.
+      await page.addStyleTag({ content: `body { padding-bottom: ${scrollRoomPx}px; }` });
+      await page.evaluate(
+        ({ heading, offset }: { heading: string; offset: number }): void => {
+          const target: Element | undefined = [...document.querySelectorAll("h1, h2, h3")].find(
+            (candidate) => candidate.textContent?.trim() === heading,
+          );
+          if (target !== undefined) {
+            window.scrollTo(0, target.getBoundingClientRect().top + window.scrollY - offset);
+          }
+        },
+        { heading: scrollToHeading, offset: optionsHeadingTopOffset },
+      );
+      await page.waitForTimeout(hoverSettleMs);
+    }
     await page.screenshot({ path });
     return await page.evaluate((): string => {
       const bodyColor: string = getComputedStyle(document.body).backgroundColor;
@@ -163,11 +230,13 @@ export async function captureStoreScenes(
     records.push(record(optionsFile, "light", "skipped", "options.html or popup.html is missing"));
     return records;
   }
+  await seedFetchedPolicy(context, extensionId, viewport);
   await captureExtensionPageAt(
     context,
     `chrome-extension://${extensionId}/options.html`,
     viewport,
     join(outDir, optionsFile),
+    "Lookups",
   );
   records.push(record(optionsFile, "light", "captured"));
   const popupAlonePath: string = join(outDir, "popup-alone.png");
