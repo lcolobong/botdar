@@ -1,0 +1,92 @@
+/* Botdar design tokens, generated from the design system tokens.json (https://claude.ai/artifact/2jacALGXFe96ubLp62qRAe). */
+/* The badge and card live in shadow roots, so :host carries the tokens; data-theme on the host picks the theme. */
+
+:host,
+:host([data-theme="light"]) {
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f4f4f2;
+  --ink: #1b1d21;
+  --ink-muted: #5c6168;
+  --hairline: #d9dbdf;
+  --brand: #0b6e6a;
+  --on-brand: #ffffff;
+  --focus-ring: #0b6e6a;
+  --tier-typical-bg: #e6e9ee;
+  --tier-typical-fg: #3b4654;
+  --tier-typical-line: #65718a;
+  --tier-some-bg: #fdeccb;
+  --tier-some-fg: #6b4300;
+  --tier-some-line: #a56a05;
+  --tier-many-bg: #fbd9dd;
+  --tier-many-fg: #7f1d2b;
+  --tier-many-line: #c0303f;
+  --tier-declared-bg: #dfe4fb;
+  --tier-declared-fg: #2b3f9e;
+  --tier-declared-line: #4b61d1;
+  --tier-human-bg: #dcefe3;
+  --tier-human-fg: #1f5e3a;
+  --tier-human-line: #3f8a5c;
+  --bot-eye: #e3242b;
+  --tier-unknown-fg: #5c6168;
+  --tier-unknown-line: #6e757f;
+  --source-tier-0: #9aa0a8;
+  --source-tier-1: #5c6168;
+  --source-tier-2: #0b6e6a;
+  --danger: #9f1f2e;
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-pill: 999px;
+  --badge-height-x: 16px;
+  --badge-height-reddit-post: 14px;
+  --badge-height-reddit-comment: 12px;
+  --badge-glyph: 8px;
+  --card-width: 320px;
+  --popup-width: 340px;
+  --z-badge: 1;
+  --z-card: 2147483000;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+:host([data-theme="dark"]) {
+  --surface: #16181c;
+  --surface-raised: #1f2228;
+  --surface-sunken: #0f1113;
+  --ink: #f2f3f5;
+  --ink-muted: #a3a8b0;
+  --hairline: #2e3238;
+  --brand: #4fd1c5;
+  --on-brand: #062b29;
+  --focus-ring: #4fd1c5;
+  --tier-typical-bg: #2a313b;
+  --tier-typical-fg: #c3cad4;
+  --tier-typical-line: #6c7786;
+  --tier-some-bg: #3d2e0a;
+  --tier-some-fg: #f5c86a;
+  --tier-some-line: #d29a2a;
+  --tier-many-bg: #45161d;
+  --tier-many-fg: #ff9aa5;
+  --tier-many-line: #e05a6a;
+  --tier-declared-bg: #1f2a5c;
+  --tier-declared-fg: #b7c3ff;
+  --tier-declared-line: #7a8ff0;
+  --tier-human-bg: #163626;
+  --tier-human-fg: #9fe0b8;
+  --tier-human-line: #4faa75;
+  --bot-eye: #ff3b47;
+  --tier-unknown-fg: #9aa0a8;
+  --tier-unknown-line: #7d848d;
+  --source-tier-0: #6c7278;
+  --source-tier-1: #a3a8b0;
+  --source-tier-2: #4fd1c5;
+  --danger: #ff9aa5;
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
