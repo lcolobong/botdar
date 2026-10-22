@@ -1,7 +1,7 @@
 import { scoreAccount } from "@/src/core/scoring/engine";
 import type { PlatformWeights } from "@/src/core/scoring/types";
 import type { Feature, Verdict } from "@/src/core/types";
-import { ALL_TIERS, NOW, feature, signalsWith, testWeights } from "./testWeights";
+import { ALL_TIERS, DAY_MS, NOW, feature, signalsWith, testWeights } from "./testWeights";
 
 const options = { policyVersion: 7, now: NOW, sourcesAvailable: ALL_TIERS };
 
@@ -179,5 +179,58 @@ describe("scoreAccount verdict shape", () => {
       sourcesAvailable: ALL_TIERS,
     });
     expect(verdict.computedAt).toBeGreaterThanOrEqual(before);
+  });
+});
+
+describe("scoreAccount wording", () => {
+  it("renders reasons through the templates using the post-cap contribution sign", () => {
+    const verdict: Verdict = scoreAccount(
+      [strongActivity, feature("x.accountAgeDays", 2190, "age", 1)],
+      signalsWith({ tiersDelivered: ALL_TIERS, values: { createdAt: NOW - 2190 * DAY_MS } }),
+      testWeights,
+      options,
+    );
+    expect(verdict.reasons).toEqual(["~200 posts/day since joining", "Account is 6 years old"]);
+    expect(verdict.evidence[0]?.reason).toBe("~200 posts/day since joining");
+  });
+
+  it("keys the caveat on the dominant group and the account age", () => {
+    const recent: Verdict = score([strongActivity, strongAge]);
+    expect(recent.caveat).toBe(
+      "High-volume human posters, news desks and brand accounts show the same pattern. This is a pattern read, not a verdict. Humans trip these signals every day.",
+    );
+  });
+
+  it("attaches a confidence note under 0.7 and omits it above", () => {
+    const partial: Verdict = score([strongActivity], [0, 2]);
+    expect(partial.confidence).toBeCloseTo(0.45, 10);
+    expect(partial.confidenceNote).toBe("Profile details not loaded yet");
+    expect(partial.caveat).toMatch(/Some signals could not be loaded/);
+
+    const full: Verdict = score([strongActivity], [0, 1]);
+    expect(full.confidence).toBeCloseTo(0.8, 10);
+    expect(full.confidenceNote).toBeUndefined();
+    expect(full.sourcesMissing).toEqual([2]);
+  });
+
+  it("says a tier is off when the config does not allow it", () => {
+    const verdict: Verdict = scoreAccount(
+      [strongActivity],
+      signalsWith({ tiersDelivered: [0] }),
+      testWeights,
+      { ...options, sourcesAvailable: [0] },
+    );
+    expect(verdict.confidenceNote).toBe("Profile details are off; Extra lookups are off");
+  });
+
+  it("gives declared accounts the declared caveat and no confidence note", () => {
+    const verdict: Verdict = scoreAccount(
+      [],
+      signalsWith({ tiersDelivered: [0], values: { declaredAutomated: true } }),
+      testWeights,
+      options,
+    );
+    expect(verdict.caveat).toMatch(/^The account operator chose to label it as automated/);
+    expect(verdict.confidenceNote).toBeUndefined();
   });
 });
