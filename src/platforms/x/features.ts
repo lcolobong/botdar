@@ -3,6 +3,8 @@
  * docs/scoring-spec.md. Gating is this module's job: a feature whose gate is not met is omitted, and
  * the engine never sees it.
  */
+import { handleBigramLogLikelihood } from "../../core/handle/bigram";
+import { looksLikeNamePlusDigits, trailingDigitCount } from "../../core/handle/shape";
 import type {
   AccountSignals,
   Feature,
@@ -17,18 +19,11 @@ const REPLY_SHARE_MIN_SAMPLE_SIZE = 20;
 const NEW_ACCOUNT_MAX_AGE_DAYS = 90;
 /** Handle features come from the rendered handle, which every tier can see. */
 const HANDLE_TIER: SourceTier = 0;
-
-// TODO(handle-shape): replace with src/core/handle/shape.ts once the handle-shape branch lands.
-const NAME_THEN_DIGITS_PATTERN = /^[a-z]+\d{5,}$/;
-const TRAILING_DIGITS_PATTERN = /\d+$/;
-
-function matchesNameThenDigits(handle: string): boolean {
-  return NAME_THEN_DIGITS_PATTERN.test(handle);
-}
-
-function trailingDigitCount(handle: string): number {
-  return TRAILING_DIGITS_PATTERN.exec(handle)?.[0].length ?? 0;
-}
+/** X suggests name-plus-digits handles with five digits; shorter runs are common in chosen names. */
+const NAME_PLUS_DIGITS_MIN_DIGITS = 5;
+/** The bigram likelihood is meaningless on a handle that is mostly digits or punctuation. */
+const BIGRAM_MIN_LETTERS = 4;
+const LETTER_PATTERN = /[a-z]/g;
 
 /** The most expensive tier among the fields a feature reads; fields with no record count as DOM. */
 function tierOf(signals: AccountSignals, fields: SignalField[]): SourceTier {
@@ -124,7 +119,7 @@ export function toFeatures(
   const handle: string = signals.ref.handle;
   features.push({
     id: "x.handleNameDigits",
-    value: matchesNameThenDigits(handle),
+    value: looksLikeNamePlusDigits(handle, NAME_PLUS_DIGITS_MIN_DIGITS),
     group: "handle",
     tier: HANDLE_TIER,
   });
@@ -134,7 +129,14 @@ export function toFeatures(
     group: "handle",
     tier: HANDLE_TIER,
   });
-  // TODO(handle-bigram): emit x.handleBigramLL from src/core/handle/bigram.ts once that branch lands.
+  if ((handle.match(LETTER_PATTERN)?.length ?? 0) >= BIGRAM_MIN_LETTERS) {
+    features.push({
+      id: "x.handleBigramLL",
+      value: handleBigramLogLikelihood(handle),
+      group: "handle",
+      tier: HANDLE_TIER,
+    });
+  }
 
   if (signals.hasDefaultAvatar !== undefined && signals.bio !== undefined) {
     const emptyProfileCount: number =

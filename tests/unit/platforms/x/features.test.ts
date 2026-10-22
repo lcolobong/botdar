@@ -23,7 +23,11 @@ function ids(features: Feature[]): string[] {
 describe("x toFeatures", () => {
   it("emits only the handle features for a bare reference", () => {
     const features: Feature[] = toFeatures(signalsFor("alice_example"), NOW, "US");
-    expect(ids(features)).toEqual(["x.handleNameDigits", "x.handleTrailingDigits"]);
+    expect(ids(features)).toEqual([
+      "x.handleNameDigits",
+      "x.handleTrailingDigits",
+      "x.handleBigramLL",
+    ]);
     expect(featureById(features, "x.handleNameDigits")).toEqual({
       id: "x.handleNameDigits",
       value: false,
@@ -261,6 +265,19 @@ describe("x toFeatures", () => {
       const features: Feature[] = toFeatures(signalsFor(handle), NOW);
       expect(featureById(features, "x.handleNameDigits").value).toBe(nameDigits);
       expect(featureById(features, "x.handleTrailingDigits").value).toBe(trailing);
+    });
+
+    it("emits the bigram likelihood only for handles with at least four letters", () => {
+      expect(ids(toFeatures(signalsFor("ab12345"), NOW))).not.toContain("x.handleBigramLL");
+      const natural: Feature[] = toFeatures(signalsFor("alice_example"), NOW);
+      const random: Feature[] = toFeatures(signalsFor("xq7zk2pv9w"), NOW);
+      expect(featureById(natural, "x.handleBigramLL")).toMatchObject({
+        group: "handle",
+        tier: 0,
+      });
+      expect(featureById(natural, "x.handleBigramLL").value).toBeGreaterThan(
+        featureById(random, "x.handleBigramLL").value as number,
+      );
     });
   });
 
