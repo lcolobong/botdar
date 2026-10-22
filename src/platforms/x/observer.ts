@@ -1,12 +1,15 @@
 /**
  * Feed observer for X (docs/architecture.md, "X", Observer and Routing). One MutationObserver on
- * the body, coalesced into a single discovery pass per idle period whose analysis runs in budgeted
- * slices (src/core/idleSlices.ts); removed posts are released because X virtualizes its list;
+ * the body, coalesced into a single discovery pass per idle period; a discovered post is analysed
+ * once it comes near the viewport (src/core/nearViewport.ts), in budgeted slices
+ * (src/core/idleSlices.ts); removed posts are released because X virtualizes its list;
  * `pushState` is invisible to the isolated world, so the URL is compared on every pass and on
  * popstate.
  */
 import type { ShouldYield, SliceScheduler } from "@/src/core/idleSlices";
 import { IDLE_TIMEOUT_MS, createSliceScheduler, drainQueue } from "@/src/core/idleSlices";
+import type { NearViewportGate } from "@/src/core/nearViewport";
+import { createNearViewportGate } from "@/src/core/nearViewport";
 import type { PostRef } from "@/src/core/types";
 import { POST_SELECTOR, findUnbadgedPosts, toPostRef } from "./dom";
 
@@ -30,13 +33,14 @@ export function observeFeed(options: FeedObserverOptions): () => void {
     return () => undefined;
   }
   const tracked = new WeakMap<Element, PostRef>();
-  /** Discovered but not analysed yet, in document order. */
+  /** Near the viewport but not analysed yet, in the order they came near. */
   const queue = new Set<Element>();
   let lastHref: string = view.location.href;
   let discoveryPending = true;
   let stopped = false;
 
   const release = (element: Element): void => {
+    gate.unwatch(element);
     queue.delete(element);
     if (tracked.delete(element)) {
       options.onRemoved(element);
@@ -61,7 +65,7 @@ export function observeFeed(options: FeedObserverOptions): () => void {
     }
     for (const article of findUnbadgedPosts(root)) {
       if (!tracked.has(article)) {
-        queue.add(article);
+        gate.watch(article);
       }
     }
   };
@@ -78,6 +82,10 @@ export function observeFeed(options: FeedObserverOptions): () => void {
   };
 
   const scheduler: SliceScheduler = createSliceScheduler(view, PASS_DELAY_MS, runSlice);
+  const gate: NearViewportGate = createNearViewportGate(view, (article) => {
+    queue.add(article);
+    scheduler.schedule();
+  });
   const schedule = (): void => {
     discoveryPending = true;
     scheduler.schedule();
@@ -107,6 +115,7 @@ export function observeFeed(options: FeedObserverOptions): () => void {
   return () => {
     stopped = true;
     scheduler.dispose();
+    gate.disconnect();
     observer.disconnect();
     view.removeEventListener("popstate", schedule);
   };

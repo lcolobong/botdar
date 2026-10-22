@@ -2,14 +2,17 @@
  * Feed discovery for Reddit (docs/architecture.md, "Reddit"). One MutationObserver on the document
  * is enough: new posts and comments arrive in light DOM (`shreddit-feed`, `shreddit-comment-tree`,
  * `faceplate-partial`), and a mutation inside a shadow root never adds a post. Passes are coalesced
- * through requestIdleCallback so a burst of feed chunks costs one scan, and the analysis that
- * follows runs in budgeted slices (src/core/idleSlices.ts) so a long thread never blocks.
+ * through requestIdleCallback so a burst of feed chunks costs one scan. A discovered post is only
+ * analysed once it comes near the viewport (src/core/nearViewport.ts), and that analysis runs in
+ * budgeted slices (src/core/idleSlices.ts) so a long thread never blocks.
  *
  * Reddit's SPA navigation uses pushState, which the isolated world cannot hook, so every pass
  * compares the location to the last one seen and `popstate` covers the back button.
  */
 import type { ShouldYield, SliceScheduler } from "../../core/idleSlices";
 import { IDLE_TIMEOUT_MS, createSliceScheduler, drainQueue } from "../../core/idleSlices";
+import type { NearViewportGate } from "../../core/nearViewport";
+import { createNearViewportGate } from "../../core/nearViewport";
 import type { RedditPostRef } from "./dom";
 import { FEED_ITEM_SELECTOR, toPostRef } from "./dom";
 
@@ -34,7 +37,7 @@ function* feedItemsWithin(subtree: Element, selector: string): Generator<Element
 
 export function observeRedditFeed(options: RedditFeedObserverOptions): () => void {
   const reported = new WeakSet<Element>();
-  /** Discovered but not analysed yet, in document order. */
+  /** Near the viewport but not analysed yet, in the order they came near. */
   const queue = new Set<Element>();
   let pendingSubtrees: Element[] = [];
   let fullScanPending = true;
@@ -53,6 +56,7 @@ export function observeRedditFeed(options: RedditFeedObserverOptions): () => voi
 
   const forget = (subtree: Element): void => {
     for (const element of feedItemsWithin(subtree, FEED_ITEM_SELECTOR)) {
+      gate.unwatch(element);
       queue.delete(element);
       if (!reported.delete(element)) continue;
       options.onRemoved(element);
@@ -71,7 +75,7 @@ export function observeRedditFeed(options: RedditFeedObserverOptions): () => voi
     pendingSubtrees = [];
     for (const subtree of subtrees) {
       if (!subtree.isConnected) continue;
-      for (const element of feedItemsWithin(subtree, UNDISCOVERED_SELECTOR)) queue.add(element);
+      for (const element of feedItemsWithin(subtree, UNDISCOVERED_SELECTOR)) gate.watch(element);
     }
   };
 
@@ -82,6 +86,10 @@ export function observeRedditFeed(options: RedditFeedObserverOptions): () => voi
   };
 
   const scheduler: SliceScheduler = createSliceScheduler(window, IDLE_TIMEOUT_MS, runSlice);
+  const gate: NearViewportGate = createNearViewportGate(window, (element) => {
+    queue.add(element);
+    scheduler.schedule();
+  });
 
   const observer = new MutationObserver((records: MutationRecord[]): void => {
     for (const record of records) {
@@ -108,5 +116,6 @@ export function observeRedditFeed(options: RedditFeedObserverOptions): () => voi
     observer.disconnect();
     window.removeEventListener("popstate", onPopState);
     scheduler.dispose();
+    gate.disconnect();
   };
 }
