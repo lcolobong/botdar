@@ -165,6 +165,17 @@ body {
 .bd-mark h1 {
   color: var(--ink);
 }
+.bd-popup {
+  width: var(--popup-width);
+  box-sizing: border-box;
+  padding: var(--space-4);
+}
+.bd-popup .bd-notice {
+  margin-bottom: var(--space-1);
+}
+.bd-popup__foot .bd-btn--link {
+  white-space: nowrap;
+}
 .bd-btn--primary {
   background: var(--brand);
   color: var(--on-brand);
