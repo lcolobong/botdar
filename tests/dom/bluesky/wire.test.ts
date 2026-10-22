@@ -18,6 +18,7 @@ import type {
   Verdict,
 } from "@/src/core/types";
 import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME } from "@/src/ui/mount";
+import { adoptedCssOf } from "../adoptedCss";
 import { createBlueskyAdapter } from "@/src/platforms/bluesky/adapter";
 import { cardReasons } from "@/src/platforms/bluesky/cardPresenter";
 import { wireBluesky } from "@/src/platforms/bluesky/wire";
@@ -216,8 +217,7 @@ describe("wireBluesky", () => {
     const harness: Harness = makeHarness();
     stop = await wireBluesky(new ContentScriptContext("bluesky"), SHADOW_CSS, harness.deps);
     await flush();
-    const styleOf = (host: Element | null): string =>
-      host?.shadowRoot?.querySelector("style")?.textContent ?? "";
+    const styleOf = (host: Element | null): string => adoptedCssOf(host);
 
     expect(styleOf(badgeAfter("alice.example.com"))).toContain(SHADOW_CSS);
 
