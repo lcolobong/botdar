@@ -153,6 +153,8 @@ export interface PostRef {
   anchor: Element;
   isReply?: boolean;
   nativeLabel?: "automated";
+  /** Overrides the adapter's badgeDensity for platforms that mix densities in one feed (Reddit posts and comments). */
+  density?: BadgeDensity;
 }
 
 export interface PlatformAdapter {

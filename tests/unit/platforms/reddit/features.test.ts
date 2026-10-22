@@ -30,6 +30,7 @@ describe("reddit toFeatures", () => {
   it("emits every feature for a fully observed young account", () => {
     const features: Feature[] = toFeatures(
       signalsFor("brave_walrus_4821", {
+        displayName: "Brave_Walrus_4821",
         createdAt: NOW - 10 * DAY_MILLIS,
         linkKarma: 1500,
         commentKarma: 499,
@@ -109,19 +110,25 @@ describe("reddit toFeatures", () => {
     it.each([
       ["Brave_Walrus_4821", true],
       ["Brave-Walrus-4821", true],
-      ["Brave_Walrus4821", true],
+      ["Brave-Walrus-48", true],
+      ["Brave_Walrus4821", false],
       ["Brave_Walrus_48210", false],
       ["brave_Walrus_4821", false],
       ["BRAVE_WALRUS_4821", false],
       ["Brave_Walrus", false],
-      ["brave_walrus_4821", true],
-      ["brave-walrus-48", true],
       ["bravewalrus4821", false],
-      ["brave_walrus_", false],
-      ["quiet_lantern", false],
-    ])("%s → %s", (handle, expected) => {
-      const features: Feature[] = toFeatures(signalsFor(handle), NOW);
+      ["Quiet Lantern", false],
+    ])("rendered name %s → %s", (displayName, expected) => {
+      const features: Feature[] = toFeatures(
+        signalsFor(displayName.toLowerCase(), { displayName }),
+        NOW,
+      );
       expect(featureById(features, "reddit.generatedName").value).toBe(expected);
+    });
+
+    it("cannot match on the lowercased handle alone", () => {
+      const features: Feature[] = toFeatures(signalsFor("brave_walrus_4821"), NOW);
+      expect(featureById(features, "reddit.generatedName").value).toBe(false);
     });
   });
 
