@@ -4,6 +4,7 @@
  * the engine never sees it. The declared-bot override is not a feature; the engine reads
  * `signals.declaredAutomated` directly.
  */
+import { isBskySocialHandleWithDigits } from "../../core/handle/shape";
 import type {
   AccountSignals,
   Feature,
@@ -14,21 +15,8 @@ import type {
 
 const DAY_MILLIS = 86_400_000;
 const FOLLOWS_RATIO_MIN_FOLLOWING = 100;
-const BSKY_SOCIAL_SUFFIX = ".bsky.social";
 /** The handle comes from the rendered profile link, which every tier can see. */
 const HANDLE_TIER: SourceTier = 0;
-
-// TODO(handle-shape): replace with src/core/handle/shape.ts once the handle-shape branch lands.
-/** Only the free `*.bsky.social` namespace gets suggested handles; a custom domain never fires. */
-const LOCAL_PART_NAME_THEN_DIGITS_PATTERN = /^[a-z]+\d{4,}$/;
-
-function matchesDigitsOnBskySocial(handle: string): boolean {
-  if (!handle.endsWith(BSKY_SOCIAL_SUFFIX)) {
-    return false;
-  }
-  const localPart: string = handle.slice(0, -BSKY_SOCIAL_SUFFIX.length);
-  return LOCAL_PART_NAME_THEN_DIGITS_PATTERN.test(localPart);
-}
 
 /** The most expensive tier among the fields a feature reads; fields with no record count as DOM. */
 function tierOf(signals: AccountSignals, fields: SignalField[]): SourceTier {
@@ -78,7 +66,7 @@ export function toFeatures(signals: AccountSignals, now: number = Date.now()): F
   }
   features.push({
     id: "bsky.handleDigitsOnBskySocial",
-    value: matchesDigitsOnBskySocial(signals.ref.handle),
+    value: isBskySocialHandleWithDigits(signals.ref.handle),
     group: "handle",
     tier: HANDLE_TIER,
   });
