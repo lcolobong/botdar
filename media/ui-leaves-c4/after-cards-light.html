@@ -1,0 +1,325 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;background:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.host{display:block;padding:16px;color:#0f1419}
+.row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}.lab{width:200px;font-size:12px;opacity:.7}
+/* Botdar design tokens, generated from the design system tokens.json (https://claude.ai/artifact/2jacALGXFe96ubLp62qRAe). */
+/* The badge and card live in shadow roots, so .host carries the tokens; data-theme on the host picks the theme. */
+
+.host,
+.host[data-theme="light"] {
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f4f4f2;
+  --ink: #1b1d21;
+  --ink-muted: #5c6168;
+  --hairline: #d9dbdf;
+  --brand: #0b6e6a;
+  --on-brand: #ffffff;
+  --focus-ring: #0b6e6a;
+  --tier-typical-bg: #e6e9ee;
+  --tier-typical-fg: #3b4654;
+  --tier-typical-line: #65718a;
+  --tier-some-bg: #fdeccb;
+  --tier-some-fg: #6b4300;
+  --tier-some-line: #a56a05;
+  --tier-many-bg: #fbd9dd;
+  --tier-many-fg: #7f1d2b;
+  --tier-many-line: #c0303f;
+  --tier-declared-bg: #dfe4fb;
+  --tier-declared-fg: #2b3f9e;
+  --tier-declared-line: #4b61d1;
+  --tier-human-bg: #dcefe3;
+  --tier-human-fg: #1f5e3a;
+  --tier-human-line: #3f8a5c;
+  --bot-eye: #e3242b;
+  --tier-unknown-fg: #5c6168;
+  --tier-unknown-line: #6e757f;
+  --source-tier-0: #9aa0a8;
+  --source-tier-1: #5c6168;
+  --source-tier-2: #0b6e6a;
+  --danger: #9f1f2e;
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-pill: 999px;
+  --badge-height-x: 16px;
+  --badge-height-reddit-post: 14px;
+  --badge-height-reddit-comment: 12px;
+  --badge-glyph: 8px;
+  --card-width: 320px;
+  --popup-width: 340px;
+  --z-badge: 1;
+  --z-card: 2147483000;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.host[data-theme="dark"] {
+  --surface: #16181c;
+  --surface-raised: #1f2228;
+  --surface-sunken: #0f1113;
+  --ink: #f2f3f5;
+  --ink-muted: #a3a8b0;
+  --hairline: #2e3238;
+  --brand: #4fd1c5;
+  --on-brand: #062b29;
+  --focus-ring: #4fd1c5;
+  --tier-typical-bg: #2a313b;
+  --tier-typical-fg: #c3cad4;
+  --tier-typical-line: #6c7786;
+  --tier-some-bg: #3d2e0a;
+  --tier-some-fg: #f5c86a;
+  --tier-some-line: #d29a2a;
+  --tier-many-bg: #45161d;
+  --tier-many-fg: #ff9aa5;
+  --tier-many-line: #e05a6a;
+  --tier-declared-bg: #1f2a5c;
+  --tier-declared-fg: #b7c3ff;
+  --tier-declared-line: #7a8ff0;
+  --tier-human-bg: #163626;
+  --tier-human-fg: #9fe0b8;
+  --tier-human-line: #4faa75;
+  --bot-eye: #ff3b47;
+  --tier-unknown-fg: #9aa0a8;
+  --tier-unknown-line: #7d848d;
+  --source-tier-0: #6c7278;
+  --source-tier-1: #a3a8b0;
+  --source-tier-2: #4fd1c5;
+  --danger: #ff9aa5;
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Badge styles from the design system bundle.css; values come from tokens.css. */
+.bd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--badge-height-x);
+  padding: 0 var(--space-2);
+  margin-left: var(--space-1);
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: default;
+  box-sizing: border-box;
+  background: transparent;
+  color: inherit;
+}
+.bd-badge .bd-glyph {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+.bd-badge .bd-eye {
+  fill: var(--bot-eye);
+}
+.bd-badge:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.bd-badge--many {
+  background: var(--tier-many-bg);
+  color: var(--tier-many-fg);
+  border-color: var(--tier-many-line);
+}
+.bd-badge--some {
+  background: var(--tier-some-bg);
+  color: var(--tier-some-fg);
+  border-color: var(--tier-some-line);
+}
+.bd-badge--declared {
+  background: var(--tier-declared-bg);
+  color: var(--tier-declared-fg);
+  border-color: var(--tier-declared-line);
+}
+.bd-badge--human {
+  background: var(--tier-human-bg);
+  color: var(--tier-human-fg);
+  border-color: var(--tier-human-line);
+}
+.bd-badge--hollow {
+  background: transparent;
+}
+.bd-badge--paused {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--tier-unknown-line);
+}
+.bd-badge--loading .bd-glyph {
+  animation: bd-pulse 1.2s ease-in-out infinite;
+}
+@keyframes bd-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bd-badge--loading .bd-glyph {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+.bd-badge--reddit-post {
+  height: var(--badge-height-reddit-post);
+  font-size: 10px;
+  line-height: 12px;
+}
+.bd-badge--reddit-comment {
+  height: var(--badge-height-reddit-comment);
+  padding: 0 6px;
+  font-size: 10px;
+  line-height: 12px;
+}
+.bd-badge--glyph-only {
+  padding: 0 4px;
+}
+
+/* Hover card and shared controls from the design system bundle.css. */
+.bd-card {
+  width: var(--card-width);
+  box-sizing: border-box;
+  background: var(--surface-raised);
+  color: var(--ink);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-sans);
+  padding: var(--space-3);
+}
+.bd-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.bd-card__title {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+.bd-card__handle {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-muted);
+  margin: 2px 0 0;
+}
+.bd-card__reasons {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: var(--space-2);
+}
+.bd-card__reason {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+.bd-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  position: relative;
+  top: -1px;
+  display: inline-block;
+}
+.bd-dot--0 {
+  background: var(--source-tier-0);
+}
+.bd-dot--1 {
+  background: var(--source-tier-1);
+}
+.bd-dot--2 {
+  background: var(--source-tier-2);
+}
+.bd-card__legend {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+  margin: var(--space-2) 0 0;
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.bd-card__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.bd-card__note {
+  margin: var(--space-2) 0 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-muted);
+}
+.bd-card__caveat {
+  margin: var(--space-2) 0 0;
+  font-size: 13px;
+  line-height: 18px;
+}
+.bd-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--hairline);
+  font-size: 12px;
+  line-height: 16px;
+}
+.bd-btn {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--tier-typical-line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.bd-btn:hover {
+  background: var(--surface-sunken);
+}
+.bd-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.bd-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.bd-btn--link {
+  border: 0;
+  padding: 4px 0;
+  color: var(--brand);
+  background: transparent;
+}
+.bd-btn--sent {
+  border-color: transparent;
+  color: var(--ink-muted);
+}
+</style></head><body><div class="host" data-theme="light"><div style="display:grid;grid-template-columns:repeat(2,320px);gap:24px"><section id="c" class="bd-card" role="dialog" aria-label="Likely bot: @news_update_48213" aria-busy="false"><div class="bd-card__head"><div><h2 class="bd-card__title">Likely bot</h2><p class="bd-card__handle">@news_update_48213</p></div><span class="bd-badge bd-badge--many  "><svg viewBox="0 0 12 12" aria-hidden="true" class="bd-glyph"><rect x="1.5" y="3" width="9" height="7.5" rx="2" fill="currentColor"></rect><rect x="5.5" y="0.8" width="1" height="2.4" fill="currentColor"></rect><circle cx="6" cy="0.9" r="0.9" fill="currentColor"></circle><circle cx="4.2" cy="6.6" r="1.3" class="bd-eye"></circle><circle cx="7.8" cy="6.6" r="1.3" class="bd-eye"></circle></svg>Likely bot</span></div><ul class="bd-card__reasons"><li class="bd-card__reason"><span class="bd-dot bd-dot--1"></span>Joined 3 weeks ago</li><li class="bd-card__reason"><span class="bd-dot bd-dot--1"></span>~140 posts/day since joining</li><li class="bd-card__reason"><span class="bd-dot bd-dot--2"></span>Following 4,900, followed by 12</li><li class="bd-card__reason"><span class="bd-dot bd-dot--0"></span>Handle is a name followed by 5 digits</li></ul><p class="bd-card__legend"><span><i class="bd-dot bd-dot--0"></i>on the page</span><span><i class="bd-dot bd-dot--1"></i>page data</span><span><i class="bd-dot bd-dot--2"></i>profile lookup</span></p><p class="bd-card__caveat">This can be wrong: news desks and brand accounts post at this rate too.</p><div class="bd-card__foot"><button type="button" class="bd-btn" aria-pressed="false">This looks wrong</button><button type="button" class="bd-btn bd-btn--link">Settings</button></div></section><section id="c" class="bd-card" role="dialog" aria-label="Unsure: u/jordan_reads" aria-busy="false"><div class="bd-card__head"><div><h2 class="bd-card__title">Kinda sus</h2><p class="bd-card__handle">u/jordan_reads</p></div><span class="bd-badge bd-badge--some bd-badge--hollow "><svg viewBox="0 0 12 12" aria-hidden="true" class="bd-glyph"><rect x="1.5" y="3" width="9" height="7.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"></rect><rect x="5.5" y="0.8" width="1" height="2.4" fill="currentColor"></rect><text x="6" y="9.2" text-anchor="middle" font-size="6.5" font-weight="700" font-family="sans-serif" fill="currentColor">?</text></svg>Kinda sus</span></div><ul class="bd-card__reasons"><li class="bd-card__reason"><span class="bd-dot bd-dot--0"></span>Account is 19 days old</li></ul><p class="bd-card__legend"><span><i class="bd-dot bd-dot--0"></i>on the page</span><span><i class="bd-dot bd-dot--1"></i>page data</span><span><i class="bd-dot bd-dot--2"></i>profile lookup</span></p><p class="bd-card__note">Based on 1 of 2 data sources. Profile lookups are off in conservative mode.</p><p class="bd-card__caveat">This can be wrong: many people keep the name Reddit suggested.</p><div class="bd-card__foot"><button type="button" class="bd-btn" aria-pressed="false">This looks wrong</button><button type="button" class="bd-btn bd-btn--link">Settings</button></div></section><section id="c" class="bd-card" role="dialog" aria-label="Declared bot: @weatherbot.bsky.social" aria-busy="false"><div class="bd-card__head"><div><h2 class="bd-card__title">Declared bot</h2><p class="bd-card__handle">@weatherbot.bsky.social</p></div><span class="bd-badge bd-badge--declared  "><svg viewBox="0 0 12 12" aria-hidden="true" class="bd-glyph"><path d="M1.5 1.5h5l4 4-5 5-4-4z" fill="currentColor"></path><circle cx="4" cy="4" r="1" fill="#ffffff" fill-opacity="0.8"></circle></svg>Declared bot</span></div><ul class="bd-card__reasons"><li class="bd-card__reason"><span class="bd-dot bd-dot--1"></span>The account labels itself as a bot on Bluesky</li></ul><p class="bd-card__note">Declared accounts are not scored. This is the platform's own label.</p><div class="bd-card__foot"><button type="button" class="bd-btn bd-btn--sent" aria-pressed="true">Noted, thanks · Undo</button><button type="button" class="bd-btn bd-btn--link">Settings</button></div></section><section id="c" class="bd-card" role="dialog" aria-label="Likely bot: @sam_delgado" aria-busy="true"><div class="bd-card__head"><div><h2 class="bd-card__title">Checking</h2><p class="bd-card__handle">@sam_delgado</p></div><span class="bd-badge bd-badge--many  bd-badge--loading"><svg viewBox="0 0 12 12" aria-hidden="true" class="bd-glyph"><rect x="1.5" y="3" width="9" height="7.5" rx="2" fill="currentColor"></rect><rect x="5.5" y="0.8" width="1" height="2.4" fill="currentColor"></rect><circle cx="6" cy="0.9" r="0.9" fill="currentColor"></circle><circle cx="4.2" cy="6.6" r="1.3" class="bd-eye"></circle><circle cx="7.8" cy="6.6" r="1.3" class="bd-eye"></circle></svg>Likely bot</span></div><ul class="bd-card__reasons"><li class="bd-card__reason"><span class="bd-dot bd-dot--0"></span>Nothing stands out on the page</li></ul><p class="bd-card__note">Looking up the public profile.</p><div class="bd-card__foot"><button type="button" class="bd-btn" aria-pressed="false" disabled>This looks wrong</button><button type="button" class="bd-btn bd-btn--link">Settings</button></div></section></div></div></body></html>
