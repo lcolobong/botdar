@@ -1,0 +1,212 @@
+// @vitest-environment happy-dom
+// @vitest-environment-options {"url": "https://x.com/home"}
+
+import type { ContentScriptContext } from "wxt/utils/content-script-context";
+import type { MountedUi, RenderFn } from "@/src/ui/mount";
+import {
+  BADGE_ELEMENT_NAME,
+  CARD_ELEMENT_NAME,
+  detectHostTheme,
+  mountBadge,
+  mountCard,
+} from "@/src/ui/mount";
+
+const fakeContext = (): ContentScriptContext =>
+  ({ options: {}, onInvalidated: () => () => undefined }) as unknown as ContentScriptContext;
+
+const resetDocument = (): void => {
+  document.documentElement.removeAttribute("style");
+  document.documentElement.removeAttribute("data-theme");
+  document.documentElement.className = "";
+  document.body.removeAttribute("style");
+  document.body.className = "";
+  document.body.innerHTML = "";
+};
+
+describe("detectHostTheme", () => {
+  beforeEach(resetDocument);
+
+  describe("x", () => {
+    it("reads a dark background on the root element", () => {
+      document.documentElement.style.backgroundColor = "rgb(0, 0, 0)";
+      expect(detectHostTheme("x")).toBe("dark");
+      document.documentElement.style.backgroundColor = "rgb(21, 32, 43)";
+      expect(detectHostTheme("x")).toBe("dark");
+    });
+
+    it("reads a light background on the root element", () => {
+      document.documentElement.style.backgroundColor = "rgb(255, 255, 255)";
+      expect(detectHostTheme("x")).toBe("light");
+    });
+
+    it("falls back to the body colour scheme when the background is transparent", () => {
+      document.body.style.colorScheme = "dark";
+      expect(detectHostTheme("x")).toBe("dark");
+      document.body.style.colorScheme = "light";
+      expect(detectHostTheme("x")).toBe("light");
+    });
+
+    it("defaults to light", () => {
+      expect(detectHostTheme("x")).toBe("light");
+    });
+  });
+
+  describe("reddit", () => {
+    it("reads html[data-theme]", () => {
+      document.documentElement.dataset.theme = "dark";
+      expect(detectHostTheme("reddit")).toBe("dark");
+      document.documentElement.dataset.theme = "light";
+      expect(detectHostTheme("reddit")).toBe("light");
+    });
+
+    it("reads the theme-dark class on html or body", () => {
+      document.documentElement.classList.add("theme-dark");
+      expect(detectHostTheme("reddit")).toBe("dark");
+      document.documentElement.className = "";
+      document.body.classList.add("theme-dark");
+      expect(detectHostTheme("reddit")).toBe("dark");
+    });
+
+    it("defaults to light", () => {
+      expect(detectHostTheme("reddit")).toBe("light");
+    });
+  });
+
+  describe("bluesky", () => {
+    it("treats any declared theme other than light as dark", () => {
+      document.documentElement.dataset.theme = "dim";
+      expect(detectHostTheme("bluesky")).toBe("dark");
+      document.documentElement.dataset.theme = "dark";
+      expect(detectHostTheme("bluesky")).toBe("dark");
+      document.documentElement.dataset.theme = "light";
+      expect(detectHostTheme("bluesky")).toBe("light");
+    });
+
+    it("falls back to prefers-color-scheme", () => {
+      const matchMedia = vi
+        .spyOn(window, "matchMedia")
+        .mockReturnValue({ matches: true } as MediaQueryList);
+      expect(detectHostTheme("bluesky")).toBe("dark");
+      matchMedia.mockReturnValue({ matches: false } as MediaQueryList);
+      expect(detectHostTheme("bluesky")).toBe("light");
+      matchMedia.mockRestore();
+    });
+  });
+});
+
+describe("mountBadge", () => {
+  beforeEach(resetDocument);
+
+  const makeAnchor = (): HTMLElement => {
+    const post = document.createElement("article");
+    const anchor = document.createElement("a");
+    anchor.textContent = "@someone";
+    post.append(anchor);
+    document.body.append(post);
+    return anchor;
+  };
+
+  const trackedRender = (): { render: RenderFn; unmount: ReturnType<typeof vi.fn> } => {
+    const unmount = vi.fn();
+    const render = vi.fn((container: HTMLElement) => {
+      container.textContent = "badge";
+      return unmount;
+    });
+    return { render, unmount };
+  };
+
+  it("mounts a badge host inline after the anchor with the theme set", async () => {
+    const anchor = makeAnchor();
+    const { render } = trackedRender();
+
+    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "dark");
+
+    expect(anchor.nextElementSibling).toBe(mounted.shadowHost);
+    expect(mounted.shadowHost.tagName.toLowerCase()).toBe(BADGE_ELEMENT_NAME);
+    expect(mounted.shadowHost.dataset.theme).toBe("dark");
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(mounted.shadowHost.shadowRoot?.textContent).toContain("badge");
+  });
+
+  it("reuses an existing badge sibling and updates its theme", async () => {
+    const anchor = makeAnchor();
+    const { render } = trackedRender();
+    const first: MountedUi = await mountBadge(fakeContext(), anchor, render, "light");
+
+    const second: MountedUi = await mountBadge(fakeContext(), anchor, render, "dark");
+
+    expect(second).toBe(first);
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(first.shadowHost.dataset.theme).toBe("dark");
+    expect(anchor.parentElement?.querySelectorAll(BADGE_ELEMENT_NAME)).toHaveLength(1);
+  });
+
+  it("shares one mount between concurrent calls for the same anchor", async () => {
+    const anchor = makeAnchor();
+    const { render } = trackedRender();
+
+    const [first, second] = await Promise.all([
+      mountBadge(fakeContext(), anchor, render, "light"),
+      mountBadge(fakeContext(), anchor, render, "light"),
+    ]);
+
+    expect(second).toBe(first);
+    expect(render).toHaveBeenCalledTimes(1);
+  });
+
+  it("adopts a badge sibling mounted by an earlier script instance", async () => {
+    const anchor = makeAnchor();
+    const orphan = document.createElement(BADGE_ELEMENT_NAME);
+    anchor.after(orphan);
+    const { render } = trackedRender();
+
+    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "dark");
+
+    expect(mounted.shadowHost).toBe(orphan);
+    expect(orphan.dataset.theme).toBe("dark");
+    expect(render).not.toHaveBeenCalled();
+    mounted.remove();
+    expect(orphan.isConnected).toBe(false);
+  });
+
+  it("unmounts the rendered UI and removes the host on remove", async () => {
+    const anchor = makeAnchor();
+    const { render, unmount } = trackedRender();
+    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "light");
+
+    mounted.remove();
+
+    expect(unmount).toHaveBeenCalledTimes(1);
+    expect(mounted.shadowHost.isConnected).toBe(false);
+    const remounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "light");
+    expect(remounted).not.toBe(mounted);
+    expect(render).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("mountCard", () => {
+  beforeEach(resetDocument);
+
+  it("appends one card to the body and returns it on repeated calls", async () => {
+    const render = vi.fn((container: HTMLElement) => {
+      container.textContent = "card";
+      return () => undefined;
+    });
+
+    const first: MountedUi = await mountCard(fakeContext(), render, "light");
+    const second: MountedUi = await mountCard(fakeContext(), render, "dark");
+
+    expect(second.shadowHost).toBe(first.shadowHost);
+    expect(first.shadowHost.parentElement).toBe(document.body);
+    expect(first.shadowHost.tagName.toLowerCase()).toBe(CARD_ELEMENT_NAME);
+    expect(first.shadowHost.dataset.theme).toBe("dark");
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(document.body.querySelectorAll(CARD_ELEMENT_NAME)).toHaveLength(1);
+
+    second.remove();
+    expect(document.body.querySelectorAll(CARD_ELEMENT_NAME)).toHaveLength(0);
+    const third: MountedUi = await mountCard(fakeContext(), render, "light");
+    expect(third.shadowHost).not.toBe(first.shadowHost);
+    expect(render).toHaveBeenCalledTimes(2);
+  });
+});
