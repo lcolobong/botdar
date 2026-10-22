@@ -3,7 +3,8 @@
  * the feed fixtures served by fixtureServer.ts, light and dark. It builds nothing: run
  * `pnpm build` first. Output is one PNG per scene plus a manifest.json; see scripts/smoke/README.md.
  *
- *   pnpm smoke -- [--out <dir>] [--theme light|dark|both] [--only x|reddit|bluesky|pages] [--headed]
+ *   pnpm smoke -- [--out <dir>] [--theme light|dark|both] [--only x|reddit|bluesky|pages|store]
+ *                [--viewport <width>x<height>] [--headed]
  *
  * One-time setup: `pnpm smoke:setup` (installs Playwright's Chromium).
  */
@@ -20,23 +21,37 @@ import {
   smokePlatformIds,
   startFixtureServer,
 } from "./fixtureServer.ts";
-import type { SceneGroup, SceneRecord, SmokeTheme } from "./scenes.ts";
+import type { SceneGroup, SceneRecord, SmokeTheme, Viewport } from "./scenes.ts";
 import { captureExtensionPage, captureFeed, extensionPageScenes, feedViewport } from "./scenes.ts";
+import { captureStoreScenes, storeViewport } from "./storeScenes.ts";
 
 interface SmokeOptions {
   readonly outDir: string;
   readonly themes: readonly SmokeTheme[];
   readonly groups: readonly SceneGroup[];
   readonly headed: boolean;
+  /** Set by --viewport: captures at this size and device scale 1 instead of the 2x PR-media default. */
+  readonly viewport?: Viewport;
 }
 
 const buildDir: string = fileURLToPath(new URL("../../.output/chrome-mv3/", import.meta.url));
 const serviceWorkerWaitMs = 15_000;
 const allGroups: readonly SceneGroup[] = [...smokePlatformIds, "pages"];
+/** The store group is opt-in: it is not part of a plain `pnpm smoke`. */
+const selectableGroups: readonly SceneGroup[] = [...allGroups, "store"];
 
 function flagValue(argv: readonly string[], flag: string): string | undefined {
   const index: number = argv.indexOf(flag);
   return index === -1 ? undefined : argv[index + 1];
+}
+
+function parseViewport(value: string | undefined): Viewport | undefined {
+  if (value === undefined) return undefined;
+  const match: RegExpMatchArray | null = value.match(/^(\d+)x(\d+)$/);
+  if (match === null) {
+    throw new Error(`--viewport expects <width>x<height>, got "${value}"`);
+  }
+  return { width: Number(match[1]), height: Number(match[2]) };
 }
 
 function parseOptions(argv: readonly string[]): SmokeOptions {
@@ -45,14 +60,19 @@ function parseOptions(argv: readonly string[]): SmokeOptions {
     throw new Error(`--theme expects light, dark or both, got "${theme}"`);
   }
   const only: string | undefined = flagValue(argv, "--only");
-  if (only !== undefined && !allGroups.includes(only as SceneGroup)) {
-    throw new Error(`--only expects one of ${allGroups.join(", ")}, got "${only}"`);
+  if (only !== undefined && !selectableGroups.includes(only as SceneGroup)) {
+    throw new Error(`--only expects one of ${selectableGroups.join(", ")}, got "${only}"`);
+  }
+  const viewport: Viewport | undefined = parseViewport(flagValue(argv, "--viewport"));
+  if (only === "store" && viewport === undefined) {
+    throw new Error(`--only store needs --viewport ${storeViewport.width}x${storeViewport.height}`);
   }
   return {
     outDir: resolve(flagValue(argv, "--out") ?? ".output/smoke"),
     themes: theme === "both" ? ["light", "dark"] : [theme],
     groups: only === undefined ? allGroups : [only as SceneGroup],
     headed: argv.includes("--headed"),
+    ...(viewport === undefined ? {} : { viewport }),
   };
 }
 
@@ -60,6 +80,7 @@ async function launchWithExtension(
   userDataDir: string,
   fixturePort: number,
   headed: boolean,
+  viewport: Viewport | undefined,
 ): Promise<BrowserContext> {
   const extensionDir: string = buildDir.replace(/\/$/, "");
   return chromium.launchPersistentContext(userDataDir, {
@@ -67,8 +88,8 @@ async function launchWithExtension(
     channel: "chromium",
     headless: !headed,
     ignoreHTTPSErrors: true,
-    deviceScaleFactor: 2,
-    viewport: feedViewport,
+    deviceScaleFactor: viewport === undefined ? 2 : 1,
+    viewport: viewport ?? feedViewport,
     args: [
       `--disable-extensions-except=${extensionDir}`,
       `--load-extension=${extensionDir}`,
@@ -91,6 +112,9 @@ async function captureAll(
   options: SmokeOptions,
 ): Promise<SceneRecord[]> {
   const records: SceneRecord[] = [];
+  if (options.groups.includes("store") && options.viewport !== undefined) {
+    return captureStoreScenes(context, extensionId, buildDir, options.viewport, options.outDir);
+  }
   for (const theme of options.themes) {
     for (const group of options.groups) {
       if (group === "pages") {
@@ -139,7 +163,7 @@ async function main(): Promise<void> {
   const server: FixtureServer = await startFixtureServer();
   let context: BrowserContext | undefined;
   try {
-    context = await launchWithExtension(userDataDir, server.port, options.headed);
+    context = await launchWithExtension(userDataDir, server.port, options.headed, options.viewport);
     const extensionId: string = await resolveExtensionId(context);
     process.stdout.write(`extension ${extensionId} from ${buildDir}\n`);
     const records: SceneRecord[] = await captureAll(context, extensionId, options);

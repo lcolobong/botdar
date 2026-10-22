@@ -9,7 +9,7 @@ import type { FixtureSource, SmokeFeedScene, SmokePlatformId } from "./fixtureSe
 import { fixtureUrl, resolveFixture } from "./fixtureServer.ts";
 
 export type SmokeTheme = "light" | "dark";
-export type SceneGroup = SmokePlatformId | "pages";
+export type SceneGroup = SmokePlatformId | "pages" | "store";
 
 export interface Viewport {
   readonly width: number;
@@ -38,7 +38,7 @@ export interface SceneRecord {
   readonly note?: string;
 }
 
-interface HoverTarget {
+export interface HoverTarget {
   readonly control: Locator;
   readonly name: string;
 }
@@ -78,7 +78,7 @@ export function hoverSceneName(scene: string): string {
   return scene === primaryFeedScene ? "hover" : `${scene}-hover`;
 }
 
-async function openThemedPage(
+export async function openThemedPage(
   context: BrowserContext,
   theme: SmokeTheme,
   viewport: Viewport,
@@ -142,7 +142,7 @@ function badgeControlNamed(page: Page, name: string): Locator {
 }
 
 /** Waits for any badge, then briefly for the most interesting one, so Tier 1 verdicts make the capture. */
-async function waitForBadges(page: Page): Promise<boolean> {
+export async function waitForBadges(page: Page): Promise<boolean> {
   const badgeMounted: boolean = await page
     .locator(badgeControlSelector)
     .first()
@@ -159,7 +159,7 @@ async function waitForBadges(page: Page): Promise<boolean> {
 }
 
 /** The first badge control named Likely bot, else Unsure, else whichever badge comes first. */
-async function findHoverTarget(page: Page): Promise<HoverTarget | undefined> {
+export async function findHoverTarget(page: Page): Promise<HoverTarget | undefined> {
   for (const name of preferredBadgeNames) {
     const control: Locator = badgeControlNamed(page, name);
     if ((await control.count()) > 0) {
@@ -173,7 +173,7 @@ async function findHoverTarget(page: Page): Promise<HoverTarget | undefined> {
   return { control, name: (await control.getAttribute("aria-label")) ?? "unnamed badge" };
 }
 
-interface CardBox {
+export interface CardBox {
   readonly top: number;
   readonly bottom: number;
 }
@@ -183,7 +183,7 @@ interface CardBox {
  * opened. The wiring toggles the host's `display` between none and block and renders the card
  * into its shadow root on open, so an open card has a height.
  */
-function waitForCardOpen(page: Page): Promise<CardBox | undefined> {
+export function waitForCardOpen(page: Page): Promise<CardBox | undefined> {
   return page
     .waitForFunction(
       (selector: string): CardBox | false => {

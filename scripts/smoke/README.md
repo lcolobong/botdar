@@ -62,7 +62,12 @@ pnpm build                       # the runner never builds
 pnpm smoke                       # everything, light and dark, into .output/smoke
 pnpm smoke -- --only x --theme dark --out /tmp/botdar-smoke
 pnpm smoke -- --headed           # watch it in a window
+pnpm smoke -- --only store --viewport 1280x800 --out store/screenshots   # the Chrome Web Store set
 ```
+
+`--viewport <width>x<height>` captures at that CSS size and device scale 1 (the default is 600x820
+at 2x). `--only store` is opt-in and needs it: it writes the five numbered listing screenshots
+from `storeScenes.ts` (plus `popup-alone.png`, the unpadded popup), light except the Bluesky one.
 
 Output is one PNG per scene, named `after-<group>-<scene>-<theme>.png`, and a `manifest.json`
 listing each scene with its file, status, the served fixture, the badge hovered, the scene's
