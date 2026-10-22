@@ -277,6 +277,6 @@ describe("confidenceNoteFor", () => {
 
   it("names a tier that is switched off", () => {
     expect(confidenceNoteFor([2], [0, 1])).toBe("Extra lookups are off");
-    expect(confidenceNoteFor([1, 2], [0])).toBe("Profile details are off; Extra lookups are off");
+    expect(confidenceNoteFor([1, 2], [0])).toBe("Profile details are off. Extra lookups are off");
   });
 });

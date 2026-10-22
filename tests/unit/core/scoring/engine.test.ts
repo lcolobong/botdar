@@ -220,7 +220,7 @@ describe("scoreAccount wording", () => {
       testWeights,
       { ...options, sourcesAvailable: [0] },
     );
-    expect(verdict.confidenceNote).toBe("Profile details are off; Extra lookups are off");
+    expect(verdict.confidenceNote).toBe("Profile details are off. Extra lookups are off");
   });
 
   it("gives declared accounts the declared caveat and no confidence note", () => {
