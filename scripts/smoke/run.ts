@@ -11,7 +11,7 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import type { BrowserContext, Worker } from "playwright";
 import type { FixtureServer } from "./fixtureServer.ts";
@@ -34,13 +34,15 @@ interface SmokeOptions {
   readonly viewport?: Viewport;
 }
 
-const buildDir: string = fileURLToPath(new URL("../../.output/chrome-mv3/", import.meta.url));
+export const buildDir: string = fileURLToPath(
+  new URL("../../.output/chrome-mv3/", import.meta.url),
+);
 const serviceWorkerWaitMs = 15_000;
 const allGroups: readonly SceneGroup[] = [...smokePlatformIds, "pages"];
 /** The store group is opt-in: it is not part of a plain `pnpm smoke`. */
 const selectableGroups: readonly SceneGroup[] = [...allGroups, "store"];
 
-function flagValue(argv: readonly string[], flag: string): string | undefined {
+export function flagValue(argv: readonly string[], flag: string): string | undefined {
   const index: number = argv.indexOf(flag);
   return index === -1 ? undefined : argv[index + 1];
 }
@@ -76,30 +78,40 @@ function parseOptions(argv: readonly string[]): SmokeOptions {
   };
 }
 
-async function launchWithExtension(
-  userDataDir: string,
-  fixturePort: number,
-  headed: boolean,
-  viewport: Viewport | undefined,
-): Promise<BrowserContext> {
-  const extensionDir: string = buildDir.replace(/\/$/, "");
-  return chromium.launchPersistentContext(userDataDir, {
+export interface ChromeLaunch {
+  readonly userDataDir: string;
+  readonly fixturePort: number;
+  readonly headed: boolean;
+  /** The unpacked build to load; null launches the same browser bare, for comparison runs. */
+  readonly extensionDir: string | null;
+  readonly viewport?: Viewport;
+  /** Defaults to 2x for the feed captures and 1x for a custom viewport (store captures). */
+  readonly deviceScaleFactor?: number;
+}
+
+/** Chrome for Testing with the fixture hostnames mapped to the local server, extension optional. */
+export async function launchChrome(launch: ChromeLaunch): Promise<BrowserContext> {
+  const extensionDir: string | undefined = launch.extensionDir?.replace(/\/$/, "");
+  const extensionArgs: string[] =
+    extensionDir === undefined
+      ? []
+      : [`--disable-extensions-except=${extensionDir}`, `--load-extension=${extensionDir}`];
+  return chromium.launchPersistentContext(launch.userDataDir, {
     // The headless shell cannot load extensions; the full Chromium build in new headless mode can.
     channel: "chromium",
-    headless: !headed,
+    headless: !launch.headed,
     ignoreHTTPSErrors: true,
-    deviceScaleFactor: viewport === undefined ? 2 : 1,
-    viewport: viewport ?? feedViewport,
+    deviceScaleFactor: launch.deviceScaleFactor ?? (launch.viewport === undefined ? 2 : 1),
+    viewport: launch.viewport ?? feedViewport,
     args: [
-      `--disable-extensions-except=${extensionDir}`,
-      `--load-extension=${extensionDir}`,
-      `--host-resolver-rules=${hostResolverRules(fixturePort)}`,
+      ...extensionArgs,
+      `--host-resolver-rules=${hostResolverRules(launch.fixturePort)}`,
       "--ignore-certificate-errors",
     ],
   });
 }
 
-async function resolveExtensionId(context: BrowserContext): Promise<string> {
+export async function resolveExtensionId(context: BrowserContext): Promise<string> {
   const worker: Worker =
     context.serviceWorkers()[0] ??
     (await context.waitForEvent("serviceworker", { timeout: serviceWorkerWaitMs }));
@@ -163,7 +175,13 @@ async function main(): Promise<void> {
   const server: FixtureServer = await startFixtureServer();
   let context: BrowserContext | undefined;
   try {
-    context = await launchWithExtension(userDataDir, server.port, options.headed, options.viewport);
+    context = await launchChrome({
+      userDataDir,
+      fixturePort: server.port,
+      headed: options.headed,
+      extensionDir: buildDir,
+      ...(options.viewport === undefined ? {} : { viewport: options.viewport }),
+    });
     const extensionId: string = await resolveExtensionId(context);
     process.stdout.write(`extension ${extensionId} from ${buildDir}\n`);
     const records: SceneRecord[] = await captureAll(context, extensionId, options);
@@ -184,7 +202,11 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+const runAsScript: boolean =
+  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (runAsScript) {
+  main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
