@@ -146,6 +146,29 @@ export function detectHostTheme(platform: PlatformId, doc: Document = document):
   }
 }
 
+/**
+ * createShadowRootUi registers `ctx.onInvalidated(remove)` for every UI and drops the unsubscribe,
+ * so each removed badge's closure (its host, and through the anchor the detached post) stayed
+ * reachable from the context until the page unloaded. Handing WXT this view of the context keeps
+ * the unsubscribe so `remove` can release it.
+ */
+function contextReleasedOnRemove(ctx: ContentScriptContext): {
+  context: ContentScriptContext;
+  release: () => void;
+} {
+  const unsubscribes: Array<() => void> = [];
+  const context = Object.create(ctx, {
+    onInvalidated: {
+      value: (callback: () => void): (() => void) => {
+        const unsubscribe: () => void = ctx.onInvalidated(callback);
+        unsubscribes.push(unsubscribe);
+        return unsubscribe;
+      },
+    },
+  }) as ContentScriptContext;
+  return { context, release: () => unsubscribes.splice(0).forEach((unsubscribe) => unsubscribe()) };
+}
+
 async function createMountedUi(
   ctx: ContentScriptContext,
   name: string,
@@ -154,7 +177,8 @@ async function createMountedUi(
   theme: HostTheme,
   css: string,
 ): Promise<MountedUi> {
-  const ui = await createShadowRootUi(ctx, {
+  const { context, release } = contextReleasedOnRemove(ctx);
+  const ui = await createShadowRootUi(context, {
     name,
     css: shadowStyles(HOST_STYLE_BY_ELEMENT[name] ?? "", css),
     position: "inline",
@@ -171,6 +195,7 @@ async function createMountedUi(
     },
     remove: () => {
       ui.remove();
+      release();
       mountedByHost.delete(ui.shadowHost);
     },
   };
