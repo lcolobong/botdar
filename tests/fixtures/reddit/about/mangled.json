@@ -1,0 +1,20 @@
+{
+  "kind": "t2",
+  "data": {
+    "name": "Odd_Shape_01",
+    "created_utc": "1573498800",
+    "created": -5,
+    "link_karma": "1840",
+    "comment_karma": 22200.5,
+    "total_karma": null,
+    "icon_img": 42,
+    "snoovatar_img": "   ",
+    "has_verified_email": "false",
+    "is_suspended": "yes",
+    "subreddit": {
+      "title": 7,
+      "public_description": ["not", "a", "string"]
+    },
+    "verified": null
+  }
+}
