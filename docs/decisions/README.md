@@ -52,3 +52,4 @@ File name is `ADR-00NN-<kebab-case-slug>.md`.
 | [0014](ADR-0014-docs-in-repo-mirrored-to-notion.md) | Docs in repo, mirrored to Notion | `docs/` is canonical and reviewed in PRs; Notion holds mirrors and the task tracker. |
 | [0015](ADR-0015-bluesky-extension-not-labeler.md) | Bluesky via extension | Bluesky support ships inside the extension; a labeler is a separate later decision. |
 | [0016](ADR-0016-public-repo-stacked-prs.md) | Public repo, stacked PRs | Public GitHub repo, small commits, stacked PRs, rebase-merge, 250/400 production-line limits. |
+| [ADR-0017](ADR-0017-badge-wording-and-label-styles.md) | Badge wording, quiet feed, selectable label styles | Plain "Likely bot" / "Unsure" / "Declared bot" labels, no badge on fine accounts, optional Likely human, Sus scale and icon-only styles; amends ADR-0003 |

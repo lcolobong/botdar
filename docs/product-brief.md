@@ -20,17 +20,17 @@ three-step scale, and a hover card that explains the badge in neutral, factual t
 computed in the browser from signals the page already shows or already fetched for itself. Nothing about
 the accounts you look at leaves your machine.
 
-Tiers of the badge:
+Badge labels (plain style, the default; see [design.md](design.md) for the Sus scale and icon-only styles):
 
-| Tier | Meaning | Copy |
-|---|---|---|
-| typical | Nothing stands out | "Looks typical" |
-| some | One or two signals | "Some automation signals" |
-| many | Several independent signals | "Many automation signals" |
-| declared | The platform's own automated label is set | "Declared automated account" |
-| unknown | Not enough data yet | hollow badge, "Not enough data" |
+| Internal tier | Label | Meaning | Shown |
+|---|---|---|---|
+| many | Likely bot | Several independent signals, confidence at or above 0.5 | yes |
+| some | Unsure | One or two signals | yes |
+| declared | Declared bot | The platform's own automated label is set | yes |
+| typical | Likely human | Nothing stands out | only with the "Show Likely human" setting |
+| unknown | (no badge) | Not enough data | never |
 
-The badge never says "bot" or "fake" about a named account. It describes patterns.
+The badge label is a plain claim; everything on the hover card is an observation with a number or a date in it, and every card says how it could be wrong. "Fake", "troll" and similar words never appear.
 
 ## Who it is for
 
