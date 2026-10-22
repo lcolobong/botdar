@@ -13,8 +13,9 @@ everything around it.
 2. **Tiered sources, each switchable.** Every way of obtaining a signal has a tier. Tier 0 reads the
    rendered DOM. Tier 1 passively reads JSON responses the page already fetched for itself. Tier 2 makes
    extra, on-demand requests. Each tier is independently switchable per platform.
-3. **Restrict-only remote policy.** A signed policy file can turn tiers or platforms off, lower caps, and
-   adjust thresholds without a store release. It can never enable anything the build has off.
+3. **Restrict-only remote policy.** A signed policy file can turn tiers or platforms off, lower caps,
+   weaken feature contributions and raise thresholds without a store release. It can never enable
+   anything the build has off or make a verdict stricter than the build would.
 4. **Never hide posts.** The badge adds information. It never removes, dims or reorders content.
 5. **Describe signals, not people.** The UI never calls an account a bot. It reports the patterns observed
    and says why the reading might be wrong.
@@ -373,8 +374,8 @@ in an extension release, with the old key accepted for one release.
 | `platform.enabled`, `tiers.t1`, `tiers.t2` | `build && (policy ?? true)` |
 | Unknown platform or feature in the policy | Ignored |
 | `feature.cap` | `min(build, policy)` |
-| `feature.bins` / `weight` | Replaced wholesale if present, every value clamped to `[-cap, +cap]` using the effective cap |
-| `thresholds.some/many` | Replaced if present, clamped to `[0.15, 0.95]`, `many ≥ some + 0.1` enforced |
+| `feature.bins` / `weight` | Replaced if present, every value clamped to `[-cap, min(build value, cap)]` using the effective cap; a replaced bin whose boundaries differ from the build's bin at the same index is capped at 0. A policy can weaken or neutralise a feature, never strengthen it |
+| `thresholds.some/many` | `max(build, policy)` after clamping to `[0.15, 0.95]`; `many ≥ some + 0.1` kept by raising `many`. Thresholds can only go up |
 | `prior` | Replaced if present, clamped to `[-5, 0]` |
 | `rateLimit.perMinute` | `min(build, policy)` |
 | `x.aboutAccountQueryId` | Accepted only if it matches `/^[A-Za-z0-9_-]{15,40}$/` |
@@ -435,7 +436,7 @@ user opt-in. What must never change:
 | Attacker | Can | Cannot | Why |
 |---|---|---|---|
 | Hostile page script | Post forged relay messages; render DOM that mimics a post | Enable sources, change weights, read settings, reach `storage` | Relay accepts only `source === window` and same origin, which a page script satisfies; so bodies are treated as untrusted data and only ever lower or raise a score within caps. No privileged action is reachable from a relay message |
-| Hijacked policy host | Serve a tampered or stale file | Enable a tier, raise a cap, change the prior toward "many", roll back | Signature check against the baked key; `version` monotonic; merge is restrict-only even for a valid signature |
+| Hijacked policy host | Serve a tampered or stale file | Enable a tier, raise a cap, lower a threshold, strengthen a feature, change the prior toward "many", roll back | Signature check against the baked key; `version` monotonic; merge is restrict-only even for a valid signature: thresholds only rise, bins and weights only fall |
 | Leaked signing key | Publish a valid policy that disables platforms or lowers caps | Enable anything, exfiltrate data, run code | Same restrict-only merge. Response: rotate `kid` in a release |
 | Malicious recorded fixture | Crash a parser in tests | Affect users | Parsers are fixture-tested to return partials; fixtures are anonymised and reviewed |
 | Fingerprinting site | Detect the extension if it exposed resources | Detect it through bundled files | No `web_accessible_resources` |

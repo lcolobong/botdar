@@ -141,10 +141,60 @@ describe("applyPolicy", () => {
       expect(effective.weights.x.features.postsPerDay?.cap).toBe(2);
     });
 
-    it("clamps replaced bins and weights to the effective cap", () => {
+    it("caps a replaced bin with new boundaries at zero and a weight at the build value", () => {
       const effective: EffectiveConfig = applyPolicy(buildDefaults, weights(), permissivePolicy());
-      expect(effective.weights.x.features.postsPerDay?.bins).toEqual([[0, null, 2]]);
+      expect(effective.weights.x.features.postsPerDay?.bins).toEqual([[0, null, 0]]);
       expect(effective.weights.x.features.handleDigits?.weight).toBe(0.7);
+    });
+
+    it("cannot raise a bin above the build value for the same boundaries", () => {
+      const effective: EffectiveConfig = applyPolicy(
+        buildDefaults,
+        weights(),
+        policyWith({
+          x: {
+            enabled: true,
+            features: {
+              postsPerDay: {
+                bins: [
+                  [0, 10, 0.3],
+                  [10, 30, 1.5],
+                  [30, null, 1.9],
+                ],
+              },
+            },
+          },
+        }),
+      );
+      expect(effective.weights.x.features.postsPerDay?.bins).toEqual([
+        [0, 10, 0],
+        [10, 30, 0.4],
+        [30, null, 1.9],
+      ]);
+    });
+
+    it("cannot raise a bool weight above the build value", () => {
+      const effective: EffectiveConfig = applyPolicy(
+        buildDefaults,
+        weights(),
+        policyWith({ x: { enabled: true, features: { handleDigits: { weight: 0.69 } } } }),
+      );
+      expect(effective.weights.x.features.handleDigits?.weight).toBe(0.69);
+      const raised: EffectiveConfig = applyPolicy(
+        buildDefaults,
+        weights(),
+        policyWith({ x: { enabled: true, features: { handleDigits: { weight: 0.71 } } } }),
+      );
+      expect(raised.weights.x.features.handleDigits?.weight).toBe(0.7);
+    });
+
+    it("cannot lower a threshold below the build default", () => {
+      const effective: EffectiveConfig = applyPolicy(
+        buildDefaults,
+        weights(),
+        policyWith({ x: { enabled: true, thresholds: { some: 0.2, many: 0.5 } } }),
+      );
+      expect(effective.weights.x.thresholds).toEqual({ some: 0.3, many: 0.6 });
     });
 
     it("never moves the prior toward many", () => {
@@ -254,7 +304,7 @@ describe("applyPolicy", () => {
       ]);
     });
 
-    it("replaces bins wholesale", () => {
+    it("weakens or neutralises bins that keep the build boundaries", () => {
       const effective: EffectiveConfig = applyPolicy(
         buildDefaults,
         weights(),
@@ -264,7 +314,33 @@ describe("applyPolicy", () => {
             features: {
               postsPerDay: {
                 bins: [
-                  [0, 100, 0],
+                  [0, 10, -0.5],
+                  [10, 30, 0],
+                  [30, null, 1.1],
+                ],
+              },
+            },
+          },
+        }),
+      );
+      expect(effective.weights.x.features.postsPerDay?.bins).toEqual([
+        [0, 10, -0.5],
+        [10, 30, 0],
+        [30, null, 1.1],
+      ]);
+    });
+
+    it("redraws bin boundaries with contributions at or below zero, floored at -cap", () => {
+      const effective: EffectiveConfig = applyPolicy(
+        buildDefaults,
+        weights(),
+        policyWith({
+          x: {
+            enabled: true,
+            features: {
+              postsPerDay: {
+                bins: [
+                  [0, 100, -3],
                   [100, null, 1.5],
                 ],
               },
@@ -273,9 +349,18 @@ describe("applyPolicy", () => {
         }),
       );
       expect(effective.weights.x.features.postsPerDay?.bins).toEqual([
-        [0, 100, 0],
-        [100, null, 1.5],
+        [0, 100, -2],
+        [100, null, 0],
       ]);
+    });
+
+    it("lowers a bool weight and floors it at -cap", () => {
+      const effective: EffectiveConfig = applyPolicy(
+        buildDefaults,
+        weights(),
+        policyWith({ x: { enabled: true, features: { handleDigits: { weight: -5 } } } }),
+      );
+      expect(effective.weights.x.features.handleDigits?.weight).toBe(-0.7);
     });
 
     it("moves the prior toward typical and clamps it at -5", () => {
@@ -293,7 +378,7 @@ describe("applyPolicy", () => {
       expect(floored.weights.x.prior).toBe(-5);
     });
 
-    it("replaces thresholds, clamps them to [0.15, 0.95] and keeps many at least 0.1 above some", () => {
+    it("raises thresholds, clamps them to [0.15, 0.95] and keeps many at least 0.1 above some", () => {
       const raised: EffectiveConfig = applyPolicy(
         buildDefaults,
         weights(),
@@ -310,7 +395,7 @@ describe("applyPolicy", () => {
         policyWith({ x: { enabled: true, thresholds: { some: 0.9, many: 0.5 } } }),
       );
       expect(raised.weights.x.thresholds).toEqual({ some: 0.3, many: 0.8 });
-      expect(clamped.weights.x.thresholds).toEqual({ some: 0.15, many: 0.95 });
+      expect(clamped.weights.x.thresholds).toEqual({ some: 0.3, many: 0.95 });
       expect(squeezed.weights.x.thresholds.some).toBeCloseTo(0.85);
       expect(squeezed.weights.x.thresholds.many).toBeCloseTo(0.95);
     });

@@ -8,15 +8,18 @@ The signed policy file is the kill switch. This page is the procedure for using 
 
 - Disable a whole platform (`platforms.x.enabled = false`).
 - Disable Tier 1 (passive interception) or Tier 2 (active lookups) per platform.
-- Lower a feature's cap, replace its bins, raise thresholds, move the prior toward "typical".
+- Lower a feature's cap, weaken or neutralise its bins or weight (never strengthen them), raise
+  thresholds (never lower them), move the prior toward "typical".
 - Lower the Tier 2 rate limit.
 - Supply the current X `AboutAccountQuery` query id after X rotates it.
 - Show a one-time notice in the popup.
 
 ## What the policy cannot do
 
-Enable anything the build has off, raise a cap above the build default, raise the prior above the build
-default (it may only move it toward "typical"), name a platform or feature the build does not know, or run code. Invalid signature, invalid
+Enable anything the build has off, raise a cap above the build default, raise a bin or weight above
+the build's value for that bin, lower a threshold below the build default, raise the prior above the
+build default (it may only move it toward "typical"), name a platform or feature the build does not
+know, or run code. Invalid signature, invalid
 schema, or a version lower than the cached one are all ignored and the last-known-good stays.
 
 ## Procedure: flip a switch
