@@ -292,7 +292,10 @@ on posts.
 ### Badge and hover card mounting
 
 `src/ui/mount.ts` wraps WXT `createShadowRootUi(ctx, { name: 'botdar-badge', position: 'inline', anchor,
-append: 'after' })`. Mounting is idempotent: an existing `BOTDAR-BADGE` sibling is reused. The hover card
+append: 'after' })`. Mounting is idempotent: an existing `BOTDAR-BADGE` sibling is reused. The bundled
+stylesheets are built once into a constructed `CSSStyleSheet` that every badge and card shadow root
+adopts (`src/ui/sharedStyles.ts`); only the host layout rules go through WXT's `<style>`, after its
+`:host` reset. Where adoption is unavailable or refused, a root gets a `<style>` copy. The hover card
 is one singleton `botdar-card` on `document.body`, positioned from `getBoundingClientRect` and flipped at
 viewport edges; opens after 150 ms hover or on focus (`<button aria-describedby>`), closes 200 ms after
 leaving both badge and card. Tier 2 fires on open; the card shows a loading state and re-renders. All

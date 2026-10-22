@@ -20,6 +20,7 @@ import type { RedditRuntime } from "@/src/platforms/reddit/wire";
 import { wireReddit } from "@/src/platforms/reddit/wire";
 import { defaultWeights } from "@/src/core/scoring/weights";
 import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME } from "@/src/ui/mount";
+import { adoptedCssOf } from "../adoptedCss";
 import { loadRedditFixture } from "./fixtures";
 
 const SHADOW_CSS = ":host { --botdar-test: reddit; }";
@@ -176,8 +177,7 @@ describe("wireReddit", () => {
 
   it("writes the bundled stylesheet into the badge and card shadow roots", async () => {
     const harness: Harness = await wire("feed.html");
-    const styleOf = (host: HTMLElement | undefined): string =>
-      host?.shadowRoot?.querySelector("style")?.textContent ?? "";
+    const styleOf = (host: HTMLElement | undefined): string => adoptedCssOf(host);
 
     expect(styleOf(badgeFor("brisk_falcon_2210"))).toContain(SHADOW_CSS);
     expect(styleOf(card())).toContain(SHADOW_CSS);

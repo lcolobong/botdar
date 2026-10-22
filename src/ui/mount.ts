@@ -1,16 +1,18 @@
 /**
  * Host-theme detection and shadow-root mounting for the badge and the hover card
- * (docs/architecture.md, "Badge and hover card mounting"). The stylesheet text is passed in and
- * written straight into the shadow root. The content script that uses these helpers must declare
- * `cssInjectionMode: "manual"` and import its stylesheets with `?inline`, bundled through
- * `shadowStyles`: WXT's `"ui"` mode fetches the CSS at runtime, which lists the file under
- * `web_accessible_resources` and lets any page probe for the extension (ADR-0013). The Preact
- * components arrive through the injected `render` function.
+ * (docs/architecture.md, "Badge and hover card mounting"). The stylesheet text is passed in, built
+ * once into a constructed sheet and adopted by every shadow root. The content script that uses
+ * these helpers must declare `cssInjectionMode: "manual"` and import its stylesheets with
+ * `?inline`, bundled through `shadowStyles`: WXT's `"ui"` mode fetches the CSS at runtime, which
+ * lists the file under `web_accessible_resources` and lets any page probe for the extension
+ * (ADR-0013). The Preact components arrive through the injected `render` function.
  */
 
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import { createShadowRootUi } from "wxt/utils/content-script-ui/shadow-root";
 import type { PlatformId } from "@/src/core/types";
+import type { SharedStyles } from "./sharedStyles";
+import { applySharedStyles, sharedStylesFor } from "./sharedStyles";
 
 export type HostTheme = "light" | "dark";
 
@@ -177,16 +179,20 @@ async function createMountedUi(
   theme: HostTheme,
   css: string,
 ): Promise<MountedUi> {
+  const styles: SharedStyles = sharedStylesFor(css);
   const { context, release } = contextReleasedOnRemove(ctx);
+  // Only the host rules and any document-level at-rules pass through WXT's `<style>`; the bundled
+  // sheets are adopted after it, so the host rules still follow WXT's reset (see above).
   const ui = await createShadowRootUi(context, {
     name,
-    css: shadowStyles(HOST_STYLE_BY_ELEMENT[name] ?? "", css),
+    css: shadowStyles(HOST_STYLE_BY_ELEMENT[name] ?? "", styles.documentCss),
     position: "inline",
     anchor: anchor ?? document.body,
     append: anchor === undefined ? "last" : "after",
     onMount: (container) => render(container),
     onRemove: (unmount) => unmount?.(),
   });
+  applySharedStyles(ui.shadow, styles);
   const mounted: MountedUi = {
     shadowHost: ui.shadowHost,
     ...placementControls(ui.shadowHost),
