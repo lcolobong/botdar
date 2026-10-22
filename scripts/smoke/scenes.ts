@@ -4,7 +4,7 @@
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { BrowserContext, Page } from "playwright";
+import type { BrowserContext, Locator, Page } from "playwright";
 import type { FixtureSource, SmokePlatform } from "./fixtureServer.ts";
 import { fixtureUrl, resolveFixture } from "./fixtureServer.ts";
 
@@ -30,12 +30,32 @@ export interface SceneRecord {
   readonly status: "captured" | "skipped";
   readonly reason?: string;
   readonly fixture?: FixtureSource["kind"];
+  /** The served page, relative to the repository root. */
+  readonly fixtureFile?: string;
+  /** The accessible name of the badge the hover scene hovered. */
+  readonly hovered?: string;
 }
 
-/** Matches BADGE_ELEMENT_NAME in src/ui/mount.ts; the scripts avoid importing WXT client code. */
+interface HoverTarget {
+  readonly control: Locator;
+  readonly name: string;
+}
+
+/** Match BADGE_ELEMENT_NAME and CARD_ELEMENT_NAME in src/ui/mount.ts; the scripts avoid WXT client code. */
 const badgeSelector = "botdar-badge";
+const cardSelector = "botdar-card";
+/**
+ * The badge host lays out as a block, so hovering it lands on empty row space; the control inside
+ * its open shadow root is what opens the card. Playwright selectors pierce open shadow roots.
+ */
+const badgeControlSelector = `${badgeSelector} button`;
+/** Accessible names from src/ui/labels.ts, most interesting first. */
+const preferredBadgeNames: readonly string[] = ["Likely bot", "Unsure"];
 const badgeWaitMs = 3_000;
-const hoverSettleMs = 400;
+/** Tier 1 bodies land after the first badge mounts, so a Likely bot badge may follow a little later. */
+const preferredBadgeWaitMs = 2_000;
+const cardOpenWaitMs = 1_000;
+const hoverSettleMs = 150;
 const pageSettleMs = 300;
 
 export const feedViewport: Viewport = { width: 600, height: 820 };
@@ -109,6 +129,71 @@ export async function captureExtensionPage(
   }
 }
 
+function badgeControlNamed(page: Page, name: string): Locator {
+  return page.locator(badgeSelector).getByRole("button", { name, exact: true }).first();
+}
+
+/** Waits for any badge, then briefly for the most interesting one, so Tier 1 verdicts make the capture. */
+async function waitForBadges(page: Page): Promise<boolean> {
+  const badgeMounted: boolean = await page
+    .locator(badgeControlSelector)
+    .first()
+    .waitFor({ state: "attached", timeout: badgeWaitMs })
+    .then(() => true)
+    .catch(() => false);
+  if (badgeMounted) {
+    const [firstChoice = ""] = preferredBadgeNames;
+    await badgeControlNamed(page, firstChoice)
+      .waitFor({ state: "attached", timeout: preferredBadgeWaitMs })
+      .catch(() => undefined);
+  }
+  return badgeMounted;
+}
+
+/** The first badge control named Likely bot, else Unsure, else whichever badge comes first. */
+async function findHoverTarget(page: Page): Promise<HoverTarget | undefined> {
+  for (const name of preferredBadgeNames) {
+    const control: Locator = badgeControlNamed(page, name);
+    if ((await control.count()) > 0) {
+      return { control, name };
+    }
+  }
+  const control: Locator = page.locator(badgeControlSelector).first();
+  if ((await control.count()) === 0) {
+    return undefined;
+  }
+  return { control, name: (await control.getAttribute("aria-label")) ?? "unnamed badge" };
+}
+
+interface CardBox {
+  readonly top: number;
+  readonly bottom: number;
+}
+
+/**
+ * The card host's box once it is displayed with rendered content, or undefined when it never
+ * opened. The wiring toggles the host's `display` between none and block and renders the card
+ * into its shadow root on open, so an open card has a height.
+ */
+function waitForCardOpen(page: Page): Promise<CardBox | undefined> {
+  return page
+    .waitForFunction(
+      (selector: string): CardBox | false => {
+        const host: Element | null = document.querySelector(selector);
+        if (host === null || getComputedStyle(host).display === "none") {
+          return false;
+        }
+        const { top, bottom, height } = host.getBoundingClientRect();
+        return height > 0 && { top, bottom };
+      },
+      cardSelector,
+      { timeout: cardOpenWaitMs },
+    )
+    .then((handle) => handle.jsonValue())
+    .then((box) => (box === false ? undefined : box))
+    .catch(() => undefined);
+}
+
 export async function captureFeed(
   context: BrowserContext,
   platform: SmokePlatform,
@@ -118,7 +203,12 @@ export async function captureFeed(
   const fixture: FixtureSource = resolveFixture(platform.id);
   const feedFile: string = screenshotName(platform.id, "feed", theme);
   const hoverFile: string = screenshotName(platform.id, "hover", theme);
-  const base = { group: platform.id, theme, fixture: fixture.kind } as const;
+  const base = {
+    group: platform.id,
+    theme,
+    fixture: fixture.kind,
+    fixtureFile: fixture.file,
+  } as const;
   if (!existsSync(fixture.path)) {
     const reason = `fixture ${fixture.path} is missing`;
     return [
@@ -129,12 +219,7 @@ export async function captureFeed(
   const page: Page = await openThemedPage(context, theme, feedViewport, true);
   try {
     await page.goto(fixtureUrl(platform), { waitUntil: "domcontentloaded" });
-    const badgeMounted: boolean = await page
-      .locator(badgeSelector)
-      .first()
-      .waitFor({ state: "attached", timeout: badgeWaitMs })
-      .then(() => true)
-      .catch(() => false);
+    const badgeMounted: boolean = await waitForBadges(page);
     await page.screenshot({ path: join(outDir, feedFile) });
     const feedRecord: SceneRecord = {
       ...base,
@@ -143,7 +228,8 @@ export async function captureFeed(
       status: "captured",
       ...(badgeMounted ? {} : { reason: "no badge mounted within the wait; captured bare feed" }),
     };
-    if (!badgeMounted) {
+    const target: HoverTarget | undefined = badgeMounted ? await findHoverTarget(page) : undefined;
+    if (target === undefined) {
       return [
         feedRecord,
         {
@@ -155,10 +241,31 @@ export async function captureFeed(
         },
       ];
     }
-    await page.locator(badgeSelector).first().hover();
+    await target.control.hover();
+    const cardBox: CardBox | undefined = await waitForCardOpen(page);
     await page.waitForTimeout(hoverSettleMs);
-    await page.screenshot({ path: join(outDir, hoverFile) });
-    return [feedRecord, { ...base, scene: "hover", file: hoverFile, status: "captured" }];
+    // A card host whose fixed positioning the page's reset stylesheet overrode flows at the end of
+    // the body and runs past the fold; the full page keeps it in frame rather than cutting it off.
+    const cardCutOff: boolean =
+      cardBox !== undefined && (cardBox.top < 0 || cardBox.bottom > feedViewport.height);
+    await page.screenshot({ path: join(outDir, hoverFile), fullPage: cardCutOff });
+    const reason: string | undefined =
+      cardBox === undefined
+        ? "card did not open within the wait; captured anyway"
+        : cardCutOff
+          ? "card opened outside the viewport (host is not positioned); captured the full page"
+          : undefined;
+    return [
+      feedRecord,
+      {
+        ...base,
+        scene: "hover",
+        file: hoverFile,
+        status: "captured",
+        hovered: target.name,
+        ...(reason === undefined ? {} : { reason }),
+      },
+    ];
   } finally {
     await page.close();
   }
