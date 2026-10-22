@@ -1,0 +1,79 @@
+<!doctype html>
+<!--
+  Hand-authored approximation of the bsky.app feed markup (2026-10-22), reduced to the structure
+  src/platforms/bluesky/dom.ts relies on: post containers with a `feedItem-by-<handle>` or
+  `postThreadItem-by-<handle>` test id, `/profile/<handle>` links for avatar, name and handle, the
+  avatar component's test ids, and the robot badge next to a declared bot. Handles match the JSON
+  fixtures in the parent directory.
+-->
+<html lang="en" data-theme="light">
+  <body>
+    <div data-testid="feedItem-by-alice.example.com">
+      <div class="post-header">
+        <a href="/profile/alice.example.com" aria-label="Alice Example's avatar">
+          <img data-testid="userAvatarImage" src="https://cdn.example/avatar/alice.jpg" alt="" />
+        </a>
+        <div class="author-row">
+          <a href="/profile/alice.example.com"><span>Alice Example</span></a>
+          <a href="/profile/alice.example.com"><span>@alice.example.com</span></a>
+          <span>&middot; 2h</span>
+        </div>
+      </div>
+      <div class="post-body">Compilers and gardens.</div>
+    </div>
+
+    <div data-testid="feedItem-by-kai09127364.bsky.social">
+      <div class="post-header">
+        <a href="/profile/kai09127364.bsky.social" aria-label="Kai's avatar">
+          <div data-testid="userAvatarFallback"><svg viewBox="0 0 24 24"></svg></div>
+        </a>
+        <div class="author-row">
+          <a href="/profile/kai09127364.bsky.social">
+            <span>Kai</span>
+            <span data-testid="botBadge" aria-label="Bot account"><svg></svg></span>
+            <span>@kai09127364.bsky.social</span>
+          </a>
+          <span>&middot; 5m</span>
+        </div>
+      </div>
+      <div class="post-body">Automated weather update.</div>
+    </div>
+
+    <div data-testid="postThreadItem-by-newsroom.example.org">
+      <div class="repost-row">
+        Reposted by <a href="/profile/alice.example.com">Alice Example</a>
+      </div>
+      <div class="post-header">
+        <a href="/profile/newsroom.example.org">
+          <img data-testid="userAvatarImage" src="https://cdn.example/avatar/newsroom.jpg" alt="" />
+        </a>
+        <div class="author-row">
+          <a href="/profile/newsroom.example.org?tab=posts"><span>Example Newsroom</span></a>
+          <a href="/profile/newsroom.example.org"><span>@newsroom.example.org</span></a>
+        </div>
+      </div>
+      <div class="post-body">Breaking: nothing happened.</div>
+      <div class="quote-embed">
+        <a href="/profile/kai09127364.bsky.social">
+          <div data-testid="userAvatarFallback"><svg></svg></div>
+          <span>Kai</span>
+          <span data-testid="botBadge" aria-label="Bot account"></span>
+          <span>@kai09127364.bsky.social</span>
+        </a>
+        <div>Quoted weather update.</div>
+      </div>
+    </div>
+
+    <div data-testid="feedItem-by-marked.example.com" data-botdar="1">
+      <a href="/profile/marked.example.com"><span>@marked.example.com</span></a>
+    </div>
+
+    <div data-testid="feedItem-by-orphan.example.com">
+      <div class="post-body">No author links rendered yet.</div>
+    </div>
+
+    <div data-testid="feedItem-by-">
+      <a href="/profile/did:plc:zzzzzzzzzzzzzzzzzzzzzzzz"><span>@handle.invalid</span></a>
+    </div>
+  </body>
+</html>
