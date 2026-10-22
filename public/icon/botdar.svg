@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Botdar">
+  <!-- Toolbar icon: the product mark (a disc with two concentric rings) in white on a brand-teal
+       rounded square with a 20% corner radius, so the icon needs no transparency. -->
+  <rect width="128" height="128" rx="25.6" fill="#0b6e6a" />
+  <circle cx="64" cy="64" r="14" fill="#ffffff" />
+  <circle cx="64" cy="64" r="30" fill="none" stroke="#ffffff" stroke-width="8" />
+  <circle cx="64" cy="64" r="48" fill="none" stroke="#ffffff" stroke-width="8" />
+</svg>
