@@ -1,12 +1,15 @@
 /**
  * Feed observer for bsky.app: one MutationObserver on the body, coalesced into a single discovery
  * pass per idle slot, that discovers post containers the badge has not marked yet and reports posts
- * the virtualised list has dropped. The analysis runs in budgeted slices (src/core/idleSlices.ts).
+ * the virtualised list has dropped. A discovered post is analysed once it comes near the viewport
+ * (src/core/nearViewport.ts), in budgeted slices (src/core/idleSlices.ts).
  * `pushState` is invisible to the isolated world, so route changes are detected by comparing
  * `location.href` on every pass plus `popstate`.
  */
 import type { ShouldYield, SliceScheduler } from "../../core/idleSlices";
 import { IDLE_TIMEOUT_MS, createSliceScheduler, drainQueue } from "../../core/idleSlices";
+import type { NearViewportGate } from "../../core/nearViewport";
+import { createNearViewportGate } from "../../core/nearViewport";
 import type { PostRef } from "../../core/types";
 import { UNMARKED_POST_SELECTOR, toPostRef } from "./dom";
 
@@ -23,15 +26,23 @@ export { IDLE_TIMEOUT_MS };
 
 export function observeBlueskyFeed(options: ObserveFeedOptions): () => void {
   const root: Document = options.root ?? document;
-  const view: Window = root.defaultView ?? window;
+  const view: Window & typeof globalThis = root.defaultView ?? window;
   const tracked = new Set<Element>();
-  /** Discovered but not analysed yet, in document order. */
+  /** Discovered and waiting to come near the viewport. */
+  const watching = new Set<Element>();
+  /** Near the viewport but not analysed yet, in the order they came near. */
   const queue = new Set<Element>();
   let lastHref: string = root.location.href;
   let removalPending = false;
   let discoveryPending = true;
 
   const sweepRemoved = (): void => {
+    for (const element of watching) {
+      if (!element.isConnected) {
+        watching.delete(element);
+        gate.unwatch(element);
+      }
+    }
     for (const element of tracked) {
       if (!element.isConnected) {
         tracked.delete(element);
@@ -64,7 +75,8 @@ export function observeBlueskyFeed(options: ObserveFeedOptions): () => void {
     }
     for (const element of root.querySelectorAll(UNMARKED_POST_SELECTOR)) {
       if (!tracked.has(element)) {
-        queue.add(element);
+        watching.add(element);
+        gate.watch(element);
       }
     }
   };
@@ -82,6 +94,11 @@ export function observeBlueskyFeed(options: ObserveFeedOptions): () => void {
     options.idleTimeoutMs ?? IDLE_TIMEOUT_MS,
     runSlice,
   );
+  const gate: NearViewportGate = createNearViewportGate(view, (element) => {
+    watching.delete(element);
+    queue.add(element);
+    scheduler.schedule();
+  });
   const schedule = (): void => {
     discoveryPending = true;
     scheduler.schedule();
@@ -101,7 +118,9 @@ export function observeBlueskyFeed(options: ObserveFeedOptions): () => void {
     mutationObserver.disconnect();
     view.removeEventListener("popstate", schedule);
     scheduler.dispose();
+    gate.disconnect();
     tracked.clear();
+    watching.clear();
     queue.clear();
   };
 }

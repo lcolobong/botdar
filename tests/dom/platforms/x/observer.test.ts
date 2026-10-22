@@ -3,6 +3,10 @@
 
 import type { PostRef } from "@/src/core/types";
 import { PASS_DELAY_MS, observeFeed } from "@/src/platforms/x/observer";
+import {
+  controlledObserver,
+  installControlledIntersectionObserver,
+} from "../../controlledIntersectionObserver";
 import { loadTimeline, timelineArticles, timelineBodyHtml } from "./timelineFixture";
 
 interface Harness {
@@ -118,6 +122,27 @@ describe("observeFeed", () => {
     expect(onRouteChange).toHaveBeenLastCalledWith("https://x.com/home");
     expect(onRouteChange).toHaveBeenCalledTimes(2);
     stop();
+  });
+
+  it("analyses a post once it comes near the viewport and forgets one removed before", async () => {
+    const restore: () => void = installControlledIntersectionObserver();
+    loadTimeline();
+    const { onPost, onRemoved, stop } = start();
+    await settle();
+    const [first, second] = timelineArticles();
+    if (first === undefined || second === undefined) throw new Error("fixture has no posts");
+    expect(onPost).not.toHaveBeenCalled();
+
+    controlledObserver().deliver([second], true);
+    await settle();
+    expect(handles(onPost)).toEqual(["kai09127364"]);
+
+    first.remove();
+    await settle();
+    expect(controlledObserver().observed.has(first)).toBe(false);
+    expect(onRemoved).not.toHaveBeenCalled();
+    stop();
+    restore();
   });
 
   it("stops observing and cancels a pending pass on stop", async () => {
