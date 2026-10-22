@@ -21,6 +21,7 @@ than one.
 | R-12 | Calibration drift over time | H | M | Weights in policy-adjustable JSON, local feedback export, scheduled calibration pass each release, scoring spec records every bin | Feedback "looks wrong" rate rising release over release, or a platform changing default handle formats | maintainer |
 | R-13 | Maintainer bus factor | H | M | Public repo, ADRs, runbook in `docs/policy-ops.md`, release checklist, no secrets in the build pipeline except the key | Maintainer unavailable for more than a month with a live incident | maintainer |
 | R-14 | Extension fingerprinting by hostile sites | M | M | No `web_accessible_resources`, no page-visible globals from the isolated world, MAIN-world patch leaves no detectable marker beyond the wrapped functions | A platform begins blocking or degrading sessions with Botdar installed | maintainer |
+| R-15 | Evasion by operators erodes signal value over time | H | M | Cost-raising behavioural features over cheap-to-fake account attributes, chosen in [adversarial-evasion.md](adversarial-evasion.md) (v1.1 set of six local features); each new feature validated in the calibration pass every release, and the evasion analysis revisited every six months | The share of later-suspended accounts that Botdar read as `typical` rises release over release, or a platform changes default handles, payout rules or the About panel | maintainer |
 
 ## R-01 Platform pressure or public backlash from X
 
@@ -109,3 +110,10 @@ the repo; its location is documented in the runbook without the key itself.
 LinkedIn probes for thousands of extension IDs by loading their web-accessible files. Botdar exposes
 none. The MAIN-world patch is detectable in principle by inspecting `window.fetch.toString()`, which is
 accepted; the mitigation is not to add any further markers.
+
+## R-15 Evasion by operators
+
+Every v1 feature is an account attribute an operator can buy or set in minutes, and the public weights
+give them an exact oracle. The answer is not secrecy but features whose evasion costs throughput or money
+(timing, in-thread reuse, account history), validated in each release's calibration pass. The full
+analysis and the v1.1 set are in [adversarial-evasion.md](adversarial-evasion.md).
