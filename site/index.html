@@ -12,7 +12,29 @@
       common in automated accounts, with the reasons. Everything is computed in your browser; the
       only network request the extension makes is a daily fetch of a signed policy file from this
       site. See the <a href="https://github.com/lcolobong/botdar">source repository</a> and the
-      <a href="https://github.com/lcolobong/botdar/blob/main/docs/privacy.md">privacy page</a>.
+      <a href="privacy.html">privacy page</a>.
+    </p>
+
+    <h2>What it does</h2>
+    <p>
+      On X, Reddit and Bluesky, each post author who shows patterns common in automated accounts
+      gets a small badge next to their handle: "Likely bot" when several independent signals line
+      up, "Unsure" when only one or two do, and "Declared bot" when the platform's own automated
+      label is set. Accounts that look fine, and accounts with too little data, get no badge, so
+      most of the feed stays quiet. Hovering a badge lists the observations behind it, such as
+      account age, posting rate, follower ratio and handle shape, and every card says how the read
+      could be wrong. Botdar describes patterns, not people, never hides a post, and makes no claim
+      about how often its badges are right.
+    </p>
+
+    <h2>Where the policy file lives</h2>
+    <p>
+      The extension downloads <a href="policy/v1.json">policy/v1.json</a> from this site once a day.
+      It is a signed, restrict-only configuration file: it can turn a platform or a signal source
+      off for everyone, lower a cap or show a one-time notice, and it can never enable anything,
+      raise a cap or run code. The extension checks the signature against a public key built into
+      the package and ignores anything that fails, so a tampered file leaves the last good
+      configuration in place. The request carries nothing about you or the accounts you have seen.
     </p>
   </body>
 </html>

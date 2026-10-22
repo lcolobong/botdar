@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Botdar privacy</title>
+  </head>
+  <body>
+    <h1>Botdar privacy</h1>
+    <p><a href="./">Back to Botdar</a></p>
+
+    <h2>What the extension does</h2>
+    <p>
+      It reads the social media pages you are already looking at, computes a small set of signals
+      about each post's author on your device, and draws a badge next to the author. That is all.
+    </p>
+
+    <h2>What leaves your browser</h2>
+    <p>
+      One thing: once a day the extension downloads a small signed configuration file from this
+      project's GitHub Pages site. That request carries no information about you or about the
+      accounts you have seen. GitHub may log the request like any web request.
+    </p>
+    <p>
+      Nothing else. No account names, no scores, no browsing history, no analytics, no crash
+      reports.
+    </p>
+
+    <h2>What is stored on your device</h2>
+    <ul>
+      <li>Your settings (which platforms are on, conservative mode).</li>
+      <li>The last configuration file that was downloaded.</li>
+      <li>
+        Feedback you chose to send with the "This looks wrong" button, which stays on your device
+        until you export or delete it from the options page.
+      </li>
+    </ul>
+    <p>
+      Signals and scores for accounts are kept in memory while a tab is open and discarded
+      afterwards.
+    </p>
+
+    <h2>Requests to platforms</h2>
+    <p>
+      On X, Reddit and Bluesky, when you hover a badge, the extension may ask the platform for the
+      same public profile information the page itself shows, using your existing session. These
+      requests are rate-limited, cached, and can be turned off with "conservative mode" or per
+      platform. The maintainer can also turn them off for everyone through the configuration file.
+    </p>
+
+    <h2>Permissions</h2>
+    <p>
+      The extension asks for access to x.com, twitter.com, reddit.com and bsky.app only, plus local
+      storage and a timer for the daily configuration fetch.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      Open an issue at
+      <a href="https://github.com/lcolobong/botdar">github.com/lcolobong/botdar</a>.
+    </p>
+  </body>
+</html>
