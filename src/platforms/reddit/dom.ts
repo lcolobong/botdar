@@ -87,12 +87,16 @@ function profilePathName(link: Element): string | undefined {
  * Slotted light DOM first, then the open shadow root. Among several profile links (crossposts,
  * mentions) the one that leads to the author wins; the first profile link is the fallback.
  */
-export function findAuthorAnchor(element: Element, kind: RedditPostKind): Element | null {
+export function findAuthorAnchor(
+  element: Element,
+  kind: RedditPostKind,
+  rows: readonly ParentNode[] = metaRowsOf(element, kind),
+): Element | null {
   const author: string | undefined = authorNameOf(element)?.toLowerCase();
   const linkSelector: string = isOldRedditThing(element)
     ? OLD_REDDIT_AUTHOR_LINK_SELECTOR
     : USER_LINK_SELECTOR;
-  for (const row of metaRowsOf(element, kind)) {
+  for (const row of rows) {
     const links: Element[] = [...row.querySelectorAll(linkSelector)];
     const toAuthor: Element | undefined = links.find((link) => profilePathName(link) === author);
     const anchor: Element | undefined = toAuthor ?? links[0];
@@ -101,18 +105,28 @@ export function findAuthorAnchor(element: Element, kind: RedditPostKind): Elemen
   return null;
 }
 
-function hasAppTag(element: Element, kind: RedditPostKind): boolean {
-  return metaRowsOf(element, kind).some((row) => {
+function hasAppTagLeaf(row: ParentNode): boolean {
+  for (const leaf of row.querySelectorAll("*")) {
+    if (leaf.childElementCount === 0 && leaf.textContent?.trim() === APP_TAG_TEXT) return true;
+  }
+  return false;
+}
+
+/**
+ * Each row's text is read once, natively, before any leaf is visited: almost no row contains "APP"
+ * at all, and walking every leaf of a whole shadow root was the costliest part of Tier 0.
+ */
+function hasAppTag(rows: readonly ParentNode[]): boolean {
+  return rows.some((row) => {
     if (row.querySelector(APP_TAG_SELECTOR) !== null) return true;
-    return [...row.querySelectorAll("*")].some(
-      (leaf) => leaf.childElementCount === 0 && leaf.textContent?.trim() === APP_TAG_TEXT,
-    );
+    if (!(row.textContent ?? "").includes(APP_TAG_TEXT)) return false;
+    return hasAppTagLeaf(row);
   });
 }
 
 /** true for a stock avatar, false for an uploaded one, undefined when no avatar image is rendered. */
-function hasDefaultAvatar(element: Element, kind: RedditPostKind): boolean | undefined {
-  for (const row of metaRowsOf(element, kind)) {
+function hasDefaultAvatar(rows: readonly ParentNode[]): boolean | undefined {
+  for (const row of rows) {
     const avatar: Element | null = row.querySelector(AUTHOR_AVATAR_SELECTOR);
     const source: string | null =
       avatar?.getAttribute("src") ?? avatar?.getAttribute("data-src") ?? null;
@@ -135,7 +149,8 @@ export function toPostRef(element: Element): RedditPostRef | null {
   const kind: RedditPostKind | undefined = kindOf(element);
   const author: string | undefined = authorNameOf(element);
   if (kind === undefined || author === undefined) return null;
-  const anchor: Element | null = findAuthorAnchor(element, kind);
+  const rows: ParentNode[] = metaRowsOf(element, kind);
+  const anchor: Element | null = findAuthorAnchor(element, kind, rows);
   if (anchor === null) return null;
   const post: RedditPostRef = {
     element,
@@ -144,24 +159,23 @@ export function toPostRef(element: Element): RedditPostRef | null {
     kind,
     isReply: isReply(element, kind),
   };
-  if (hasAppTag(element, kind)) post.nativeLabel = "automated";
+  if (hasAppTag(rows)) post.nativeLabel = "automated";
   return post;
 }
 
 /**
  * `shreddit-post[created-timestamp]` is the post's publication time, not the author's cake day, so it
  * never feeds `createdAt`: account age only arrives from Tier 2. The rendered username keeps its
- * casing, which the generated-name feature needs and the lowercased handle has lost.
+ * casing, which the generated-name feature needs and the lowercased handle has lost. The APP tag is
+ * read once, by `toPostRef`, and arrives here as `nativeLabel` rather than being searched for again.
  */
 export function extractDomSignals(post: PostRef): PartialSignals {
   const kind: RedditPostKind | undefined = kindOf(post.element);
   const author: string | undefined = authorNameOf(post.element);
   if (kind === undefined || author === undefined) return {};
   const signals: PartialSignals = { displayName: author.slice(0, MAX_DISPLAY_NAME_LENGTH) };
-  if (post.nativeLabel === "automated" || hasAppTag(post.element, kind)) {
-    signals.declaredAutomated = true;
-  }
-  const avatar: boolean | undefined = hasDefaultAvatar(post.element, kind);
+  if (post.nativeLabel === "automated") signals.declaredAutomated = true;
+  const avatar: boolean | undefined = hasDefaultAvatar(metaRowsOf(post.element, kind));
   if (avatar !== undefined) signals.hasDefaultAvatar = avatar;
   return signals;
 }
