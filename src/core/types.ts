@@ -118,6 +118,8 @@ export interface EffectivePlatformConfig {
   /** Active lookups per minute. */
   rateLimitPerMinute: number;
   policyVersion: number;
+  /** X only: the current `AboutAccountQuery` GraphQL query id when the policy supplies one. */
+  aboutAccountQueryId?: string;
 }
 
 export interface ResolveContext {
