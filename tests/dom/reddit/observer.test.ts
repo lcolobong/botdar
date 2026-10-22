@@ -177,6 +177,28 @@ describe("observeRedditFeed", () => {
     Object.assign(window, { requestIdleCallback: undefined });
   });
 
+  it("analyses a long thread in slices, yielding when the idle period runs out", () => {
+    const callbacks: Array<(deadline: IdleDeadline) => void> = [];
+    const requestIdleCallback = vi.fn((callback: (deadline: IdleDeadline) => void): number => {
+      callbacks.push(callback);
+      return callbacks.length;
+    });
+    Object.assign(window, { requestIdleCallback });
+    loadRedditFixture("comments.html");
+    const harness: Harness = observe();
+    const exhausted: IdleDeadline = { didTimeout: false, timeRemaining: () => 0 };
+
+    callbacks.shift()?.(exhausted);
+    expect(handles(harness.posts)).toEqual(["quiet_lantern_4821"]);
+    callbacks.shift()?.(exhausted);
+    expect(handles(harness.posts)).toEqual(["quiet_lantern_4821", "mossy_teapot"]);
+    while (callbacks.length > 0) callbacks.shift()?.(exhausted);
+    expect(harness.posts).toHaveLength(4);
+
+    harness.stop();
+    Object.assign(window, { requestIdleCallback: undefined });
+  });
+
   it("stops reporting after stop", async () => {
     const harness: Harness = observe();
     harness.stop();
