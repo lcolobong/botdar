@@ -75,6 +75,37 @@ export function fixtureUrl(platform: SmokePlatform): string {
   return `https://${platform.hostname}${platform.feedPath}`;
 }
 
+export interface ApiFixtureRoute {
+  readonly platform: SmokePlatformId;
+  /** The request path the real web app would use; the fixture pages fetch exactly this. */
+  readonly path: string;
+  /** The recorded response body, relative to the repository root. */
+  readonly file: string;
+}
+
+/**
+ * Recorded API bodies served at the paths the web apps fetch, so the extension's MAIN-world
+ * interceptor relays them and Tier 1 scoring runs in the captures. The X query id is made up:
+ * the interceptor matches any id of the right shape and only the operation name matters.
+ */
+export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
+  {
+    platform: "x",
+    path: "/i/api/graphql/SMOKEQUERYID00000001/HomeTimeline",
+    file: "tests/fixtures/x/graphql/home-timeline-core.json",
+  },
+  {
+    platform: "bluesky",
+    path: "/xrpc/app.bsky.feed.getTimeline",
+    file: "tests/fixtures/bluesky/get-timeline.json",
+  },
+  {
+    platform: "bluesky",
+    path: "/xrpc/app.bsky.actor.getProfiles",
+    file: "tests/fixtures/bluesky/get-profiles.json",
+  },
+];
+
 /**
  * Maps every fixture hostname to the local server. Everything else resolves to NOTFOUND so a
  * recorded page's leftover asset URLs fail fast instead of waiting on real DNS and networks.
@@ -99,6 +130,18 @@ function platformForRequest(request: IncomingMessage): SmokePlatform | undefined
 function handleRequest(request: IncomingMessage, response: ServerResponse): void {
   const platform: SmokePlatform | undefined = platformForRequest(request);
   const requestPath: string = (request.url ?? "/").split("?")[0] ?? "/";
+  // GET or POST alike: X posts some GraphQL operations and the interceptor relays both.
+  const apiRoute: ApiFixtureRoute | undefined = apiFixtureRoutes.find(
+    (route) => route.platform === platform?.id && route.path === requestPath,
+  );
+  if (apiRoute !== undefined) {
+    response.writeHead(200, {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    });
+    response.end(readFileSync(new URL(apiRoute.file, repoRoot)));
+    return;
+  }
   if (platform === undefined || requestPath !== platform.feedPath) {
     response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
     response.end("no smoke fixture at this route");

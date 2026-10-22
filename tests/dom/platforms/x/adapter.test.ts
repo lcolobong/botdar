@@ -56,7 +56,7 @@ describe("createXAdapter", () => {
       const stop: () => void = routed.observeFeed(onPost, () => undefined);
       loadTimeline();
       await vi.advanceTimersByTimeAsync(PASS_DELAY_MS);
-      expect(onPost).toHaveBeenCalledTimes(3);
+      expect(onPost).toHaveBeenCalledTimes(4);
       history.pushState(null, "", "/explore");
       document.body.append(document.createElement("div"));
       await vi.advanceTimersByTimeAsync(PASS_DELAY_MS);

@@ -62,28 +62,29 @@ describe("observeBlueskyFeed", () => {
       "alice.example.com",
       "kai09127364.bsky.social",
       "newsroom.example.org",
+      "mila48213907.bsky.social",
     ]);
   });
 
   it("reports an appended post once, after the coalesced pass", async () => {
     document.body.append(makePost("new.example.com"));
     document.body.append(makePost("newer.example.com"));
-    expect(harness.posts).toHaveLength(3);
+    expect(harness.posts).toHaveLength(4);
 
     await settle();
 
-    expect(harness.posts.map((post) => post.ref.handle).slice(3)).toEqual([
+    expect(harness.posts.map((post) => post.ref.handle).slice(4)).toEqual([
       "new.example.com",
       "newer.example.com",
     ]);
     await settle();
-    expect(harness.posts).toHaveLength(5);
+    expect(harness.posts).toHaveLength(6);
   });
 
   it("does not report a post again while it is still on the page", async () => {
     document.body.append(document.createElement("p"));
     await settle();
-    expect(harness.posts).toHaveLength(3);
+    expect(harness.posts).toHaveLength(4);
   });
 
   it("reports removed posts, including those removed with an ancestor", async () => {
@@ -93,7 +94,7 @@ describe("observeBlueskyFeed", () => {
     wrapper.append(wrapped);
     document.body.append(wrapper);
     await settle();
-    expect(harness.posts).toHaveLength(4);
+    expect(harness.posts).toHaveLength(5);
 
     alice?.element.remove();
     wrapper.remove();
@@ -136,6 +137,6 @@ describe("observeBlueskyFeed", () => {
     harness.stop();
     document.body.append(makePost("late.example.com"));
     await settle();
-    expect(harness.posts).toHaveLength(3);
+    expect(harness.posts).toHaveLength(4);
   });
 });

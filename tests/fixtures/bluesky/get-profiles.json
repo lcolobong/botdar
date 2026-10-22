@@ -112,6 +112,29 @@
       "followersCount": 12,
       "followsCount": 2400,
       "postsCount": 8900
+    },
+    {
+      "did": "did:plc:eeeeeeeeeeeeeeeeeeeeeeee",
+      "handle": "mila48213907.bsky.social",
+      "associated": {
+        "lists": 0,
+        "feedgens": 0,
+        "starterPacks": 0,
+        "labeler": false,
+        "chat": { "allowIncoming": "all" }
+      },
+      "labels": [],
+      "createdAt": "2026-10-12T06:40:00.000Z",
+      "verification": {
+        "verifications": [],
+        "verifiedStatus": "none",
+        "trustedVerifierStatus": "none"
+      },
+      "description": "",
+      "indexedAt": "2026-10-22T06:58:41.002Z",
+      "followersCount": 12,
+      "followsCount": 4900,
+      "postsCount": 1500
     }
   ]
 }

@@ -38,6 +38,11 @@ describe("parseProfiles on getProfiles", () => {
         handle: "kai09127364.bsky.social",
         id: "did:plc:cccccccccccccccccccccccc",
       },
+      {
+        platform: "bluesky",
+        handle: "mila48213907.bsky.social",
+        id: "did:plc:eeeeeeeeeeeeeeeeeeeeeeee",
+      },
     ]);
   });
 
@@ -111,6 +116,7 @@ describe("parseFeedAuthors", () => {
       "kai09127364.bsky.social",
       "alice.example.com",
       "newsroom.example.org",
+      "mila48213907.bsky.social",
     ]);
     expect(profileByHandle(profiles, "kai09127364.bsky.social").signals).toEqual({
       createdAt: Date.parse("2026-10-01T09:12:45.000Z"),

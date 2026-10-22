@@ -137,7 +137,12 @@
                               "__typename": "User",
                               "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDAz",
                               "rest_id": "1000000000000000003",
-                              "affiliates_highlighted_label": {},
+                              "affiliates_highlighted_label": {
+                                "label": {
+                                  "userLabelType": "AutomatedLabel",
+                                  "description": "Automated"
+                                }
+                              },
                               "avatar": {
                                 "image_url": "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png"
                               },
@@ -257,6 +262,55 @@
                       }
                     }
                   ]
+                }
+              },
+              {
+                "entryId": "tweet-1700000000000000005",
+                "sortIndex": "1699999999999999975",
+                "content": {
+                  "entryType": "TimelineTimelineItem",
+                  "__typename": "TimelineTimelineItem",
+                  "itemContent": {
+                    "itemType": "TimelineTweet",
+                    "__typename": "TimelineTweet",
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "1700000000000000005",
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA1",
+                              "rest_id": "1000000000000000005",
+                              "affiliates_highlighted_label": {},
+                              "avatar": {
+                                "image_url": "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png"
+                              },
+                              "core": {
+                                "created_at": "Mon Oct 12 06:40:00 +0000 2026",
+                                "name": "Mila",
+                                "screen_name": "mila48213907"
+                              },
+                              "is_blue_verified": false,
+                              "legacy": {
+                                "default_profile": true,
+                                "default_profile_image": true,
+                                "pinned_tweet_ids_str": [],
+                                "withheld_in_countries": []
+                              },
+                              "location": { "location": "" },
+                              "profile_bio": { "description": "", "entities": {} },
+                              "relationship_counts": { "followers": 12, "following": 4900 },
+                              "tweet_counts": { "tweets": 1500, "media_tweets": 0 },
+                              "verification": { "verified": false }
+                            }
+                          }
+                        },
+                        "legacy": { "full_text": "Follow for daily picks 🔥", "lang": "en" }
+                      }
+                    }
+                  }
                 }
               },
               {

@@ -63,6 +63,7 @@ describe("createPassiveGraphqlSource", () => {
       "example_news",
       "kai09127364",
       "maria_dev",
+      "mila48213907",
     ]);
     const [aliceRef, aliceSignals] = emissions[0] ?? [];
     expect(aliceRef).toEqual({ platform: "x", handle: "alice_example", id: "1000000000000000001" });

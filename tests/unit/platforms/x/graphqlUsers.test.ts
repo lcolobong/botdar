@@ -54,12 +54,14 @@ describe("collectUsers on HomeTimeline (core shape)", () => {
       "example_news",
       "kai09127364",
       "maria_dev",
+      "mila48213907",
     ]);
     expect(users.map((user) => user.ref)).toEqual([
       { platform: "x", handle: "alice_example", id: "1000000000000000001" },
       { platform: "x", handle: "example_news", id: "1000000000000000002" },
       { platform: "x", handle: "kai09127364", id: "1000000000000000003" },
       { platform: "x", handle: "maria_dev", id: "1000000000000000004" },
+      { platform: "x", handle: "mila48213907", id: "1000000000000000005" },
     ]);
   });
 
@@ -86,7 +88,7 @@ describe("collectUsers on HomeTimeline (core shape)", () => {
     expect(signals.createdAt).toBe(Date.UTC(2006, 2, 21, 14, 2, 11));
   });
 
-  it("maps a new blue account with a default avatar and empty bio", () => {
+  it("maps a new blue account with a default avatar, an empty bio and the Automated label", () => {
     expect(toSignals(userByHandle(users, "kai09127364"))).toEqual({
       createdAt: Date.UTC(2026, 0, 3, 9, 12, 45),
       followers: 12,
@@ -96,7 +98,7 @@ describe("collectUsers on HomeTimeline (core shape)", () => {
       bio: "",
       hasDefaultAvatar: true,
       verified: "blue",
-      declaredAutomated: false,
+      declaredAutomated: true,
     });
   });
 

@@ -209,7 +209,7 @@ describe("wireBluesky", () => {
       document.querySelectorAll(
         '[data-testid^="feedItem-by-"][data-botdar], [data-testid^="postThreadItem-by-"][data-botdar]',
       ),
-    ).toHaveLength(4);
+    ).toHaveLength(5);
   });
 
   it("writes the bundled stylesheet into the badge and card shadow roots", async () => {

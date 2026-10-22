@@ -33,7 +33,7 @@ describe("findUnbadgedPosts and the badged mark", () => {
     expect(first.getAttribute(BADGED_ATTRIBUTE)).toBe("1");
     expect(findUnbadgedPosts(document)).toEqual(articles.slice(1));
     unmarkBadged(first);
-    expect(findUnbadgedPosts(document)).toHaveLength(3);
+    expect(findUnbadgedPosts(document)).toHaveLength(4);
   });
 });
 

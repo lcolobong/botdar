@@ -50,6 +50,7 @@ describe("passive XRPC source", () => {
       "kai09127364.bsky.social",
       "alice.example.com",
       "newsroom.example.org",
+      "mila48213907.bsky.social",
     ]);
     const declared = emitted.find((entry) => entry.ref.handle === "kai09127364.bsky.social");
     expect(declared?.ref.id).toBe("did:plc:cccccccccccccccccccccccc");
@@ -80,7 +81,7 @@ describe("passive XRPC source", () => {
     dispatchEnvelope("app.bsky.actor.getProfiles", loadFixture("get-profiles.json"));
 
     const alice = emitted.find((entry) => entry.ref.handle === "alice.example.com");
-    expect(emitted).toHaveLength(3);
+    expect(emitted).toHaveLength(4);
     expect(alice?.partial).toMatchObject({ followers: 15200, following: 870, postCount: 31000 });
   });
 
