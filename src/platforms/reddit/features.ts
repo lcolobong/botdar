@@ -3,6 +3,7 @@
  * docs/scoring-spec.md. Gating is this module's job: a feature whose gate is not met is omitted, and
  * the engine never sees it.
  */
+import { isRedditGeneratedName } from "../../core/handle/shape";
 import type {
   AccountSignals,
   Feature,
@@ -14,21 +15,16 @@ import type {
 const DAY_MILLIS = 86_400_000;
 const KARMA_PER_DAY_MAX_AGE_DAYS = 180;
 const POST_TO_COMMENT_MIN_LINK_KARMA = 500;
-/** The handle comes from the rendered author attribute, which every tier can see. */
+/** The username is rendered on every post, so the name feature is always Tier 0 evidence. */
 const HANDLE_TIER: SourceTier = 0;
 
-// TODO(handle-shape): replace with src/core/handle/shape.ts once the handle-shape branch lands.
 /**
- * Reddit's suggested usernames are Adjective_Noun_1234 or Adjective-Noun-1234, both words
- * capitalised. AccountRef lowercases handles, so a lowercased handle is matched case-insensitively
- * and only a handle that still carries case has to show the capitals.
+ * The suggested-name pattern needs the capitals Reddit renders, which AccountRef.handle has lost;
+ * Tier 0 records the rendered username as displayName. Tier 2 replaces it only when the profile
+ * carries a custom title, and an account that chose a display name is not keeping a suggested one.
  */
-const GENERATED_NAME_PATTERN = /^[A-Z][a-z]+[-_][A-Z][a-z]+[-_]?\d{1,4}$/;
-const GENERATED_NAME_PATTERN_ANY_CASE = /^[a-z]+[-_][a-z]+[-_]?\d{1,4}$/i;
-
-function matchesGeneratedName(handle: string): boolean {
-  const isLowercased: boolean = handle === handle.toLowerCase();
-  return (isLowercased ? GENERATED_NAME_PATTERN_ANY_CASE : GENERATED_NAME_PATTERN).test(handle);
+function matchesGeneratedName(signals: AccountSignals): boolean {
+  return isRedditGeneratedName(signals.displayName ?? signals.ref.handle);
 }
 
 /** The most expensive tier among the fields a feature reads; fields with no record count as DOM. */
@@ -86,7 +82,7 @@ export function toFeatures(signals: AccountSignals, now: number = Date.now()): F
   }
   features.push({
     id: "reddit.generatedName",
-    value: matchesGeneratedName(signals.ref.handle),
+    value: matchesGeneratedName(signals),
     group: "handle",
     tier: HANDLE_TIER,
   });
