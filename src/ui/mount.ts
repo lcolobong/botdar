@@ -20,7 +20,34 @@ export type RenderFn = (container: HTMLElement) => () => void;
 export interface MountedUi {
   shadowHost: HTMLElement;
   setTheme: (theme: HostTheme) => void;
+  /** Positions a fixed host (the card) in viewport pixels. */
+  setPlacement: (placement: { top: number; left: number }) => void;
+  /** Shows or hides the host. */
+  setVisible: (visible: boolean) => void;
   remove: () => void;
+}
+
+/**
+ * Host geometry travels through custom properties: WXT's `:host { all: initial !important }` reset
+ * wipes ordinary inline `top`/`left`/`display` on the host, but `all` leaves custom properties
+ * alone, so the `:host` rules below read them with `var()`.
+ */
+const PLACEMENT_PROPERTIES = {
+  top: "--botdar-top",
+  left: "--botdar-left",
+  display: "--botdar-display",
+} as const;
+
+function placementControls(host: HTMLElement): Pick<MountedUi, "setPlacement" | "setVisible"> {
+  return {
+    setPlacement: ({ top, left }) => {
+      host.style.setProperty(PLACEMENT_PROPERTIES.top, `${top}px`);
+      host.style.setProperty(PLACEMENT_PROPERTIES.left, `${left}px`);
+    },
+    setVisible: (visible) => {
+      host.style.setProperty(PLACEMENT_PROPERTIES.display, visible ? "block" : "none");
+    },
+  };
 }
 
 export const BADGE_ELEMENT_NAME = "botdar-badge";
@@ -36,7 +63,8 @@ export const CARD_ELEMENT_NAME = "botdar-card";
 const HOST_STYLE_BY_ELEMENT: Readonly<Record<string, string>> = {
   [BADGE_ELEMENT_NAME]:
     ":host { display: inline-flex !important; vertical-align: middle !important; margin-left: 4px !important; }",
-  [CARD_ELEMENT_NAME]: ":host { position: fixed !important; }",
+  [CARD_ELEMENT_NAME]:
+    ":host { position: fixed !important; top: var(--botdar-top, 0px) !important; left: var(--botdar-left, 0px) !important; display: var(--botdar-display, none) !important; z-index: 2147483000 !important; }",
 };
 
 const DARK_LUMINANCE_CEILING = 128;
@@ -137,6 +165,7 @@ async function createMountedUi(
   });
   const mounted: MountedUi = {
     shadowHost: ui.shadowHost,
+    ...placementControls(ui.shadowHost),
     setTheme: (nextTheme) => {
       ui.shadowHost.dataset.theme = nextTheme;
     },
@@ -155,6 +184,7 @@ async function createMountedUi(
 function adoptExistingHost(host: Element): MountedUi {
   const adopted: MountedUi = {
     shadowHost: host as HTMLElement,
+    ...placementControls(host as HTMLElement),
     setTheme: (theme) => {
       (host as HTMLElement).dataset.theme = theme;
     },

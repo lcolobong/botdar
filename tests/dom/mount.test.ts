@@ -252,4 +252,27 @@ describe("mountCard", () => {
     expect(third.shadowHost).not.toBe(first.shadowHost);
     expect(render).toHaveBeenCalledTimes(2);
   });
+
+  it("positions and shows the card through custom properties the host reset cannot wipe", async () => {
+    const card: MountedUi = await mountCard(
+      fakeContext(),
+      () => () => undefined,
+      "light",
+      CARD_CSS,
+    );
+    const host: HTMLElement = card.shadowHost;
+
+    const hostRules: string = host.shadowRoot?.querySelector("style")?.textContent ?? "";
+    expect(hostRules).toContain("top: var(--botdar-top");
+    expect(hostRules).toContain("display: var(--botdar-display, none)");
+
+    card.setPlacement({ top: 120, left: 40 });
+    card.setVisible(true);
+    expect(host.style.getPropertyValue("--botdar-top")).toBe("120px");
+    expect(host.style.getPropertyValue("--botdar-left")).toBe("40px");
+    expect(host.style.getPropertyValue("--botdar-display")).toBe("block");
+
+    card.setVisible(false);
+    expect(host.style.getPropertyValue("--botdar-display")).toBe("none");
+  });
 });
