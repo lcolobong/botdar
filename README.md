@@ -6,34 +6,94 @@ the accounts you see leaves it.
 
 Working title. Status: pre-alpha, under construction.
 
-## How it works
+## What it does
 
-Each post author gets a small badge on a three-step scale: looks typical, some automation signals, many
-automation signals. Accounts that carry the platform's own automated label show a distinct declared
-state. Hovering the badge lists the two to four observations behind it, such as account age, posting
-rate, follower ratio and handle shape, plus a line on why the read might be wrong.
+On X, Reddit and Bluesky, Botdar draws a small badge next to the author of a post when that account
+shows patterns common in automated accounts: "Likely bot" when several independent signals agree,
+"Unsure" when only one or two do, and "Declared bot" when the platform's own automated label is set.
+Accounts that look fine, and accounts with too little data, get no badge, so most of the feed stays
+quiet. Hovering a badge lists the two to four observations behind it, such as account age, posting
+rate, follower ratio and handle shape, each with a number or a date, and every card ends with a line
+that names the innocent explanation. Botdar describes patterns, not people; it never hides a post, and
+it makes no claim about how often its badges are right.
 
-Signals come from three tiers of sources, each switchable per platform: what the page renders, what the
-page already fetched for itself, and on-demand public profile lookups. A signed configuration file lets
-the maintainer turn any tier off for everyone without a store release, and it can only ever restrict.
+## Install from source
+
+Requires Node 24 and pnpm (`corepack enable` picks up the pinned version).
+
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+`pnpm dev` writes a development build to `.output/chrome-mv3` and rebuilds on change. In Chrome, open
+`chrome://extensions`, turn on Developer mode, choose "Load unpacked" and pick `.output/chrome-mv3`.
+For Firefox, `pnpm dev:firefox` writes `.output/firefox-mv2`, which loads from `about:debugging` as a
+temporary add-on. `pnpm build` and `pnpm build:firefox` produce the release builds; `pnpm zip` and
+`pnpm zip:firefox` package them.
+
+## How scoring works
+
+Each platform adapter turns what it can see about an author into a short list of features, such as
+account age, posting rate, follower ratio and handle shape, and a feature is left out entirely when its
+gate is not met, so a ratio over tiny counts cannot dominate ([scoring-spec.md](docs/scoring-spec.md)).
+Features come from three tiers of sources, each switchable per platform: what the page renders, what the
+page already fetched for itself, and on-demand public profile lookups
+([architecture.md](docs/architecture.md), [ADR-0006](docs/decisions/ADR-0006-tiered-signal-sources.md)).
+Each feature contributes a capped, hand-set weight, groups of related features share a cap, and the sum
+goes through a logistic function to give an internal probability that is never shown to users
+([ADR-0004](docs/decisions/ADR-0004-heuristics-not-trained-model.md)). The "Likely bot" tier requires
+that probability to clear its threshold, at least two strong signals from distinct groups, and
+confidence of at least 0.5, where confidence measures how many source tiers actually delivered; when
+fewer than half did, the tier is capped at "Unsure" and the badge renders hollow
+([ADR-0003](docs/decisions/ADR-0003-three-tier-verdict.md),
+[ADR-0017](docs/decisions/ADR-0017-badge-wording-and-label-styles.md)). The reasons on the card are the
+strongest contributions rendered through fixed templates, negative evidence included, and the caveat is
+chosen by the group of the largest positive contribution ([design.md](docs/design.md)).
+
+## The policy kill switch
+
+Once a day the extension downloads a signed policy file from
+[lcolobong.github.io/botdar/policy/v1.json](https://lcolobong.github.io/botdar/policy/v1.json), verifies
+it against a public key built into the package, and merges it over the build defaults. The merge is
+restrict-only: a policy can switch a platform or a signal source off for everyone, lower a cap, raise a
+threshold or show a one-time notice, and it can never enable anything, raise a cap or run code, so a
+stolen key or a hijacked host can only ever turn features off. The procedure for flipping a switch and
+rotating the key is in [policy-ops.md](docs/policy-ops.md), and the design rationale in
+[ADR-0007](docs/decisions/ADR-0007-signed-restrict-only-policy.md).
+
+## Privacy
+
+Nothing about the accounts you see leaves your browser. The only request the extension makes on its own
+is the daily policy fetch, which carries no information about you. Settings, the last policy file and
+any "This looks wrong" feedback you record stay in local storage; account signals live in memory for the
+open tab and are discarded when it closes. The full text is in [privacy.md](docs/privacy.md) and
+published at [lcolobong.github.io/botdar/privacy.html](https://lcolobong.github.io/botdar/privacy.html).
 
 ## Documents
 
-| Document | What it is |
-|---|---|
-| [docs/product-brief.md](docs/product-brief.md) | Problem, goals, non-goals, scope, success measures |
-| [docs/roadmap.md](docs/roadmap.md) | Platforms by release and why |
-| [docs/architecture.md](docs/architecture.md) | System design, type contracts, policy system, threat model |
-| [docs/scoring-spec.md](docs/scoring-spec.md) | Features, weights, bucketing, wording |
-| [docs/design.md](docs/design.md) | Design principles, surfaces, states, copy |
-| [docs/decisions/](docs/decisions/) | Architecture decision records |
-| [docs/risk-register.md](docs/risk-register.md) | Risks, mitigations, triggers |
-| [docs/research/](docs/research/) | Landscape, feasibility, heuristics literature, platform ranking |
-| [docs/test-plan.md](docs/test-plan.md) | Automated layers and the manual checklist |
-| [docs/release-checklist.md](docs/release-checklist.md) | What to check before shipping |
-| [docs/policy-ops.md](docs/policy-ops.md) | Runbook for the kill switch and key rotation |
-| [docs/privacy.md](docs/privacy.md) | Source of the published privacy page |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Commit, PR and code rules |
+| Document                                                     | What it is                                              |
+| ------------------------------------------------------------ | ------------------------------------------------------- |
+| [docs/product-brief.md](docs/product-brief.md)               | Problem, goals, non-goals, scope, success measures      |
+| [docs/roadmap.md](docs/roadmap.md)                           | Platforms by release and why                            |
+| [docs/architecture.md](docs/architecture.md)                 | System design, type contracts, policy system, threat model |
+| [docs/scoring-spec.md](docs/scoring-spec.md)                 | Features, weights, bucketing, wording                   |
+| [docs/design.md](docs/design.md)                             | Design principles, surfaces, states, copy               |
+| [docs/decisions/](docs/decisions/)                           | Architecture decision records                           |
+| [docs/risk-register.md](docs/risk-register.md)               | Risks, mitigations, triggers                            |
+| [docs/research/](docs/research/)                             | Landscape, feasibility, heuristics literature, platform ranking |
+| [docs/test-plan.md](docs/test-plan.md)                       | Automated layers and the manual checklist               |
+| [docs/release-checklist.md](docs/release-checklist.md)       | What to check before shipping                           |
+| [docs/policy-ops.md](docs/policy-ops.md)                     | Runbook for the kill switch and key rotation            |
+| [docs/privacy.md](docs/privacy.md)                           | Source of the published privacy page                    |
+| [store/README.md](store/README.md)                           | Store listing and disclosure texts                      |
+| [CHANGELOG.md](CHANGELOG.md)                                 | User-facing changes per release                         |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                           | Commit, PR and code rules                               |
+
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) first: one logical change per commit, each one green on its
+own, stacked PRs merged with rebase, and `docs/` updated in the same PR as any behaviour change.
 
 ## Stack
 
@@ -41,4 +101,4 @@ WXT, TypeScript, Preact, Vitest, pnpm. Builds for Chrome and Firefox from one co
 
 ## License
 
-MIT.
+MIT. See [LICENSE](LICENSE).
