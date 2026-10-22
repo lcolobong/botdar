@@ -71,7 +71,7 @@ follow ratios). They will move after the calibration pass.
 | `x.followingRatio` | graph | 1.5 | `following / (followers + 1)` | `[0,1)→-0.3` `[1,5)→0` `[5,20)→0.6` `[20,100)→1.0` `[100,∞)→1.5` | `following ≥ 100` |
 | `x.handleNameDigits` | handle | 0.7 | handle matches `^[a-z]+\d{5,}$` | bool, 0.7 | always |
 | `x.handleTrailingDigits` | handle | 0.5 | count of trailing digits | `[0,5)→0` `[5,∞)→0.5` | always |
-| `x.handleBigramLL` | handle | 0.8 | mean log character-bigram likelihood of the handle's letters | `(-∞,-4.5)→0.8` `[-4.5,-3.8)→0.4` `[-3.8,∞)→0` | handle has ≥ 4 letters |
+| `x.handleBigramLL` | handle | 0.8 | mean log character-bigram likelihood of the handle's letters | `(-∞,-3.8)→0.8` `[-3.8,-3.4)→0.4` `[-3.4,∞)→0` | handle has ≥ 4 letters |
 | `x.defaultAvatarEmptyBio` | profile | 1.0 | 0, 1 or 2 of {default avatar, empty bio} | `[0,1)→0` `[1,2)→0.3` `[2,3)→1.0` | both fields known |
 | `x.newAndBlue` | verification | 0.8 | `verified === 'blue'` and age < 90 d | bool, 0.8 | both known |
 | `x.replyShare` | content | 0.8 | `replyShare.ratio` | `[0,0.9)→0` `[0.9,∞)→0.8` | `replyShare.n ≥ 20` |

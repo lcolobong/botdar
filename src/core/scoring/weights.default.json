@@ -1,0 +1,257 @@
+{
+  "schema": 1,
+  "platforms": {
+    "x": {
+      "prior": -2.5,
+      "thresholds": {
+        "some": 0.3,
+        "many": 0.6
+      },
+      "groupCaps": {
+        "handle": 1.2,
+        "profile": 1.2
+      },
+      "confidenceWeights": {
+        "0": 0.25,
+        "1": 0.55,
+        "2": 0.2
+      },
+      "features": {
+        "x.postsPerDay": {
+          "group": "activity",
+          "cap": 2.0,
+          "kind": "bins",
+          "bins": [
+            [0, 10, 0],
+            [10, 30, 0.4],
+            [30, 75, 1.0],
+            [75, 150, 1.5],
+            [150, null, 2.0]
+          ]
+        },
+        "x.accountAgeDays": {
+          "group": "age",
+          "cap": 1.5,
+          "kind": "bins",
+          "bins": [
+            [0, 30, 1.5],
+            [30, 90, 0.8],
+            [90, 365, 0.2],
+            [365, null, -0.5]
+          ]
+        },
+        "x.followingRatio": {
+          "group": "graph",
+          "cap": 1.5,
+          "kind": "bins",
+          "bins": [
+            [0, 1, -0.3],
+            [1, 5, 0],
+            [5, 20, 0.6],
+            [20, 100, 1.0],
+            [100, null, 1.5]
+          ]
+        },
+        "x.handleNameDigits": {
+          "group": "handle",
+          "cap": 0.7,
+          "kind": "bool",
+          "weight": 0.7
+        },
+        "x.handleTrailingDigits": {
+          "group": "handle",
+          "cap": 0.5,
+          "kind": "bins",
+          "bins": [
+            [0, 5, 0],
+            [5, null, 0.5]
+          ]
+        },
+        "x.handleBigramLL": {
+          "group": "handle",
+          "cap": 0.8,
+          "kind": "bins",
+          "bins": [
+            [null, -3.8, 0.8],
+            [-3.8, -3.4, 0.4],
+            [-3.4, null, 0]
+          ]
+        },
+        "x.defaultAvatarEmptyBio": {
+          "group": "profile",
+          "cap": 1.0,
+          "kind": "bins",
+          "bins": [
+            [0, 1, 0],
+            [1, 2, 0.3],
+            [2, 3, 1.0]
+          ]
+        },
+        "x.newAndBlue": {
+          "group": "verification",
+          "cap": 0.8,
+          "kind": "bool",
+          "weight": 0.8
+        },
+        "x.replyShare": {
+          "group": "content",
+          "cap": 0.8,
+          "kind": "bins",
+          "bins": [
+            [0, 0.9, 0],
+            [0.9, null, 0.8]
+          ]
+        },
+        "x.usernameChanges": {
+          "group": "profile",
+          "cap": 0.6,
+          "kind": "bins",
+          "bins": [
+            [0, 3, 0],
+            [3, null, 0.6]
+          ]
+        },
+        "x.countryLocaleMismatch": {
+          "group": "geo",
+          "cap": 0.4,
+          "kind": "bool",
+          "weight": 0.4
+        }
+      }
+    },
+    "reddit": {
+      "prior": -2.8,
+      "thresholds": {
+        "some": 0.3,
+        "many": 0.6
+      },
+      "groupCaps": {},
+      "confidenceWeights": {
+        "0": 0.3,
+        "1": 0.0,
+        "2": 0.7
+      },
+      "features": {
+        "reddit.karmaPerDay": {
+          "group": "activity",
+          "cap": 1.5,
+          "kind": "bins",
+          "bins": [
+            [0, 50, 0],
+            [50, 200, 0.6],
+            [200, 1000, 1.0],
+            [1000, null, 1.5]
+          ]
+        },
+        "reddit.accountAgeDays": {
+          "group": "age",
+          "cap": 1.2,
+          "kind": "bins",
+          "bins": [
+            [0, 30, 1.2],
+            [30, 180, 0.6],
+            [180, 730, 0],
+            [730, null, -0.6]
+          ]
+        },
+        "reddit.postToCommentKarma": {
+          "group": "content",
+          "cap": 1.0,
+          "kind": "bins",
+          "bins": [
+            [0, 5, 0],
+            [5, 20, 0.5],
+            [20, null, 1.0]
+          ]
+        },
+        "reddit.generatedName": {
+          "group": "handle",
+          "cap": 0.4,
+          "kind": "bool",
+          "weight": 0.4
+        },
+        "reddit.noAvatar": {
+          "group": "profile",
+          "cap": 0.3,
+          "kind": "bool",
+          "weight": 0.3
+        },
+        "reddit.noVerifiedEmail": {
+          "group": "profile",
+          "cap": 0.3,
+          "kind": "bool",
+          "weight": 0.3
+        }
+      }
+    },
+    "bluesky": {
+      "prior": -2.5,
+      "thresholds": {
+        "some": 0.3,
+        "many": 0.6
+      },
+      "groupCaps": {
+        "handle": 1.2,
+        "profile": 1.2
+      },
+      "confidenceWeights": {
+        "0": 0.2,
+        "1": 0.4,
+        "2": 0.4
+      },
+      "features": {
+        "bsky.postsPerDay": {
+          "group": "activity",
+          "cap": 2.0,
+          "kind": "bins",
+          "bins": [
+            [0, 10, 0],
+            [10, 30, 0.4],
+            [30, 75, 1.0],
+            [75, 150, 1.5],
+            [150, null, 2.0]
+          ]
+        },
+        "bsky.accountAgeDays": {
+          "group": "age",
+          "cap": 1.5,
+          "kind": "bins",
+          "bins": [
+            [0, 30, 1.5],
+            [30, 90, 0.8],
+            [90, 365, 0.2],
+            [365, null, -0.5]
+          ]
+        },
+        "bsky.followsRatio": {
+          "group": "graph",
+          "cap": 1.5,
+          "kind": "bins",
+          "bins": [
+            [0, 1, -0.3],
+            [1, 5, 0],
+            [5, 20, 0.6],
+            [20, 100, 1.0],
+            [100, null, 1.5]
+          ]
+        },
+        "bsky.handleDigitsOnBskySocial": {
+          "group": "handle",
+          "cap": 0.7,
+          "kind": "bool",
+          "weight": 0.7
+        },
+        "bsky.noAvatarEmptyBio": {
+          "group": "profile",
+          "cap": 1.0,
+          "kind": "bins",
+          "bins": [
+            [0, 1, 0],
+            [1, 2, 0.3],
+            [2, 3, 1.0]
+          ]
+        }
+      }
+    }
+  }
+}
