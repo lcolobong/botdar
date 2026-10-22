@@ -1,0 +1,385 @@
+<!doctype html>
+<!--
+  Store-listing page, not a recording: a self-contained approximation of the Bluesky Discover feed
+  (dark) for the Chrome Web Store screenshots. It keeps the structure src/platforms/bluesky/dom.ts
+  relies on (div[data-testid^="feedItem-by-<handle>"], /profile/<handle> author links, the avatar
+  and bot-badge test ids) and carries the same authors and texts as tests/fixtures/bluesky/html/feed.html,
+  so the served getTimeline and getProfiles bodies score @mila48213907.bsky.social Likely bot. No
+  Botdar badge is drawn here; the extension draws it.
+-->
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>Bluesky</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #161e27;
+        color: #f1f3f5;
+        font:
+          15px/20px -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .layout {
+        width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+      }
+      .left {
+        width: 240px;
+        padding: 16px 12px;
+      }
+      .brand {
+        font-size: 22px;
+        font-weight: 800;
+        color: #1083fe;
+        padding: 0 12px 12px;
+      }
+      .left a {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 12px;
+        font-size: 18px;
+        border-radius: 8px;
+      }
+      .left a.current {
+        font-weight: 700;
+      }
+      .newpost {
+        margin: 16px 12px 0;
+        padding: 10px 0;
+        border-radius: 999px;
+        background: #1083fe;
+        color: #fff;
+        font-weight: 700;
+        text-align: center;
+      }
+      main {
+        width: 600px;
+        border-left: 1px solid #2e4052;
+        border-right: 1px solid #2e4052;
+        min-height: 100vh;
+      }
+      .tabs {
+        height: 52px;
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        border-bottom: 1px solid #2e4052;
+        font-weight: 700;
+      }
+      .tabs .on {
+        border-bottom: 3px solid #1083fe;
+        padding: 14px 0;
+      }
+      .tabs .off {
+        color: #aebbc9;
+        font-weight: 500;
+      }
+      .post {
+        padding: 12px 16px;
+        border-bottom: 1px solid #2e4052;
+      }
+      .repost-row {
+        margin: 0 0 4px 52px;
+        color: #aebbc9;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .post-row {
+        display: flex;
+        gap: 10px;
+      }
+      .post-col {
+        min-width: 0;
+        flex: 1;
+      }
+      .author-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .display-name {
+        font-weight: 700;
+      }
+      .handle {
+        color: #aebbc9;
+      }
+      .bot-chip {
+        display: inline-flex;
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        background: #aebbc9;
+        color: #161e27;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 700;
+      }
+      .post-body {
+        margin-top: 2px;
+      }
+      .actions {
+        display: flex;
+        gap: 40px;
+        margin-top: 8px;
+        color: #aebbc9;
+        font-size: 13px;
+      }
+      .right {
+        width: 300px;
+        padding: 16px 24px;
+      }
+      .search {
+        height: 40px;
+        border-radius: 999px;
+        background: #1e2a37;
+        color: #aebbc9;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+      }
+      .panel {
+        margin-top: 16px;
+        padding: 12px 0;
+        border-top: 1px solid #2e4052;
+        color: #aebbc9;
+        font-size: 13px;
+      }
+      .panel b {
+        display: block;
+        color: #f1f3f5;
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+      .panel p {
+        margin: 0 0 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="left" aria-label="Primary">
+        <div class="brand">Bluesky</div>
+        <a href="#" class="current"
+          ><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">
+            <path d="M12 2.5 2.5 10v11h7v-6h5v6h7V10z" /></svg
+          ><span>Home</span></a
+        >
+        <a href="#"
+          ><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">
+            <path
+              d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.3 4.3-1.4 1.4-4.3-4.3A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"
+            /></svg
+          ><span>Search</span></a
+        >
+        <a href="#"
+          ><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">
+            <path
+              d="M12 2a6 6 0 0 0-6 6v4l-2 4v1h16v-1l-2-4V8a6 6 0 0 0-6-6zm-2 17a2 2 0 0 0 4 0z"
+            /></svg
+          ><span>Notifications</span></a
+        >
+        <a href="#"
+          ><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">
+            <path d="M3 5h18v14H3zm2 2v.5l7 5 7-5V7zm0 3v7h14v-7l-7 5z" /></svg
+          ><span>Chat</span></a
+        >
+        <a href="#"
+          ><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">
+            <path
+              d="M12 3a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zM4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z"
+            /></svg
+          ><span>Profile</span></a
+        >
+        <div class="newpost">New Post</div>
+      </nav>
+      <main>
+        <div class="tabs"><span class="on">Discover</span><span class="off">Following</span></div>
+        <div data-testid="feedItem-by-alice.example.com" class="post">
+          <div class="post-row">
+            <a href="/profile/alice.example.com" aria-label="Alice Example's avatar">
+              <div data-testid="userAvatarFallback">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 40 40"
+                  width="42"
+                  height="42"
+                  aria-hidden="true"
+                >
+                  <circle cx="20" cy="20" r="20" fill="#3a5068" />
+                  <circle cx="20" cy="15" r="7" fill="#fff" fill-opacity=".85" />
+                  <path d="M6 37c1-8 7-12 14-12s13 4 14 12z" fill="#fff" fill-opacity=".85" />
+                </svg>
+              </div>
+            </a>
+            <div class="post-col">
+              <div class="author-row">
+                <a href="/profile/alice.example.com" class="display-name"
+                  ><span>Alice Example</span></a
+                >
+                <a href="/profile/alice.example.com" class="handle"
+                  ><span>@alice.example.com</span></a
+                >
+                <span class="handle">&middot; 2h</span>
+              </div>
+              <div class="post-body">Compilers and gardens.</div>
+              <div class="actions"><span>3</span><span>1</span><span>18</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div data-testid="feedItem-by-kai09127364.bsky.social" class="post">
+          <div class="post-row">
+            <a href="/profile/kai09127364.bsky.social" aria-label="Kai's avatar">
+              <div data-testid="userAvatarFallback">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 40 40"
+                  width="42"
+                  height="42"
+                  aria-hidden="true"
+                >
+                  <circle cx="20" cy="20" r="20" fill="#4d6a52" />
+                  <circle cx="20" cy="15" r="7" fill="#fff" fill-opacity=".85" />
+                  <path d="M6 37c1-8 7-12 14-12s13 4 14 12z" fill="#fff" fill-opacity=".85" />
+                </svg>
+              </div>
+            </a>
+            <div class="post-col">
+              <div class="author-row">
+                <a href="/profile/kai09127364.bsky.social" class="display-name"><span>Kai</span></a>
+                <span data-testid="botBadge" aria-label="Bot account" class="bot-chip">B</span>
+                <a href="/profile/kai09127364.bsky.social" class="handle"
+                  ><span>@kai09127364.bsky.social</span></a
+                >
+                <span class="handle">&middot; 5m</span>
+              </div>
+              <div class="post-body">Automated weather update.</div>
+              <div class="actions"><span>0</span><span>0</span><span>4</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div data-testid="feedItem-by-newsroom.example.org" class="post">
+          <div class="repost-row">
+            Reposted by <a href="/profile/alice.example.com">Alice Example</a>
+          </div>
+          <div class="post-row">
+            <a href="/profile/newsroom.example.org" aria-label="Example Newsroom's avatar">
+              <div data-testid="userAvatarFallback">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 40 40"
+                  width="42"
+                  height="42"
+                  aria-hidden="true"
+                >
+                  <circle cx="20" cy="20" r="20" fill="#68506a" />
+                  <circle cx="20" cy="15" r="7" fill="#fff" fill-opacity=".85" />
+                  <path d="M6 37c1-8 7-12 14-12s13 4 14 12z" fill="#fff" fill-opacity=".85" />
+                </svg>
+              </div>
+            </a>
+            <div class="post-col">
+              <div class="author-row">
+                <a href="/profile/newsroom.example.org" class="display-name"
+                  ><span>Example Newsroom</span></a
+                >
+                <a href="/profile/newsroom.example.org" class="handle"
+                  ><span>@newsroom.example.org</span></a
+                >
+                <span class="handle">&middot; 1h</span>
+              </div>
+              <div class="post-body">Breaking: nothing happened.</div>
+              <div class="actions"><span>7</span><span>12</span><span>96</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div data-testid="feedItem-by-mila48213907.bsky.social" class="post">
+          <div class="post-row">
+            <a href="/profile/mila48213907.bsky.social" aria-label="Mila's avatar">
+              <div data-testid="userAvatarFallback">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 40 40"
+                  width="42"
+                  height="42"
+                  aria-hidden="true"
+                >
+                  <circle cx="20" cy="20" r="20" fill="#2e4052" />
+                  <circle cx="20" cy="15" r="7" fill="#fff" fill-opacity=".85" />
+                  <path d="M6 37c1-8 7-12 14-12s13 4 14 12z" fill="#fff" fill-opacity=".85" />
+                </svg>
+              </div>
+            </a>
+            <div class="post-col">
+              <div class="author-row">
+                <a href="/profile/mila48213907.bsky.social" class="display-name"
+                  ><span>Mila</span></a
+                >
+                <a href="/profile/mila48213907.bsky.social" class="handle"
+                  ><span>@mila48213907.bsky.social</span></a
+                >
+                <span class="handle">&middot; 1m</span>
+              </div>
+              <div class="post-body">Follow for daily picks 🔥</div>
+              <div class="actions"><span>0</span><span>0</span><span>1</span></div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <aside class="right">
+        <div class="search">Search</div>
+        <div class="panel">
+          <b>Trending</b>
+          <p>#BrowserExtensions</p>
+          <p>#Lisbon</p>
+          <p>#Gardening</p>
+        </div>
+        <div class="panel">
+          <b>Feeds</b>
+          <p>Discover</p>
+          <p>Following</p>
+          <p>Popular With Friends</p>
+        </div>
+      </aside>
+    </div>
+    <script>
+      // Served by scripts/smoke: fetching the recorded timeline and profiles bodies the way the
+      // web app does lets the extension's MAIN-world interceptor relay them to Tier 1. The content
+      // script only subscribes after document_idle, so the requests are repeated a few times.
+      window.addEventListener("load", () => {
+        for (const delay of [0, 400, 1200, 2500]) {
+          setTimeout(() => {
+            for (const path of [
+              "/xrpc/app.bsky.feed.getTimeline",
+              "/xrpc/app.bsky.actor.getProfiles",
+            ]) {
+              fetch(path).catch(() => undefined);
+            }
+          }, delay);
+        }
+      });
+    </script>
+  </body>
+</html>

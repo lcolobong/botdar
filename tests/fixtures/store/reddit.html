@@ -1,0 +1,508 @@
+<!doctype html>
+<!--
+  Store-listing page, not a recording: a self-contained approximation of the Reddit home feed
+  (light, card layout) for the Chrome Web Store screenshots. shreddit-post attributes and the author
+  rows follow the markup the adapter reads: most posts slot their credit bar into light DOM, while
+  the second renders its author row only inside the shadow root with the registered-app "APP" leaf.
+  The authors and titles of posts one and two are those in tests/fixtures/reddit/html/feed.html, so
+  u/Brisk_Falcon_2210 scores Declared bot. No Botdar badge is drawn here; the extension draws it.
+-->
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <title>Reddit - The heart of the internet</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #dae0e6;
+        color: #1c1c1c;
+        font:
+          14px/20px -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .topbar {
+        height: 48px;
+        background: #fff;
+        border-bottom: 1px solid #edeff1;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 16px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 20px;
+        font-weight: 800;
+        color: #ff4500;
+        width: 240px;
+      }
+      .logo i {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #ff4500;
+        display: inline-block;
+      }
+      .search {
+        flex: 1;
+        max-width: 640px;
+        height: 36px;
+        border-radius: 999px;
+        background: #f6f7f8;
+        border: 1px solid #edeff1;
+        color: #7c7c7c;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+      }
+      .layout {
+        width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        gap: 24px;
+        padding: 20px 0 0;
+      }
+      .side {
+        width: 240px;
+        padding: 0 16px;
+        color: #576f76;
+      }
+      .side b {
+        display: block;
+        color: #1c1c1c;
+        font-size: 12px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin: 8px 0;
+      }
+      .side a {
+        display: block;
+        padding: 8px 0;
+      }
+      .side a.current {
+        color: #1c1c1c;
+        font-weight: 700;
+      }
+      .col {
+        width: 760px;
+      }
+      .sortbar {
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 16px;
+        padding: 8px 16px;
+        margin-bottom: 12px;
+        font-weight: 700;
+        color: #576f76;
+        display: flex;
+        gap: 20px;
+      }
+      .sortbar .on {
+        color: #1c1c1c;
+      }
+      article {
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 16px;
+        padding: 12px 16px 8px;
+        margin-bottom: 12px;
+      }
+      shreddit-post {
+        display: block;
+      }
+      .post-container {
+        display: block;
+      }
+      .credit-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        line-height: 16px;
+        color: #576f76;
+        margin-bottom: 8px;
+      }
+      .credit-bar a {
+        color: inherit;
+      }
+      .sub {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #1c1c1c !important;
+      }
+      .font-bold {
+        font-weight: 700;
+      }
+      .sub-dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .title {
+        display: block;
+        font-size: 18px;
+        line-height: 24px;
+        font-weight: 600;
+        margin: 0 0 8px;
+      }
+      .media {
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+      .media svg {
+        display: block;
+      }
+      .footer {
+        display: flex;
+        gap: 8px;
+        padding: 4px 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: #576f76;
+      }
+      .pill {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #eaedef;
+      }
+      .extras {
+        width: 312px;
+      }
+      .extras section {
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 16px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+      }
+      .extras h2 {
+        margin: 0 0 8px;
+        font-size: 12px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #576f76;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="logo"><i></i>reddit</div>
+      <div class="search">Search Reddit</div>
+    </div>
+    <shreddit-app>
+      <div class="layout">
+        <nav class="side">
+          <a href="#" class="current">Home</a><a href="#">Popular</a><a href="#">Explore</a>
+          <b>Communities</b><a href="#">r/woodworking</a><a href="#">r/dailydeals</a
+          ><a href="#">r/gardening</a>
+        </nav>
+        <div class="col">
+          <div class="sortbar">
+            <span class="on">Best</span><span>Hot</span><span>New</span><span>Top</span>
+          </div>
+          <shreddit-feed id="main-feed">
+            <article class="w-full m-0">
+              <shreddit-post
+                id="t3_1k9x2ab"
+                author="Quiet_Lantern_4821"
+                author-id="t2_a1b2c3"
+                created-timestamp="2026-10-20T14:03:11.000+0000"
+                subreddit-prefixed-name="r/woodworking"
+                post-title="Finished the walnut side table"
+                permalink="/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/"
+                post-type="image"
+                score="412"
+                comment-count="37"
+              >
+                <template shadowrootmode="open">
+                  <div class="post-container">
+                    <slot name="credit-bar"></slot>
+                    <slot name="title"></slot>
+                    <slot name="post-media-container"></slot>
+                    <slot name="post-footer"></slot>
+                  </div>
+                </template>
+                <div slot="credit-bar" class="credit-bar">
+                  <a href="/r/woodworking/" class="sub"
+                    ><span class="sub-dot" style="background: #46d160"></span
+                    ><span class="font-bold">r/woodworking</span></a
+                  >
+                  <span class="weak">•</span>
+                  <faceplate-timeago ts="2026-10-20T14:03:11.000+0000"
+                    >2 days ago</faceplate-timeago
+                  >
+                  <span class="weak">by</span>
+                  <faceplate-hovercard aria-label="User info"
+                    ><a href="/user/Quiet_Lantern_4821/" class="author-name"
+                      >u/Quiet_Lantern_4821</a
+                    ></faceplate-hovercard
+                  >
+                </div>
+                <a
+                  slot="title"
+                  class="title"
+                  href="/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/"
+                  >Finished the walnut side table</a
+                >
+                <div slot="post-media-container" class="media">
+                  <svg
+                    viewBox="0 0 720 220"
+                    width="100%"
+                    height="220"
+                    preserveAspectRatio="xMidYMid slice"
+                    aria-hidden="true"
+                  >
+                    <rect width="720" height="220" fill="#d9cfc3" />
+                    <rect y="150" width="720" height="70" fill="#b9a893" />
+                    <rect x="230" y="50" width="260" height="22" rx="4" fill="#5b3a29" />
+                    <rect x="250" y="72" width="14" height="110" fill="#4a2f21" />
+                    <rect x="456" y="72" width="14" height="110" fill="#4a2f21" />
+                    <rect x="240" y="72" width="240" height="8" fill="#3d271b" />
+                  </svg>
+                </div>
+                <div slot="post-footer" class="footer">
+                  <span class="pill">&#9650; 412 &#9660;</span><span class="pill">&#128172; 37</span
+                  ><span class="pill">Share</span>
+                </div>
+              </shreddit-post>
+            </article>
+
+            <article class="w-full m-0">
+              <shreddit-post
+                id="t3_1ka7zzq"
+                author="Brisk_Falcon_2210"
+                author-id="t2_d4e5f6"
+                created-timestamp="2026-10-21T09:41:00.000+0000"
+                subreddit-prefixed-name="r/dailydeals"
+                post-title="Today's price drops, Oct 21"
+                permalink="/r/dailydeals/comments/1ka7zzq/todays_price_drops_oct_21/"
+                post-type="link"
+                score="12"
+                comment-count="0"
+              >
+                <template shadowrootmode="open">
+                  <style>
+                    .post-container {
+                      display: block;
+                      font-family:
+                        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+                        sans-serif;
+                    }
+                    .credit-bar {
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                      font-size: 12px;
+                      line-height: 16px;
+                      color: #576f76;
+                      margin-bottom: 8px;
+                    }
+                    .credit-bar a {
+                      color: inherit;
+                      text-decoration: none;
+                    }
+                    .sub {
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                      color: #1c1c1c !important;
+                    }
+                    .font-bold {
+                      font-weight: 700;
+                    }
+                    .sub-dot {
+                      width: 24px;
+                      height: 24px;
+                      border-radius: 50%;
+                      display: inline-block;
+                    }
+                    .author-name {
+                      display: inline-flex;
+                      align-items: center;
+                      gap: 4px;
+                    }
+                    .author-name img {
+                      border-radius: 50%;
+                    }
+                    .app-tag {
+                      padding: 0 4px;
+                      border-radius: 3px;
+                      background: #e5ebee;
+                      color: #576f76;
+                      font-size: 10px;
+                      font-weight: 700;
+                    }
+                  </style>
+                  <div class="post-container">
+                    <div class="credit-bar">
+                      <a href="/r/dailydeals/" class="sub"
+                        ><span class="sub-dot" style="background: #ff8717"></span
+                        ><span class="font-bold">r/dailydeals</span></a
+                      >
+                      <span>•</span>
+                      <span>1 day ago</span>
+                      <span>by</span>
+                      <faceplate-hovercard aria-label="User info">
+                        <a href="/user/Brisk_Falcon_2210/" class="author-name">
+                          <img
+                            src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2040%2040%22%20width%3D%2220%22%20height%3D%2220%22%20aria-hidden%3D%22true%22%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2220%22%20r%3D%2220%22%20fill%3D%22%23b8c0c4%22%2F%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2215%22%20r%3D%227%22%20fill%3D%22%23fff%22%20fill-opacity%3D%22.85%22%2F%3E%3Cpath%20d%3D%22M6%2037c1-8%207-12%2014-12s13%204%2014%2012z%22%20fill%3D%22%23fff%22%20fill-opacity%3D%22.85%22%2F%3E%3C%2Fsvg%3E"
+                            alt="u/Brisk_Falcon_2210 avatar"
+                            width="20"
+                            height="20"
+                          />
+                          u/Brisk_Falcon_2210
+                        </a>
+                      </faceplate-hovercard>
+                      <span class="app-tag">APP</span>
+                    </div>
+                    <slot name="title"></slot>
+                    <slot name="post-footer"></slot>
+                  </div>
+                </template>
+                <a
+                  slot="title"
+                  class="title"
+                  href="/r/dailydeals/comments/1ka7zzq/todays_price_drops_oct_21/"
+                  >Today's price drops, Oct 21</a
+                >
+                <div slot="post-footer" class="footer">
+                  <span class="pill">&#9650; 12 &#9660;</span><span class="pill">&#128172; 0</span
+                  ><span class="pill">Share</span>
+                </div>
+              </shreddit-post>
+            </article>
+
+            <article class="w-full m-0">
+              <shreddit-post
+                id="t3_1kb3m9d"
+                author="Mossy_Teapot"
+                author-id="t2_g7h8i9"
+                created-timestamp="2026-10-22T04:12:00.000+0000"
+                subreddit-prefixed-name="r/gardening"
+                post-title="First tomatoes of the season, finally"
+                permalink="/r/gardening/comments/1kb3m9d/first_tomatoes_of_the_season_finally/"
+                post-type="image"
+                score="1800"
+                comment-count="142"
+              >
+                <template shadowrootmode="open">
+                  <div class="post-container">
+                    <slot name="credit-bar"></slot>
+                    <slot name="title"></slot>
+                    <slot name="post-media-container"></slot>
+                    <slot name="post-footer"></slot>
+                  </div>
+                </template>
+                <div slot="credit-bar" class="credit-bar">
+                  <a href="/r/gardening/" class="sub"
+                    ><span class="sub-dot" style="background: #0079d3"></span
+                    ><span class="font-bold">r/gardening</span></a
+                  >
+                  <span class="weak">•</span>
+                  <faceplate-timeago ts="2026-10-22T04:12:00.000+0000"
+                    >6 hours ago</faceplate-timeago
+                  >
+                  <span class="weak">by</span>
+                  <faceplate-hovercard aria-label="User info"
+                    ><a href="/user/Mossy_Teapot/" class="author-name"
+                      >u/Mossy_Teapot</a
+                    ></faceplate-hovercard
+                  >
+                </div>
+                <a
+                  slot="title"
+                  class="title"
+                  href="/r/gardening/comments/1kb3m9d/first_tomatoes_of_the_season_finally/"
+                  >First tomatoes of the season, finally</a
+                >
+                <div slot="post-footer" class="footer">
+                  <span class="pill">&#9650; 1800 &#9660;</span
+                  ><span class="pill">&#128172; 142</span><span class="pill">Share</span>
+                </div>
+              </shreddit-post>
+            </article>
+
+            <article class="w-full m-0">
+              <shreddit-post
+                id="t3_1kb5q2x"
+                author="Calm_River_5530"
+                author-id="t2_j1k2l3"
+                created-timestamp="2026-10-22T07:30:00.000+0000"
+                subreddit-prefixed-name="r/askculinary"
+                post-title="What is your go-to weeknight pasta?"
+                permalink="/r/askculinary/comments/1kb5q2x/what_is_your_goto_weeknight_pasta/"
+                post-type="text"
+                score="296"
+                comment-count="88"
+              >
+                <template shadowrootmode="open">
+                  <div class="post-container">
+                    <slot name="credit-bar"></slot>
+                    <slot name="title"></slot>
+                    <slot name="post-media-container"></slot>
+                    <slot name="post-footer"></slot>
+                  </div>
+                </template>
+                <div slot="credit-bar" class="credit-bar">
+                  <a href="/r/askculinary/" class="sub"
+                    ><span class="sub-dot" style="background: #ea0027"></span
+                    ><span class="font-bold">r/askculinary</span></a
+                  >
+                  <span class="weak">•</span>
+                  <faceplate-timeago ts="2026-10-22T07:30:00.000+0000"
+                    >3 hours ago</faceplate-timeago
+                  >
+                  <span class="weak">by</span>
+                  <faceplate-hovercard aria-label="User info"
+                    ><a href="/user/Calm_River_5530/" class="author-name"
+                      >u/Calm_River_5530</a
+                    ></faceplate-hovercard
+                  >
+                </div>
+                <a
+                  slot="title"
+                  class="title"
+                  href="/r/askculinary/comments/1kb5q2x/what_is_your_goto_weeknight_pasta/"
+                  >What is your go-to weeknight pasta?</a
+                >
+                <div slot="post-footer" class="footer">
+                  <span class="pill">&#9650; 296 &#9660;</span><span class="pill">&#128172; 88</span
+                  ><span class="pill">Share</span>
+                </div>
+              </shreddit-post>
+            </article>
+          </shreddit-feed>
+        </div>
+        <aside class="extras">
+          <section>
+            <h2>Popular communities</h2>
+            <p>r/woodworking</p>
+            <p>r/gardening</p>
+            <p>r/dailydeals</p>
+          </section>
+          <section>
+            <h2>Recent posts</h2>
+            <p>Finished the walnut side table</p>
+          </section>
+        </aside>
+      </div>
+    </shreddit-app>
+  </body>
+</html>
