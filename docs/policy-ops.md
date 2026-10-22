@@ -15,8 +15,8 @@ The signed policy file is the kill switch. This page is the procedure for using 
 
 ## What the policy cannot do
 
-Enable anything the build has off, raise a cap above the build default, lower the prior below the build
-default, name a platform or feature the build does not know, or run code. Invalid signature, invalid
+Enable anything the build has off, raise a cap above the build default, raise the prior above the build
+default (it may only move it toward "typical"), name a platform or feature the build does not know, or run code. Invalid signature, invalid
 schema, or a version lower than the cached one are all ignored and the last-known-good stays.
 
 ## Procedure: flip a switch
