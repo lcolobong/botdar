@@ -26,6 +26,14 @@ import type {
 /** ADR-0012 ceiling for Tier 2 results held in memory; callers size their cache with it. */
 export const TIER2_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Ceiling on accounts tracked per tab. Passive sources emit for every author in every response, so
+ * an endless feed would otherwise grow the map without bound; see `evictIdleEntries`.
+ */
+export const MAX_TRACKED_ACCOUNTS = 2000;
+/** Evicting a batch at a time keeps the sort of idle entries off the hot path of every emission. */
+const EVICTION_BATCH_SIZE = MAX_TRACKED_ACCOUNTS / 10;
+
 export type Scorer = (
   features: Feature[],
   signals: AccountSignals,
@@ -37,7 +45,7 @@ export type VerdictListener = (verdict: Verdict) => void;
 export interface BadgeHandle {
   subscribe: (listener: VerdictListener) => () => void;
   current: () => Verdict;
-  /** Schedules the Tier 2 lookup (hover or first view with eager lookups) and resolves after rescoring. */
+  /** Schedules the Tier 2 lookup (on hover) and resolves after rescoring. */
   lookup: () => Promise<void>;
 }
 
@@ -47,7 +55,6 @@ export interface AccountResolverOptions {
   config: EffectivePlatformConfig;
   limiter: RateLimiter;
   cache: TtlLruCache<string, PartialSignals>;
-  eagerLookups: boolean;
   now?: () => number;
 }
 
@@ -63,6 +70,8 @@ interface AccountEntry extends MergeableSignals {
   sourcesAvailable: Set<SourceTier>;
   posts: Set<Element>;
   pendingLookup: Promise<void> | null;
+  /** Value of the resolver's touch counter when the entry was last looked up; orders eviction. */
+  touchedAt: number;
 }
 
 interface AttachedPost {
@@ -112,7 +121,6 @@ export class AccountResolver {
   private readonly scorer: Scorer;
   private readonly limiter: RateLimiter;
   private readonly cache: TtlLruCache<string, PartialSignals>;
-  private readonly eagerLookups: boolean;
   private readonly now: () => number;
   private readonly entries = new Map<string, AccountEntry>();
   private readonly attachedPosts = new Map<Element, AttachedPost>();
@@ -120,6 +128,7 @@ export class AccountResolver {
   private stopPassiveSources: Array<() => void> = [];
   private config: EffectivePlatformConfig;
   private disposed = false;
+  private touchCounter = 0;
 
   constructor(options: AccountResolverOptions) {
     this.adapter = options.adapter;
@@ -127,9 +136,13 @@ export class AccountResolver {
     this.config = options.config;
     this.limiter = options.limiter;
     this.cache = options.cache;
-    this.eagerLookups = options.eagerLookups;
     this.now = options.now ?? Date.now;
     this.startPassiveSources();
+  }
+
+  /** Accounts currently tracked in this tab; never exceeds `MAX_TRACKED_ACCOUNTS`. */
+  get trackedAccountCount(): number {
+    return this.entries.size;
   }
 
   /** Runs Tier 0 now, merges Tier 1 data already received, scores, and returns the badge's handle. */
@@ -158,9 +171,6 @@ export class AccountResolver {
       lookup: () => this.requestLookup(post.ref),
     };
     this.attachedPosts.set(post.element, { entry, handle, listeners });
-    if (this.eagerLookups) {
-      void this.requestLookup(post.ref);
-    }
     return handle;
   }
 
@@ -322,6 +332,9 @@ export class AccountResolver {
   private entryFor(ref: AccountRef): AccountEntry {
     let entry: AccountEntry | undefined = this.entries.get(ref.handle);
     if (entry === undefined) {
+      if (this.entries.size >= MAX_TRACKED_ACCOUNTS) {
+        this.evictIdleEntries();
+      }
       entry = {
         signals: { ref: { ...ref }, provenance: {}, observedAt: 0 },
         fieldObservedAt: {},
@@ -330,11 +343,29 @@ export class AccountResolver {
         sourcesAvailable: new Set(),
         posts: new Set(),
         pendingLookup: null,
+        touchedAt: 0,
       };
       this.entries.set(ref.handle, entry);
     } else if (entry.signals.ref.id === undefined && ref.id !== undefined) {
       entry.signals.ref.id = ref.id;
     }
+    entry.touchedAt = ++this.touchCounter;
     return entry;
+  }
+
+  /**
+   * Drops the least recently touched accounts that have no post on screen, a batch at a time. An
+   * entry with attached posts is never evicted, so a feed with more than the cap on screen at once
+   * grows past it rather than losing badges.
+   */
+  private evictIdleEntries(): void {
+    const idle: Array<[string, AccountEntry]> = [...this.entries].filter(
+      ([, entry]) => entry.posts.size === 0,
+    );
+    idle.sort(([, left], [, right]) => left.touchedAt - right.touchedAt);
+    const excess: number = this.entries.size - MAX_TRACKED_ACCOUNTS + EVICTION_BATCH_SIZE;
+    for (const [handle] of idle.slice(0, excess)) {
+      this.entries.delete(handle);
+    }
   }
 }

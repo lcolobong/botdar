@@ -305,11 +305,12 @@ timers and observers register on `ctx` so an extension update invalidates cleanl
 1. `attach(post)` runs Tier 0 immediately, merges any Tier 1 data already received for that handle,
    scores, and renders.
 2. Tier 1 emissions arrive asynchronously and trigger a rescore for every mounted badge of that handle.
-3. Tier 2 is scheduled on hover (or on first view when `settings.eagerLookups`, default off), goes through
-   the cache and rate limiter, then rescoring.
+3. Tier 2 is scheduled on hover only, goes through the cache and rate limiter, then rescoring.
 4. **Tier-merge rule:** a higher tier overwrites a lower tier's value for the same field; within the same
    tier, newer wins. `provenance` records the tier for each field so confidence can be computed.
 5. `config.changed` from the background recomputes every verdict with the new effective config.
+6. The map holds at most 2,000 accounts per tab (`MAX_TRACKED_ACCOUNTS`); past that, the least
+   recently touched accounts with no post on screen are evicted a batch at a time.
 
 ## Policy system
 
