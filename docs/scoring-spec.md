@@ -214,6 +214,12 @@ they transfer poorly.
 
 ## Wording rules
 
+Amendment 2026-10-22 ([ADR-0017](decisions/ADR-0017-badge-wording-and-label-styles.md)): the rendered badge
+labels are now "Likely bot" (many), "Unsure" (some), "Declared bot" (declared) and the optional
+"Likely human" (typical, off by default), with a Sus scale and an icon-only label style as settings.
+Internal tier names below are unchanged. The rules that follow still govern reason lines, caveats and
+every sentence on the hover card: "bot" appears only in the fixed labels and card titles.
+
 These apply to every user-visible string in the badge, hover card, popup, options, onboarding and store
 listing.
 

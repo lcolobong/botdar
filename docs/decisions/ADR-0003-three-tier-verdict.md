@@ -1,6 +1,6 @@
 # ADR-0003: Three-tier verdict with neutral wording, never a percentage
 
-Status: Accepted
+Status: Accepted, amended by ADR-0017 (badge labels and the quiet-feed default changed; the two-signal gate, factual reasons and caveat stand)
 Date: 2026-10-22
 
 ## Context
