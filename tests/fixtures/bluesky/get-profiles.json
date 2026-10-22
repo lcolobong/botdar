@@ -1,0 +1,117 @@
+{
+  "profiles": [
+    {
+      "did": "did:plc:aaaaaaaaaaaaaaaaaaaaaaaa",
+      "handle": "example.social",
+      "displayName": "Example Social",
+      "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:aaaaaaaaaaaaaaaaaaaaaaaa/bafkreiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@jpeg",
+      "associated": {
+        "lists": 18,
+        "feedgens": 7,
+        "starterPacks": 15,
+        "labeler": false,
+        "chat": { "allowIncoming": "none" },
+        "activitySubscription": { "allowSubscriptions": "followers" }
+      },
+      "labels": [],
+      "createdAt": "2023-04-12T04:53:57.057Z",
+      "verification": {
+        "verifications": [],
+        "verifiedStatus": "none",
+        "trustedVerifierStatus": "valid"
+      },
+      "status": {
+        "uri": "at://did:plc:aaaaaaaaaaaaaaaaaaaaaaaa/app.bsky.actor.status/self",
+        "cid": "bafyreiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "record": {
+          "$type": "app.bsky.actor.status",
+          "createdAt": "2026-10-20T16:00:37.680Z",
+          "durationMinutes": 60,
+          "status": "app.bsky.actor.status#live"
+        },
+        "status": "app.bsky.actor.status#live",
+        "labels": [],
+        "expiresAt": "2026-10-20T17:00:37.680Z",
+        "isActive": false
+      },
+      "description": "official Example Social account (check username👆)\n\nBugs, feature requests, feedback: support@example.social",
+      "indexedAt": "2025-10-27T21:05:26.152Z",
+      "banner": "https://cdn.bsky.app/img/banner/plain/did:plc:aaaaaaaaaaaaaaaaaaaaaaaa/bafkreibbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@jpeg",
+      "followersCount": 35338336,
+      "followsCount": 23,
+      "postsCount": 886,
+      "pinnedPost": {
+        "cid": "bafyreicccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "uri": "at://did:plc:aaaaaaaaaaaaaaaaaaaaaaaa/app.bsky.feed.post/3l6oveex3ii2l"
+      }
+    },
+    {
+      "did": "did:plc:bbbbbbbbbbbbbbbbbbbbbbbb",
+      "handle": "alice.example.com",
+      "displayName": "Alice Example",
+      "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/bafkreidddddddddddddddddddddddddddddddddddddddddddddddddddddddd@jpeg",
+      "associated": {
+        "lists": 0,
+        "feedgens": 0,
+        "starterPacks": 0,
+        "labeler": false,
+        "chat": { "allowIncoming": "following" },
+        "activitySubscription": { "allowSubscriptions": "followers" }
+      },
+      "labels": [],
+      "createdAt": "2023-04-14T18:12:06.575Z",
+      "verification": {
+        "verifications": [
+          {
+            "issuer": "did:plc:aaaaaaaaaaaaaaaaaaaaaaaa",
+            "issuerDisplayName": "Example Social",
+            "issuerHandle": "example.social",
+            "uri": "at://did:plc:aaaaaaaaaaaaaaaaaaaaaaaa/app.bsky.graph.verification/3lndslpegeo2f",
+            "isValid": true,
+            "createdAt": "2025-04-21T11:35:53.359Z"
+          }
+        ],
+        "verifiedStatus": "valid",
+        "trustedVerifierStatus": "none"
+      },
+      "description": "Writes about compilers and gardens. she/her",
+      "indexedAt": "2026-09-30T08:14:02.001Z",
+      "banner": "https://cdn.bsky.app/img/banner/plain/did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/bafkreieeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee@jpeg",
+      "followersCount": 15200,
+      "followsCount": 870,
+      "postsCount": 31000
+    },
+    {
+      "did": "did:plc:cccccccccccccccccccccccc",
+      "handle": "kai09127364.bsky.social",
+      "associated": {
+        "lists": 0,
+        "feedgens": 0,
+        "starterPacks": 0,
+        "labeler": false,
+        "chat": { "allowIncoming": "following" },
+        "activitySubscription": { "allowSubscriptions": "followers" }
+      },
+      "labels": [
+        {
+          "src": "did:plc:cccccccccccccccccccccccc",
+          "uri": "at://did:plc:cccccccccccccccccccccccc/app.bsky.actor.profile/self",
+          "cid": "bafyreiffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "val": "bot",
+          "cts": "2026-10-01T00:00:00.000Z"
+        }
+      ],
+      "createdAt": "2026-10-01T09:12:45.000Z",
+      "verification": {
+        "verifications": [],
+        "verifiedStatus": "none",
+        "trustedVerifierStatus": "none"
+      },
+      "description": "",
+      "indexedAt": "2026-10-21T19:40:11.772Z",
+      "followersCount": 12,
+      "followsCount": 2400,
+      "postsCount": 8900
+    }
+  ]
+}

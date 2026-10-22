@@ -1,0 +1,97 @@
+{
+  "feed": [
+    {
+      "post": {
+        "uri": "at://did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/app.bsky.feed.post/3myfsmerpmk2z",
+        "cid": "bafyreigggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+        "author": {
+          "did": "did:plc:bbbbbbbbbbbbbbbbbbbbbbbb",
+          "handle": "alice.example.com",
+          "displayName": "Alice Example",
+          "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:bbbbbbbbbbbbbbbbbbbbbbbb/bafkreidddddddddddddddddddddddddddddddddddddddddddddddddddddddd@jpeg",
+          "associated": {
+            "chat": { "allowIncoming": "following", "allowGroupInvites": "following" },
+            "activitySubscription": { "allowSubscriptions": "followers" },
+            "germ": { "showButtonTo": "none", "messageMeUrl": "https://landing.ger.mx/newUser" }
+          },
+          "labels": [],
+          "createdAt": "2023-04-14T18:12:06.575Z",
+          "verification": {
+            "verifications": [
+              {
+                "issuer": "did:plc:aaaaaaaaaaaaaaaaaaaaaaaa",
+                "issuerDisplayName": "Example Social",
+                "issuerHandle": "example.social",
+                "uri": "at://did:plc:aaaaaaaaaaaaaaaaaaaaaaaa/app.bsky.graph.verification/3mdj36qhttc26",
+                "isValid": true,
+                "createdAt": "2026-01-28T20:07:16.306Z"
+              }
+            ],
+            "verifiedStatus": "valid",
+            "trustedVerifierStatus": "none"
+          }
+        },
+        "record": {
+          "$type": "app.bsky.feed.post",
+          "createdAt": "2026-10-21T18:44:55.442Z",
+          "embed": {
+            "$type": "app.bsky.embed.video",
+            "alt": "a floating tablet with a butterfly logo on it",
+            "aspectRatio": { "height": 1610, "width": 2800 },
+            "presentation": "gif",
+            "video": {
+              "$type": "blob",
+              "ref": {
+                "$link": "bafkreihhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh"
+              },
+              "mimeType": "video/mp4",
+              "size": 1368500
+            }
+          },
+          "langs": ["en"],
+          "text": "🔜"
+        },
+        "embed": {
+          "cid": "bafkreihhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+          "playlist": "https://video.bsky.app/watch/did%3Aplc%3Abbbbbbbbbbbbbbbbbbbbbbbb/bafkreihhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh/playlist.m3u8",
+          "thumbnail": "https://video.bsky.app/watch/did%3Aplc%3Abbbbbbbbbbbbbbbbbbbbbbbb/bafkreihhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh/thumbnail.jpg",
+          "alt": "a floating tablet with a butterfly logo on it",
+          "aspectRatio": { "height": 1610, "width": 2800 },
+          "presentation": "gif",
+          "$type": "app.bsky.embed.video#view"
+        },
+        "bookmarkCount": 22,
+        "replyCount": 30,
+        "repostCount": 40,
+        "likeCount": 459,
+        "quoteCount": 10,
+        "indexedAt": "2026-10-21T18:44:56.549Z",
+        "labels": []
+      },
+      "reason": {
+        "$type": "app.bsky.feed.defs#reasonRepost",
+        "by": {
+          "did": "did:plc:aaaaaaaaaaaaaaaaaaaaaaaa",
+          "handle": "example.social",
+          "displayName": "Example Social",
+          "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:aaaaaaaaaaaaaaaaaaaaaaaa/bafkreiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@jpeg",
+          "associated": {
+            "chat": { "allowIncoming": "none" },
+            "activitySubscription": { "allowSubscriptions": "followers" }
+          },
+          "labels": [],
+          "createdAt": "2023-04-12T04:53:57.057Z",
+          "verification": {
+            "verifications": [],
+            "verifiedStatus": "none",
+            "trustedVerifierStatus": "valid"
+          }
+        },
+        "indexedAt": "2026-10-21T19:01:12.000Z"
+      },
+      "opThreadPostIndex": 0,
+      "opThreadPostCount": 1
+    }
+  ],
+  "cursor": "2026-10-21T19:01:12.000Z"
+}
