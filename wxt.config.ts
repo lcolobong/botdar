@@ -11,6 +11,20 @@ export default defineConfig({
     name: "Botdar",
     description:
       "In-feed badges that show when a post's author displays patterns common in automated accounts, with reasons. Nothing about the accounts you see leaves your browser.",
+    icons: {
+      16: "icon/16.png",
+      32: "icon/32.png",
+      48: "icon/48.png",
+      128: "icon/128.png",
+    },
+    action: {
+      default_icon: {
+        16: "icon/16.png",
+        32: "icon/32.png",
+        48: "icon/48.png",
+        128: "icon/128.png",
+      },
+    },
     permissions: ["storage", "alarms"],
     host_permissions: [
       "https://x.com/*",
