@@ -313,3 +313,21 @@ export function parseAboutAccount(body: unknown): ParsedAboutAccount | null {
   }
   return parsed;
 }
+
+/** The AboutAccountQuery projection as signals; the handle stays on the caller's AccountRef. */
+export function toAboutSignals(parsed: ParsedAboutAccount): PartialSignals {
+  const signals: PartialSignals = {};
+  if (parsed.country !== undefined) {
+    signals.country = parsed.country;
+  }
+  if (parsed.usernameChanges !== undefined) {
+    signals.usernameChanges = parsed.usernameChanges;
+  }
+  if (parsed.appStore !== undefined) {
+    signals.appStore = parsed.appStore;
+  }
+  if (parsed.declaredAutomated !== undefined) {
+    signals.declaredAutomated = parsed.declaredAutomated;
+  }
+  return signals;
+}
