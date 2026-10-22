@@ -1,0 +1,226 @@
+{
+  "data": {
+    "home": {
+      "home_timeline_urt": {
+        "instructions": [
+          {
+            "type": "TimelineClearCache"
+          },
+          {
+            "type": "TimelineAddEntries",
+            "entries": {
+              "0": {
+                "entryId": "tweet-numeric-rest-id",
+                "content": {
+                  "itemContent": {
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": 1,
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "rest_id": 1000000000000000000,
+                              "core": {
+                                "screen_name": "numeric_rest_id",
+                                "name": "Numeric",
+                                "created_at": "Wed Oct 10 20:19:24 +0000 2018"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "1": {
+                "entryId": "tweet-array-screen-name",
+                "content": {
+                  "itemContent": {
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "2",
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "rest_id": "1000000000000000010",
+                              "core": {
+                                "screen_name": ["array_name"],
+                                "name": "Array"
+                              },
+                              "legacy": {
+                                "screen_name": 42
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "2": {
+                "entryId": "tweet-odd-field-types",
+                "content": {
+                  "itemContent": {
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "3",
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "id": null,
+                              "rest_id": "1000000000000000011",
+                              "affiliates_highlighted_label": {
+                                "label": "Automated"
+                              },
+                              "avatar": "https://pbs.twimg.com/profile_images/1000000000000000011/odd_normal.jpg",
+                              "core": {
+                                "created_at": "yesterday",
+                                "name": 404,
+                                "screen_name": "odd_types"
+                              },
+                              "is_blue_verified": "yes",
+                              "legacy": null,
+                              "location": {
+                                "location": {
+                                  "name": "nested"
+                                }
+                              },
+                              "profile_bio": {
+                                "description": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                                "entities": null
+                              },
+                              "relationship_counts": {
+                                "followers": "340",
+                                "following": 2.5
+                              },
+                              "tweet_counts": {
+                                "tweets": -5,
+                                "media_tweets": null
+                              },
+                              "verification": {
+                                "verified": "true",
+                                "verified_type": 7
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "3": {
+                "entryId": "tweet-legacy-fallback",
+                "content": {
+                  "itemContent": {
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "4",
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "rest_id": "1000000000000000012",
+                              "core": null,
+                              "legacy": {
+                                "screen_name": "legacy_fallback",
+                                "name": "Fallback",
+                                "created_at": "2021-05-06T07:08:09.000Z",
+                                "followers_count": 9007199254740992,
+                                "friends_count": 10,
+                                "statuses_count": 20,
+                                "description": "short",
+                                "default_profile_image": "no"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "4": {
+                "entryId": "tweet-screen-name-too-long",
+                "content": {
+                  "itemContent": {
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "5",
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "rest_id": "1000000000000000013",
+                              "core": {
+                                "screen_name": "this_screen_name_is_far_too_long_to_be_real"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "5": {
+                "entryId": "tweet-truncated",
+                "content": {
+                  "itemContent": {
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "6",
+                        "core": {
+                          "user_results": {
+                            "result": null
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "6": null,
+              "7": "unexpected string entry",
+              "8": [
+                [
+                  [
+                    [
+                      [
+                        {
+                          "rest_id": "1000000000000000014",
+                          "core": {
+                            "screen_name": "deeply_nested"
+                          }
+                        }
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "errors": [
+    {
+      "message": "Something went wrong",
+      "extensions": {
+        "code": 13
+      }
+    }
+  ]
+}
