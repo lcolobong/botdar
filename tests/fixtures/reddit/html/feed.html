@@ -1,0 +1,104 @@
+<!doctype html>
+<!--
+  Hand-written approximation of a new Reddit (shreddit) home feed, anonymised. Attribute names on
+  shreddit-post match live markup; the shadow-root internals are reduced to what the adapter reads.
+  Post 1 slots its credit bar into light DOM; post 2 renders its author row only inside the shadow
+  root, carries the registered-app tag as a bare "APP" leaf, and shows a stock avatar.
+-->
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>reddit</title>
+  </head>
+  <body>
+    <shreddit-app>
+      <shreddit-feed id="main-feed">
+        <article class="w-full m-0">
+          <shreddit-post
+            id="t3_1k9x2ab"
+            author="Quiet_Lantern_4821"
+            author-id="t2_a1b2c3"
+            created-timestamp="2026-10-20T14:03:11.000+0000"
+            subreddit-prefixed-name="r/woodworking"
+            subreddit-id="t5_2qh3s"
+            post-title="Finished the walnut side table"
+            permalink="/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/"
+            post-type="image"
+            score="412"
+            comment-count="37"
+          >
+            <template shadowrootmode="open">
+              <div class="post-container">
+                <slot name="credit-bar"></slot>
+                <slot name="title"></slot>
+                <slot name="post-media-container"></slot>
+                <slot name="post-footer"></slot>
+              </div>
+            </template>
+            <div slot="credit-bar" class="flex items-center gap-xs">
+              <a href="/r/woodworking/" class="flex items-center">
+                <img
+                  src="https://styles.redditmedia.com/t5_2qh3s/styles/communityIcon_example.png"
+                  alt="r/woodworking icon"
+                />
+                <span class="font-bold">r/woodworking</span>
+              </a>
+              <span class="text-neutral-content-weak">•</span>
+              <faceplate-timeago ts="2026-10-20T14:03:11.000+0000">2 days ago</faceplate-timeago>
+              <span class="text-neutral-content-weak">by</span>
+              <faceplate-hovercard aria-label="User info">
+                <a href="/user/Quiet_Lantern_4821/" class="author-name">u/Quiet_Lantern_4821</a>
+              </faceplate-hovercard>
+            </div>
+            <a slot="title" href="/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/">
+              Finished the walnut side table
+            </a>
+            <div slot="post-footer"></div>
+          </shreddit-post>
+        </article>
+        <article class="w-full m-0">
+          <shreddit-post
+            id="t3_1ka7zzq"
+            author="Brisk_Falcon_2210"
+            author-id="t2_d4e5f6"
+            created-timestamp="2026-10-21T09:41:00.000+0000"
+            subreddit-prefixed-name="r/dailydeals"
+            subreddit-id="t5_3f8kq"
+            post-title="Today's price drops, Oct 21"
+            permalink="/r/dailydeals/comments/1ka7zzq/todays_price_drops_oct_21/"
+            post-type="link"
+            score="12"
+            comment-count="0"
+          >
+            <template shadowrootmode="open">
+              <div class="post-container">
+                <div class="credit-bar flex items-center gap-xs">
+                  <a href="/r/dailydeals/" class="flex items-center">
+                    <span class="font-bold">r/dailydeals</span>
+                  </a>
+                  <span class="text-neutral-content-weak">by</span>
+                  <faceplate-hovercard aria-label="User info">
+                    <a href="/user/Brisk_Falcon_2210/" class="author-name">
+                      <img
+                        src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png"
+                        alt="u/Brisk_Falcon_2210 avatar"
+                      />
+                      u/Brisk_Falcon_2210
+                    </a>
+                  </faceplate-hovercard>
+                  <span class="text-12 font-semibold uppercase">APP</span>
+                </div>
+                <slot name="title"></slot>
+                <slot name="post-footer"></slot>
+              </div>
+            </template>
+            <a slot="title" href="/r/dailydeals/comments/1ka7zzq/todays_price_drops_oct_21/">
+              Today's price drops, Oct 21
+            </a>
+            <div slot="post-footer"></div>
+          </shreddit-post>
+        </article>
+      </shreddit-feed>
+    </shreddit-app>
+  </body>
+</html>

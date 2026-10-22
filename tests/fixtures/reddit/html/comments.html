@@ -1,0 +1,134 @@
+<!doctype html>
+<!--
+  Hand-written approximation of a new Reddit (shreddit) comment thread, anonymised. The top-level
+  comment has a reply slotted into "children", which itself has a reply; a fourth comment is deleted.
+  Each comment slots its meta row (avatar, author link, timestamp) into light DOM.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>reddit</title>
+  </head>
+  <body>
+    <shreddit-app>
+      <shreddit-post
+        id="t3_1k9x2ab"
+        author="Quiet_Lantern_4821"
+        created-timestamp="2026-10-20T14:03:11.000+0000"
+        subreddit-prefixed-name="r/woodworking"
+        post-title="Finished the walnut side table"
+        permalink="/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/"
+      >
+        <template shadowrootmode="open">
+          <div class="post-container">
+            <slot name="credit-bar"></slot><slot name="title"></slot>
+          </div>
+        </template>
+        <div slot="credit-bar">
+          <a href="/r/woodworking/">r/woodworking</a>
+          <a href="/user/Quiet_Lantern_4821/">u/Quiet_Lantern_4821</a>
+        </div>
+        <a slot="title" href="/r/woodworking/comments/1k9x2ab/">Finished the walnut side table</a>
+      </shreddit-post>
+      <shreddit-comment-tree id="comment-tree">
+        <shreddit-comment
+          author="Mossy_Teapot"
+          thingid="t1_mx1aa01"
+          postid="t3_1k9x2ab"
+          parentid=""
+          depth="0"
+          score="58"
+        >
+          <template shadowrootmode="open">
+            <div class="comment">
+              <slot name="commentMeta"></slot>
+              <slot name="comment"></slot>
+              <slot name="actionRow"></slot>
+              <slot name="children"></slot>
+            </div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Mossy_Teapot/" class="author-name flex items-center">
+                <img
+                  src="https://styles.redditmedia.com/t5_9z8y7x/styles/profileIcon_example.png"
+                  alt="u/Mossy_Teapot avatar"
+                />
+                Mossy_Teapot
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-20T15:12:00.000+0000">2 days ago</faceplate-timeago>
+          </div>
+          <div slot="comment"><p>The grain on that top is lovely. What finish did you use?</p></div>
+          <shreddit-comment
+            slot="children"
+            author="Quiet_Lantern_4821"
+            thingid="t1_mx1aa02"
+            postid="t3_1k9x2ab"
+            parentid="t1_mx1aa01"
+            depth="1"
+            score="31"
+          >
+            <template shadowrootmode="open">
+              <div class="comment">
+                <slot name="commentMeta"></slot>
+                <slot name="comment"></slot>
+                <slot name="children"></slot>
+              </div>
+            </template>
+            <div slot="commentMeta" class="flex items-center">
+              <faceplate-hovercard>
+                <a href="/user/Quiet_Lantern_4821/" class="author-name">Quiet_Lantern_4821</a>
+              </faceplate-hovercard>
+              <span class="op-tag">OP</span>
+              <faceplate-timeago ts="2026-10-20T15:40:00.000+0000">2 days ago</faceplate-timeago>
+            </div>
+            <div slot="comment"><p>Hardwax oil, two coats.</p></div>
+            <shreddit-comment
+              slot="children"
+              author="Deal_Scout_90210"
+              thingid="t1_mx1aa03"
+              postid="t3_1k9x2ab"
+              parentid="t1_mx1aa02"
+              depth="2"
+              score="-4"
+            >
+              <template shadowrootmode="open">
+                <div class="comment">
+                  <slot name="commentMeta"></slot><slot name="comment"></slot>
+                </div>
+              </template>
+              <div slot="commentMeta" class="flex items-center">
+                <faceplate-hovercard>
+                  <a href="/user/Deal_Scout_90210/" class="author-name flex items-center">
+                    <img
+                      src="https://www.redditstatic.com/avatars/avatar_default_02_FF4500.png"
+                      alt="u/Deal_Scout_90210 avatar"
+                    />
+                    Deal_Scout_90210
+                  </a>
+                </faceplate-hovercard>
+                <faceplate-timeago ts="2026-10-21T02:05:00.000+0000">1 day ago</faceplate-timeago>
+              </div>
+              <div slot="comment"><p>Great deal on hardwax oil at my store, link in bio.</p></div>
+            </shreddit-comment>
+          </shreddit-comment>
+        </shreddit-comment>
+        <shreddit-comment
+          author="[deleted]"
+          thingid="t1_mx1aa04"
+          postid="t3_1k9x2ab"
+          parentid=""
+          depth="0"
+          score="1"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center"><span>[deleted]</span></div>
+          <div slot="comment"><p>[removed]</p></div>
+        </shreddit-comment>
+      </shreddit-comment-tree>
+    </shreddit-app>
+  </body>
+</html>
