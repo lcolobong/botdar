@@ -82,9 +82,25 @@ interface AttachedPost {
 
 const RESERVED_FIELDS: ReadonlySet<string> = new Set(["ref", "provenance", "observedAt"]);
 
+/** Field values are primitives or one flat object (`replyShare`), so a shallow comparison is exact. */
+function sameSignalValue(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) {
+    return true;
+  }
+  if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) {
+    return false;
+  }
+  const leftEntries: Array<[string, unknown]> = Object.entries(left);
+  return (
+    leftEntries.length === Object.keys(right).length &&
+    leftEntries.every(([key, value]) => Object.is(value, (right as Record<string, unknown>)[key]))
+  );
+}
+
 /**
  * Tier-merge rule: a higher tier overwrites a lower tier's value for the same field; within the same
- * tier the newer observation wins; a lower tier never overwrites. Returns whether anything changed.
+ * tier the newer observation wins; a lower tier never overwrites. Returns whether a value or its
+ * tier changed, which is all scoring reads: re-observing the same value only refreshes the times.
  */
 export function mergeSignals(
   target: MergeableSignals,
@@ -92,6 +108,7 @@ export function mergeSignals(
   tier: SourceTier,
   observedAt: number,
 ): boolean {
+  let accepted = false;
   let changed = false;
   for (const [key, value] of Object.entries(incoming)) {
     if (value === undefined || RESERVED_FIELDS.has(key)) {
@@ -105,12 +122,15 @@ export function mergeSignals(
     if (outranked || older) {
       continue;
     }
+    if (existingTier !== tier || !sameSignalValue(target.signals[field], value)) {
+      changed = true;
+    }
     Object.assign(target.signals, { [field]: value });
     target.signals.provenance[field] = tier;
     target.fieldObservedAt[field] = observedAt;
-    changed = true;
+    accepted = true;
   }
-  if (changed) {
+  if (accepted) {
     target.signals.observedAt = Math.max(target.signals.observedAt, observedAt);
   }
   return changed;
@@ -308,10 +328,20 @@ export class AccountResolver {
     this.absorb(entry, delivered ? collected : null, 2);
   }
 
+  /**
+   * A relayed body repeats most of the accounts it carried last time, so an emission that changes
+   * no field and adds no tier to an already-scored account skips the rescore and the badge renders
+   * behind it. A null partial (a Tier 2 lookup that found nothing) always rescores, because a
+   * waiting hover card leaves its loading state on that verdict.
+   */
   private absorb(entry: AccountEntry, partial: PartialSignals | null, tier: SourceTier): void {
     if (partial !== null) {
-      mergeSignals(entry, partial, tier, this.now());
+      const changed: boolean = mergeSignals(entry, partial, tier, this.now());
+      const newTier: boolean = !entry.sourcesAvailable.has(tier);
       entry.sourcesAvailable.add(tier);
+      if (!changed && !newTier && entry.verdict !== null) {
+        return;
+      }
     }
     if (entry.posts.size > 0) {
       this.recompute(entry);
