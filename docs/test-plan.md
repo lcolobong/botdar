@@ -24,7 +24,7 @@ Date: 2026-10-22. Architecture context in [architecture.md](architecture.md); sc
 | DOM mounting | Vitest, happy-dom | badge mounts on saved tweet, shreddit and bsky snippets; idempotent on a second pass; unmounts on node removal; per-page state resets on route change |
 | Rate limiter and cache | Vitest fake timers | token refill, backoff ladder, circuit open reports the source as missing; TTL expiry and LRU eviction |
 | Background | Vitest + WXT fake browser | alarm registration, last-known-good untouched on every failure mode, config broadcast after refresh and after settings change |
-| Smoke and media | Playwright script, not a CI gate | built extension loaded against fixture pages served locally; screenshots of each tier and the hover card on each platform, light and dark; `--live` for manual captures in a logged-in profile |
+| Smoke and media | Playwright script, not a CI gate | built extension loaded against fixture pages served locally; screenshots of each tier and the hover card on each platform, light and dark; `--live` for manual captures in a logged-in profile. `pnpm smoke` runs it; see [scripts/smoke/README.md](../scripts/smoke/README.md) |
 
 ## Manual checklist (run before every release)
 
