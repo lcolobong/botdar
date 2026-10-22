@@ -1,8 +1,11 @@
 /**
  * Host-theme detection and shadow-root mounting for the badge and the hover card
- * (docs/architecture.md, "Badge and hover card mounting"). The content script that uses these
- * helpers must declare `cssInjectionMode: "ui"` so WXT injects the entrypoint's CSS into the shadow
- * root; the Preact components arrive through the injected `render` function.
+ * (docs/architecture.md, "Badge and hover card mounting"). The stylesheet text is passed in and
+ * written straight into the shadow root. The content script that uses these helpers must declare
+ * `cssInjectionMode: "manual"` and import its stylesheets with `?inline`, bundled through
+ * `shadowStyles`: WXT's `"ui"` mode fetches the CSS at runtime, which lists the file under
+ * `web_accessible_resources` and lets any page probe for the extension (ADR-0013). The Preact
+ * components arrive through the injected `render` function.
  */
 
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
@@ -22,6 +25,19 @@ export interface MountedUi {
 
 export const BADGE_ELEMENT_NAME = "botdar-badge";
 export const CARD_ELEMENT_NAME = "botdar-card";
+
+/**
+ * Layout of the host elements themselves. These rules go into the shadow stylesheet right after
+ * WXT's `:host { all: initial !important }` reset, so they need `!important` too to win by source
+ * order. Setting `host.style` instead would not work: for important declarations the shadow tree's
+ * own rules beat the document's. Without this the badge host is `inline` with a block child and
+ * wraps onto its own full-width line under the handle.
+ */
+const HOST_STYLE_BY_ELEMENT: Readonly<Record<string, string>> = {
+  [BADGE_ELEMENT_NAME]:
+    ":host { display: inline-flex !important; vertical-align: middle !important; margin-left: 4px !important; }",
+  [CARD_ELEMENT_NAME]: ":host { position: fixed !important; }",
+};
 
 const DARK_LUMINANCE_CEILING = 128;
 
@@ -86,6 +102,11 @@ function detectBlueskyTheme(doc: Document): HostTheme {
   return prefersDark ? "dark" : "light";
 }
 
+/** Joins `?inline` stylesheet imports into the one text block a shadow root receives. */
+export function shadowStyles(...sheets: string[]): string {
+  return sheets.join("\n");
+}
+
 export function detectHostTheme(platform: PlatformId, doc: Document = document): HostTheme {
   switch (platform) {
     case "x":
@@ -103,9 +124,11 @@ async function createMountedUi(
   anchor: Element | undefined,
   render: RenderFn,
   theme: HostTheme,
+  css: string,
 ): Promise<MountedUi> {
   const ui = await createShadowRootUi(ctx, {
     name,
+    css: shadowStyles(HOST_STYLE_BY_ELEMENT[name] ?? "", css),
     position: "inline",
     anchor: anchor ?? document.body,
     append: anchor === undefined ? "last" : "after",
@@ -150,6 +173,7 @@ export function mountBadge(
   anchor: Element,
   render: RenderFn,
   theme: HostTheme,
+  css: string,
 ): Promise<MountedUi> {
   const sibling: Element | null = anchor.nextElementSibling;
   if (sibling !== null && sibling.tagName.toLowerCase() === BADGE_ELEMENT_NAME) {
@@ -157,7 +181,7 @@ export function mountBadge(
     existing.setTheme(theme);
     return Promise.resolve(existing);
   }
-  // The sibling check cannot see a mount that is still awaiting its CSS, so in-flight mounts are
+  // The sibling check cannot see a mount that is still being created, so in-flight mounts are
   // tracked per anchor until they land in the DOM.
   const pending: Promise<MountedUi> | undefined = pendingBadgeByAnchor.get(anchor);
   if (pending !== undefined) {
@@ -169,6 +193,7 @@ export function mountBadge(
     anchor,
     render,
     theme,
+    css,
   ).finally(() => pendingBadgeByAnchor.delete(anchor));
   pendingBadgeByAnchor.set(anchor, mounting);
   return mounting;
@@ -179,6 +204,7 @@ export function mountCard(
   ctx: ContentScriptContext,
   render: RenderFn,
   theme: HostTheme,
+  css: string,
 ): Promise<MountedUi> {
   if (pendingCard !== null) {
     return pendingCard.then((card) => {
@@ -186,7 +212,7 @@ export function mountCard(
       return card;
     });
   }
-  pendingCard = createMountedUi(ctx, CARD_ELEMENT_NAME, undefined, render, theme).then(
+  pendingCard = createMountedUi(ctx, CARD_ELEMENT_NAME, undefined, render, theme, css).then(
     (card): MountedUi => ({
       ...card,
       remove: () => {
