@@ -5,6 +5,13 @@
 
 import type { AccountSignals, Evidence, Feature, SourceTier, Verdict, VerdictTier } from "../types";
 import { applyGroupCaps, featureContribution } from "./contributions";
+import {
+  DECLARED_REASON,
+  caveatFor,
+  confidenceNoteFor,
+  renderReason,
+  selectReasons,
+} from "./reasons";
 import type { ConfidenceWeights, FeatureSpec, PlatformWeights, TierThresholds } from "./types";
 
 export interface ScoreOptions {
@@ -21,10 +28,7 @@ const ALL_TIERS: readonly SourceTier[] = [0, 1, 2];
 const STRONG_CONTRIBUTION = 0.6;
 const MANY_MIN_CONFIDENCE = 0.5;
 const LOW_CONFIDENCE_BELOW = 0.4;
-
-const DECLARED_REASON = "Carries the platform's own automated-account label";
-const PLACEHOLDER_CAVEAT =
-  "This is a pattern read, not a verdict. Humans trip these signals every day.";
+const CONFIDENCE_NOTE_BELOW = 0.7;
 
 function logistic(logOdds: number): number {
   return 1 / (1 + Math.exp(-logOdds));
@@ -44,25 +48,44 @@ function confidenceFor(delivered: SourceTier[], confidenceWeights: ConfidenceWei
   return earned / total;
 }
 
-/** Features the weights table does not know cannot contribute, so they are dropped silently. */
-function evidenceFor(features: Feature[], weights: PlatformWeights): Evidence[] {
+/**
+ * Capped, sorted evidence with rendered reasons. Features the weights table does not know cannot
+ * contribute and are dropped. Reasons render after the group caps because the age wording depends on
+ * the sign of the final contribution.
+ */
+function evidenceFor(
+  features: Feature[],
+  signals: AccountSignals,
+  weights: PlatformWeights,
+  now: number,
+): Evidence[] {
+  const valueByFeature = new Map<string, number | boolean>();
   const uncapped: Evidence[] = [];
   for (const feature of features) {
     const spec: FeatureSpec | undefined = weights.features[feature.id];
     if (spec === undefined) {
       continue;
     }
+    valueByFeature.set(feature.id, feature.value);
     uncapped.push({
       feature: feature.id,
       contribution: featureContribution(spec, feature.value),
       group: feature.group,
       tier: feature.tier,
-      reason: feature.id,
+      reason: "",
     });
   }
-  return applyGroupCaps(uncapped, weights.groupCaps).sort(
-    (left, right) => Math.abs(right.contribution) - Math.abs(left.contribution),
-  );
+  return applyGroupCaps(uncapped, weights.groupCaps)
+    .sort((left, right) => Math.abs(right.contribution) - Math.abs(left.contribution))
+    .map((item) => ({
+      ...item,
+      reason: renderReason(item.feature, {
+        value: valueByFeature.get(item.feature) ?? false,
+        contribution: item.contribution,
+        signals,
+        now,
+      }),
+    }));
 }
 
 /** The independence rule: `many` needs two strong contributions from distinct groups (ADR-0003). */
@@ -95,6 +118,7 @@ export function scoreAccount(
   weights: PlatformWeights,
   options: ScoreOptions,
 ): Verdict {
+  const now: number = options.now ?? Date.now();
   const sourcesUsed: SourceTier[] = deliveredTiers(signals);
   const expectedTiers: SourceTier[] = ALL_TIERS.filter(
     (tier) => weights.confidenceWeights[tier] > 0,
@@ -107,7 +131,7 @@ export function scoreAccount(
     sourcesUsed,
     sourcesMissing,
     policyVersion: options.policyVersion,
-    computedAt: options.now ?? Date.now(),
+    computedAt: now,
   };
 
   if (signals.declaredAutomated === true) {
@@ -116,22 +140,34 @@ export function scoreAccount(
       tier: "declared",
       reasons: [DECLARED_REASON],
       confidence: 1,
-      caveat: PLACEHOLDER_CAVEAT,
+      caveat: caveatFor({
+        tier: "declared",
+        evidenceByMagnitude: [],
+        signals,
+        now,
+        sourcesMissing,
+      }),
       lowConfidence: false,
     };
   }
+
+  const confidenceNote: string | undefined = confidenceNoteFor(
+    sourcesMissing,
+    options.sourcesAvailable,
+  );
   if (features.length === 0) {
     return {
       ...unscored,
       tier: "unknown",
       reasons: [],
       confidence: 0,
-      caveat: PLACEHOLDER_CAVEAT,
+      ...(confidenceNote === undefined ? {} : { confidenceNote }),
+      caveat: caveatFor({ tier: "unknown", evidenceByMagnitude: [], signals, now, sourcesMissing }),
       lowConfidence: true,
     };
   }
 
-  const evidence: Evidence[] = evidenceFor(features, weights);
+  const evidence: Evidence[] = evidenceFor(features, signals, weights, now);
   const logOdds: number =
     weights.prior + evidence.reduce((sum, item) => sum + item.contribution, 0);
   const probability: number = logistic(logOdds);
@@ -140,6 +176,8 @@ export function scoreAccount(
 
   const uncappedTier: VerdictTier = bucket(probability, evidence, confidence, weights.thresholds);
   const tier: VerdictTier = lowConfidence && uncappedTier === "many" ? "some" : uncappedTier;
+  const attachedNote: string | undefined =
+    confidence < CONFIDENCE_NOTE_BELOW ? confidenceNote : undefined;
 
   return {
     ...unscored,
@@ -147,9 +185,10 @@ export function scoreAccount(
     probability,
     logOdds,
     evidence,
-    reasons: evidence.slice(0, 4).map((item) => item.reason),
+    reasons: selectReasons(evidence),
     confidence,
-    caveat: PLACEHOLDER_CAVEAT,
+    ...(attachedNote === undefined ? {} : { confidenceNote: attachedNote }),
+    caveat: caveatFor({ tier, evidenceByMagnitude: evidence, signals, now, sourcesMissing }),
     lowConfidence,
   };
 }

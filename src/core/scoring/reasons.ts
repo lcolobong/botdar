@@ -1,0 +1,281 @@
+/**
+ * Neutral, factual wording for the hover card: one template per feature id, a caveat per dominant
+ * group and a note for missing sources. Every string here is governed by the wording rules in
+ * docs/scoring-spec.md and ADR-0003: observations with numbers, never a description of the person.
+ */
+
+import type {
+  AccountSignals,
+  Evidence,
+  FeatureId,
+  IndependenceGroup,
+  SourceTier,
+  VerdictTier,
+} from "../types";
+
+export interface ReasonContext {
+  value: number | boolean;
+  /** After per-feature and group caps; the sign picks the wording for age features. */
+  contribution: number;
+  signals: AccountSignals;
+  /** Epoch milliseconds. */
+  now: number;
+}
+
+type ReasonTemplate = (context: ReasonContext) => string;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Join dates this recent read as "3 weeks ago"; older ones as "March 2019". */
+const RELATIVE_JOIN_DATE_LIMIT_DAYS = 90;
+const LONG_LIVED_ACCOUNT_DAYS = 2 * 365;
+const REASON_MIN_ABSOLUTE_CONTRIBUTION = 0.3;
+const MIN_REASONS = 2;
+const MAX_REASONS = 4;
+
+export const DECLARED_REASON = "Carries the platform's own automated-account label";
+
+const countFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const monthYearFormat = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+function formatCount(value: number): string {
+  return countFormat.format(value);
+}
+
+function pluralize(count: number, unit: string): string {
+  return `${formatCount(count)} ${unit}${count === 1 ? "" : "s"}`;
+}
+
+interface Duration {
+  count: number;
+  unit: "day" | "week" | "month" | "year";
+}
+
+function durationFromDays(days: number): Duration {
+  const wholeDays: number = Math.max(0, Math.round(days));
+  if (wholeDays < 14) {
+    return { count: wholeDays, unit: "day" };
+  }
+  if (wholeDays < 60) {
+    return { count: Math.round(wholeDays / 7), unit: "week" };
+  }
+  if (wholeDays < 365) {
+    return { count: Math.round(wholeDays / 30.44), unit: "month" };
+  }
+  return { count: Math.round(wholeDays / 365.25), unit: "year" };
+}
+
+/** "3 weeks", "6 years". */
+function formatDuration(days: number): string {
+  const duration: Duration = durationFromDays(days);
+  return pluralize(duration.count, duration.unit);
+}
+
+/** "3-week", for "a 3-week-old account". */
+function formatDurationAdjective(days: number): string {
+  const duration: Duration = durationFromDays(days);
+  return `${formatCount(duration.count)}-${duration.unit}`;
+}
+
+function accountAgeDays(signals: AccountSignals, now: number): number | undefined {
+  return signals.createdAt === undefined ? undefined : (now - signals.createdAt) / DAY_MS;
+}
+
+function joinedReason({ value, contribution, signals, now }: ReasonContext): string {
+  const days: number = typeof value === "number" ? value : (accountAgeDays(signals, now) ?? 0);
+  if (contribution < 0) {
+    return `Account is ${formatDuration(days)} old`;
+  }
+  if (days < RELATIVE_JOIN_DATE_LIMIT_DAYS || signals.createdAt === undefined) {
+    return `Joined ${formatDuration(days)} ago`;
+  }
+  return `Joined ${monthYearFormat.format(new Date(signals.createdAt))}`;
+}
+
+function postsPerDayReason({ value }: ReasonContext): string {
+  return `~${formatCount(Number(value))} posts/day since joining`;
+}
+
+function followRatioReason({ signals }: ReasonContext): string {
+  if (signals.following === undefined || signals.followers === undefined) {
+    return "Follows many more accounts than follow it back";
+  }
+  return `Following ${formatCount(signals.following)}, followed by ${formatCount(signals.followers)}`;
+}
+
+function trailingDigitCount(handle: string): number {
+  const localPart: string = handle.split(".")[0] ?? handle;
+  return /\d+$/.exec(localPart)?.[0].length ?? 0;
+}
+
+function handleDigitsReason({ value, signals }: ReasonContext): string {
+  const digits: number = typeof value === "number" ? value : trailingDigitCount(signals.ref.handle);
+  return `Handle is a name followed by ${pluralize(digits, "digit")}`;
+}
+
+function avatarAndBioReason({ value, signals }: ReasonContext): string {
+  if (value === 2) {
+    return "No profile photo and no bio";
+  }
+  if (value === 1) {
+    return signals.hasDefaultAvatar === true ? "No profile photo" : "No bio";
+  }
+  return "Has a profile photo and a bio";
+}
+
+function newAndBlueReason({ signals, now }: ReasonContext): string {
+  const days: number | undefined = accountAgeDays(signals, now);
+  return days === undefined
+    ? "Verified soon after joining"
+    : `Verified within ${formatDuration(days)} of joining`;
+}
+
+function karmaPerDayReason({ value, signals, now }: ReasonContext): string {
+  const rate: string = `~${formatCount(Number(value))} karma/day`;
+  const days: number | undefined = accountAgeDays(signals, now);
+  return days === undefined
+    ? `${rate} since joining`
+    : `${rate} on a ${formatDurationAdjective(days)}-old account`;
+}
+
+function karmaSplitReason({ signals }: ReasonContext): string {
+  const link: string = formatCount(signals.linkKarma ?? 0);
+  const comment: string = formatCount(signals.commentKarma ?? 0);
+  return `Post karma ${link}, comment karma ${comment}`;
+}
+
+const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
+  "x.postsPerDay": postsPerDayReason,
+  "bsky.postsPerDay": postsPerDayReason,
+  "x.accountAgeDays": joinedReason,
+  "reddit.accountAgeDays": joinedReason,
+  "bsky.accountAgeDays": joinedReason,
+  "x.followingRatio": followRatioReason,
+  "bsky.followsRatio": followRatioReason,
+  "x.handleNameDigits": handleDigitsReason,
+  "x.handleTrailingDigits": handleDigitsReason,
+  "bsky.handleDigitsOnBskySocial": handleDigitsReason,
+  "x.handleBigramLL": () => "Handle looks randomly generated",
+  "x.defaultAvatarEmptyBio": avatarAndBioReason,
+  "bsky.noAvatarEmptyBio": avatarAndBioReason,
+  "x.newAndBlue": newAndBlueReason,
+  "x.replyShare": ({ value }) => `${formatCount(Number(value) * 100)}% of recent posts are replies`,
+  "x.usernameChanges": ({ value }) => `Username changed ${pluralize(Number(value), "time")}`,
+  "x.countryLocaleMismatch": ({ signals }) =>
+    signals.country === undefined
+      ? "Listed country differs from the bio's language"
+      : `Account based in ${signals.country}`,
+  "reddit.karmaPerDay": karmaPerDayReason,
+  "reddit.postToCommentKarma": karmaSplitReason,
+  "reddit.generatedName": () => "Username matches Reddit's auto-generated pattern",
+  "reddit.noAvatar": () => "Default avatar",
+  "reddit.noVerifiedEmail": () => "No verified email",
+};
+
+export function templatedFeatureIds(): FeatureId[] {
+  return Object.keys(REASON_TEMPLATES);
+}
+
+/** A feature without a template renders its id, so a missing template is visible, never silent. */
+export function renderReason(featureId: FeatureId, context: ReasonContext): string {
+  const template: ReasonTemplate | undefined = REASON_TEMPLATES[featureId];
+  return template === undefined ? featureId : template(context);
+}
+
+/** Top reasons by magnitude; weak evidence fills in only when fewer than two clear the bar. */
+export function selectReasons(evidenceByMagnitude: Evidence[]): string[] {
+  const material: Evidence[] = evidenceByMagnitude.filter(
+    (item) => Math.abs(item.contribution) >= REASON_MIN_ABSOLUTE_CONTRIBUTION,
+  );
+  const selected: Evidence[] =
+    material.length >= MIN_REASONS ? material : evidenceByMagnitude.slice(0, MIN_REASONS);
+  return selected.slice(0, MAX_REASONS).map((item) => item.reason);
+}
+
+const GROUP_CAVEATS: Readonly<Record<IndependenceGroup, string>> = {
+  activity: "High-volume human posters, news desks and brand accounts show the same pattern.",
+  age: "Every account was new once; a recent join date means little on its own.",
+  graph: "People who follow widely before anyone follows back look the same.",
+  handle: "Many people accept the platform's suggested handle and never change it.",
+  profile: "Privacy-minded people often leave profiles blank.",
+  verification: "Paid verification is available to any new account.",
+  content: "Some people only ever reply; that is a style, not automation.",
+  geo: "Location is inferred by the platform and is often wrong for travellers and VPN users.",
+};
+
+const DEFAULT_CLOSING =
+  "This is a pattern read, not a verdict. Humans trip these signals every day.";
+const SOURCES_MISSING_CLOSING = "Some signals could not be loaded, so this read is less certain.";
+const LONG_LIVED_CLOSING = "Long-lived accounts are rarely automated; weigh this lightly.";
+const DECLARED_CLOSING =
+  "The account operator chose to label it as automated. That is the platform's recommended, transparent practice.";
+
+export interface CaveatContext {
+  tier: VerdictTier;
+  evidenceByMagnitude: Evidence[];
+  signals: AccountSignals;
+  now: number;
+  sourcesMissing: SourceTier[];
+}
+
+export function caveatFor(context: CaveatContext): string {
+  if (context.tier === "declared") {
+    return DECLARED_CLOSING;
+  }
+  const dominant: Evidence | undefined =
+    context.evidenceByMagnitude.find((item) => item.contribution > 0) ??
+    context.evidenceByMagnitude[0];
+  const groupCaveat: string | undefined =
+    dominant === undefined ? undefined : GROUP_CAVEATS[dominant.group];
+
+  const ageDays: number | undefined = accountAgeDays(context.signals, context.now);
+  let closing: string = DEFAULT_CLOSING;
+  if (ageDays !== undefined && ageDays >= LONG_LIVED_ACCOUNT_DAYS) {
+    closing = LONG_LIVED_CLOSING;
+  } else if (context.sourcesMissing.length > 0) {
+    closing = SOURCES_MISSING_CLOSING;
+  }
+  return groupCaveat === undefined ? closing : `${groupCaveat} ${closing}`;
+}
+
+function missingTierNote(tier: SourceTier, available: boolean): string {
+  switch (tier) {
+    case 0:
+      return "Page details not loaded yet";
+    case 1:
+      return available ? "Profile details not loaded yet" : "Profile details are off";
+    case 2:
+      return available ? "Extra lookups not run yet" : "Extra lookups are off";
+  }
+}
+
+export function confidenceNoteFor(
+  sourcesMissing: SourceTier[],
+  sourcesAvailable: SourceTier[],
+): string | undefined {
+  if (sourcesMissing.length === 0) {
+    return undefined;
+  }
+  return sourcesMissing
+    .map((tier) => missingTierNote(tier, sourcesAvailable.includes(tier)))
+    .join("; ");
+}
+
+/** Every fixed string that can reach the hover card, for the wording-rule test. */
+export function allFixedStrings(): string[] {
+  return [
+    DECLARED_REASON,
+    ...Object.values(GROUP_CAVEATS),
+    DEFAULT_CLOSING,
+    SOURCES_MISSING_CLOSING,
+    LONG_LIVED_CLOSING,
+    DECLARED_CLOSING,
+    ...([0, 1, 2] as const).flatMap((tier) => [
+      missingTierNote(tier, true),
+      missingTierNote(tier, false),
+    ]),
+  ];
+}
