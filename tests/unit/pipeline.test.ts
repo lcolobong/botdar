@@ -166,6 +166,24 @@ describe("mergeSignals", () => {
     expect(target.signals.followers).toBe(7);
   });
 
+  it("reports no change when the same tier repeats a value, but refreshes its time", () => {
+    const target = blankSignals();
+    mergeSignals(target, { followers: 5, replyShare: { ratio: 0.5, sampleSize: 20 } }, 1, 100);
+    expect(
+      mergeSignals(target, { followers: 5, replyShare: { ratio: 0.5, sampleSize: 20 } }, 1, 200),
+    ).toBe(false);
+    expect(target.fieldObservedAt.followers).toBe(200);
+    expect(target.signals.observedAt).toBe(200);
+    expect(mergeSignals(target, { replyShare: { ratio: 0.6, sampleSize: 20 } }, 1, 300)).toBe(true);
+  });
+
+  it("reports a change when the same value arrives from a higher tier", () => {
+    const target = blankSignals();
+    mergeSignals(target, { followers: 5 }, 1, 100);
+    expect(mergeSignals(target, { followers: 5 }, 2, 100)).toBe(true);
+    expect(target.signals.provenance.followers).toBe(2);
+  });
+
   it("skips undefined values and reserved keys", () => {
     const target = blankSignals();
     const hostile = { followers: undefined, ref: { platform: "x", handle: "evil" }, observedAt: 9 };
@@ -211,6 +229,34 @@ describe("AccountResolver", () => {
     emit(ref(), { declaredAutomated: true });
     expect(listener).toHaveBeenCalledTimes(1);
     expect(handle.current().tier).toBe("declared");
+  });
+
+  it("skips the rescore when a relayed body changes nothing for a scored account", () => {
+    const { resolver, emit } = makeHarness();
+    const handle: BadgeHandle = resolver.attach(post());
+    emit(ref(), { followers: 40, declaredAutomated: true });
+    const listener = vi.fn();
+    handle.subscribe(listener);
+
+    vi.advanceTimersByTime(500);
+    emit(ref(), { followers: 40, declaredAutomated: true });
+    expect(listener).not.toHaveBeenCalled();
+
+    emit(ref(), { followers: 41 });
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(handle.current().reasons).toEqual(expect.arrayContaining(["followers@1"]));
+  });
+
+  it("rescores when an emission adds a tier even if it changes no field", () => {
+    const { resolver, emit } = makeHarness();
+    const handle: BadgeHandle = resolver.attach(post());
+    const listener = vi.fn();
+    handle.subscribe(listener);
+
+    emit(ref(), {});
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(handle.current().sourcesUsed).toEqual([0, 1]);
   });
 
   it("ignores emissions for another platform", () => {

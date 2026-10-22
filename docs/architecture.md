@@ -260,7 +260,7 @@ Firefox requires `cloneInto` for cross-world `detail`.
 | Tier 1 | `parsers/graphqlUsers.ts` walks any response for user objects: `core.screen_name`, `core.created_at`, `is_blue_verified`, `profile_bio.description`, `relationship_count`, `tweet_count`, `rest_id`, with `legacy.*` fallbacks. The X "Automated" label is expected in the user object (`legacy.automated` or `affiliates_highlighted_label`); confirm day one |
 | Tier 0 | `article[data-testid="tweet"]:not([data-botdar])`; handle from `[data-testid="User-Name"] a[href^="/"]` whose text starts with `@`; default-avatar heuristic from `[data-testid="Tweet-User-Avatar"]` |
 | Tier 2 | `AboutAccountQuery` on hover only: country, username-change count, app store. queryId resolution: observed from page traffic > policy value > baked constant. Limiter 20/min, burst 3, backoff on `x-rate-limit-reset` / `retry-after`, 60 s fallback |
-| Observer | One `MutationObserver` on `document.body`, coalesced per pass via `requestIdleCallback` (150 ms timeout fallback); `data-botdar="1"` set only after a badge mounts; `WeakMap<Element, BadgeHandle>`; removed nodes unmount (X virtualizes its list) |
+| Observer | One `MutationObserver` on `document.body`, coalesced per pass via `requestIdleCallback` (150 ms timeout fallback); the analysis behind a pass runs in slices capped at the idle deadline or 8 ms, whichever is shorter, and yields between them (`src/core/idleSlices.ts`, the same for Reddit and Bluesky); a discovered post is only analysed once it comes within one screen of the viewport (`src/core/nearViewport.ts`, ADR-0019); `data-botdar="1"` set only after a badge mounts; `WeakMap<Element, BadgeHandle>`; removed nodes unmount (X virtualizes its list) |
 | Routing | `pushState` is invisible to the isolated world; compare `location.href` per pass plus `popstate`. Reset per-page state (reply-share counters), keep account caches |
 | Reply share | Only on `/<handle>/with_replies`, counting articles with a "Replying to" row, minimum n = 20 |
 
@@ -292,19 +292,27 @@ on posts.
 ### Badge and hover card mounting
 
 `src/ui/mount.ts` wraps WXT `createShadowRootUi(ctx, { name: 'botdar-badge', position: 'inline', anchor,
-append: 'after' })`. Mounting is idempotent: an existing `BOTDAR-BADGE` sibling is reused. The hover card
+append: 'after' })`. Mounting is idempotent: an existing `BOTDAR-BADGE` sibling is reused. The bundled
+stylesheets are built once into a constructed `CSSStyleSheet` that every badge and card shadow root
+adopts (`src/ui/sharedStyles.ts`); only the host layout rules go through WXT's `<style>`, after its
+`:host` reset. Where adoption is unavailable or refused, a root gets a `<style>` copy. The hover card
 is one singleton `botdar-card` on `document.body`, positioned from `getBoundingClientRect` and flipped at
 viewport edges; opens after 150 ms hover or on focus (`<button aria-describedby>`), closes 200 ms after
 leaving both badge and card. Tier 2 fires on open; the card shows a loading state and re-renders. All
-timers and observers register on `ctx` so an extension update invalidates cleanly.
+timers and observers register on `ctx` so an extension update invalidates cleanly. WXT registers one
+invalidation listener per UI and drops its unsubscribe; `mount.ts` keeps it and releases it when the
+badge is removed, so a removed post is not kept alive by the context.
 
 ## AccountResolver pipeline
 
 `new AccountResolver(adapter, config, settings)` keeps `Map<handle, { signals, verdict, listeners }>`.
 
 1. `attach(post)` runs Tier 0 immediately, merges any Tier 1 data already received for that handle,
-   scores, and renders.
-2. Tier 1 emissions arrive asynchronously and trigger a rescore for every mounted badge of that handle.
+   scores, and renders. The observers attach a post when it comes within a screen of the viewport,
+   not when it is discovered (ADR-0019).
+2. Tier 1 emissions arrive asynchronously and trigger a rescore for every mounted badge of that handle,
+   unless the emission changed no value or tier of an account that already has a verdict (a relayed
+   body often repeats the previous one).
 3. Tier 2 is scheduled on hover only, goes through the cache and rate limiter, then rescoring.
 4. **Tier-merge rule:** a higher tier overwrites a lower tier's value for the same field; within the same
    tier, newer wins. `provenance` records the tier for each field so confidence can be computed.

@@ -11,12 +11,21 @@ import {
   mountCard,
   shadowStyles,
 } from "@/src/ui/mount";
+import { adoptedCssOf } from "./adoptedCss";
 
 const BADGE_CSS = ":host { --botdar-test: badge; }";
 const CARD_CSS = ":host { --botdar-test: card; }";
 
 const fakeContext = (): ContentScriptContext =>
   ({ options: {}, onInvalidated: () => () => undefined }) as unknown as ContentScriptContext;
+
+const adoptedCss = (mounted: MountedUi): string => adoptedCssOf(mounted.shadowHost);
+
+/** The text of the `<style>` elements inside the host's shadow root. */
+const inlineCss = (mounted: MountedUi): string =>
+  [...(mounted.shadowHost.shadowRoot?.querySelectorAll("style") ?? [])]
+    .map((style) => style.textContent ?? "")
+    .join("\n");
 
 const resetDocument = (): void => {
   document.documentElement.removeAttribute("style");
@@ -132,16 +141,77 @@ describe("mountBadge", () => {
     expect(mounted.shadowHost.shadowRoot?.textContent).toContain("badge");
   });
 
-  it("writes the given stylesheet into the shadow root without fetching anything", async () => {
+  it("adopts the given stylesheet into the shadow root without fetching anything", async () => {
     const anchor = makeAnchor();
     const { render } = trackedRender();
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
     const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "light", BADGE_CSS);
 
-    expect(mounted.shadowHost.shadowRoot?.querySelector("style")?.textContent).toContain(BADGE_CSS);
+    expect(adoptedCss(mounted)).toContain("--botdar-test: badge");
+    expect(inlineCss(mounted)).not.toContain("--botdar-test");
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
+  });
+
+  it("shares one constructed sheet between every badge with the same stylesheet", async () => {
+    const { render } = trackedRender();
+    const first: MountedUi = await mountBadge(
+      fakeContext(),
+      makeAnchor(),
+      render,
+      "light",
+      BADGE_CSS,
+    );
+    const second: MountedUi = await mountBadge(
+      fakeContext(),
+      makeAnchor(),
+      render,
+      "light",
+      BADGE_CSS,
+    );
+
+    const [firstSheet] = first.shadowHost.shadowRoot?.adoptedStyleSheets ?? [];
+    expect(firstSheet).toBeDefined();
+    expect(second.shadowHost.shadowRoot?.adoptedStyleSheets).toEqual([firstSheet]);
+  });
+
+  it("falls back to a style copy where constructed sheets are unavailable", async () => {
+    vi.stubGlobal("CSSStyleSheet", undefined);
+    const fallbackCss = ":host { --botdar-test: fallback; }";
+    const mounted: MountedUi = await mountBadge(
+      fakeContext(),
+      makeAnchor(),
+      trackedRender().render,
+      "light",
+      fallbackCss,
+    );
+    vi.unstubAllGlobals();
+
+    expect(inlineCss(mounted)).toContain(fallbackCss);
+    expect(getComputedStyle(mounted.shadowHost).display).toBe("inline-flex");
+  });
+
+  it("releases its invalidation listener on remove so a removed post is not retained", async () => {
+    const listeners = new Set<() => void>();
+    const context = {
+      options: {},
+      onInvalidated: (callback: () => void) => {
+        listeners.add(callback);
+        return () => listeners.delete(callback);
+      },
+    } as unknown as ContentScriptContext;
+    const { render, unmount } = trackedRender();
+    const kept: MountedUi = await mountBadge(context, makeAnchor(), render, "light", BADGE_CSS);
+    const removed: MountedUi = await mountBadge(context, makeAnchor(), render, "light", BADGE_CSS);
+    expect(listeners.size).toBe(2);
+
+    removed.remove();
+    expect(listeners.size).toBe(1);
+
+    for (const listener of listeners) listener();
+    expect(kept.shadowHost.isConnected).toBe(false);
+    expect(unmount).toHaveBeenCalledTimes(2);
   });
 
   it("lays the badge host out inline with the handle", async () => {
@@ -241,7 +311,7 @@ describe("mountCard", () => {
     expect(first.shadowHost.parentElement).toBe(document.body);
     expect(first.shadowHost.tagName.toLowerCase()).toBe(CARD_ELEMENT_NAME);
     expect(first.shadowHost.dataset.theme).toBe("dark");
-    expect(first.shadowHost.shadowRoot?.querySelector("style")?.textContent).toContain(CARD_CSS);
+    expect(adoptedCss(first)).toContain("--botdar-test: card");
     expect(getComputedStyle(first.shadowHost).position).toBe("fixed");
     expect(render).toHaveBeenCalledTimes(1);
     expect(document.body.querySelectorAll(CARD_ELEMENT_NAME)).toHaveLength(1);

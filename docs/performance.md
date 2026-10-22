@@ -239,6 +239,93 @@ Estimates are for the fixtures at 4x unless stated; "per item" figures scale wit
 | 8 | **Trim per-item string work:** compare normalised text instead of a per-post `RegExp` in Bluesky's `displayNameOf`; one span pass for both X labels. | bluesky/dom.ts:118–127, x/dom.ts:61–90 | ~10 ms of 82 ms on the Bluesky fixture at 4x; a few ms on X. |
 | 9 | **Defer non-critical startup work:** build the bigram lookup and weight tables on first use rather than at module evaluation. | core/handle/bigram.ts, scoring/weights.ts | A few ms of the 27–31 ms evaluation at 4x; worth measuring before doing. |
 
+## After the fixes
+
+Measured on 2026-10-22 on the same machine and browser, with the same runner and five runs per
+condition, after these changes from the `perf-fixes` branch:
+
+- Reddit Tier 0 reads the APP tag once per item (fix 1).
+- The observers analyse in idle slices capped at the idle deadline or 8 ms (fix 2).
+- Only posts within one screen of the viewport are analysed; the rest follow as the reader
+  scrolls (fix 3, ADR-0019).
+- A Tier 1 emission that changes no value or tier of a scored account skips the rescore (the
+  `absorb` part of fix 4; the relay text, locale and reason-string parts are not done).
+- Each badge releases WXT's invalidation listener when it is removed (fix 6).
+- Badge and card shadow roots adopt one constructed stylesheet instead of a `<style>` copy each
+  (the stylesheet part of fix 5; the mount still goes through WXT's `createShadowRootUi`).
+
+The baseline was re-measured in the same session for a like-for-like comparison, so its numbers
+differ by run-to-run noise from the tables above. Every cell is extension minus bare (Δ) or the
+extension run alone, median of five, before → after.
+
+### At full speed (1x), before → after
+
+| Fixture | load Δ (ms) | Script Δ (ms) | TBT Δ (ms) | Long tasks | First badge (ms) | Badges at settle | Scroll long tasks | Scroll max frame gap (ms) | Scroll script Δ (ms) | Heap Δ (MB) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| reddit-feed-300 | +12.3 → +9.6 | +13.9 → +9.3 | 0 → 0 | 0 → 0 | 59.4 → 62.4 | 30 → 5 | 0 → 0 | 16.8 → 16.8 | 0 → +4.4 | +1.4 → +0.8 |
+| reddit-comments-1500 | +38 → +38.3 | +29.2 → +11.1 | 0 → 0 | 0 → 0 | 39.5 → 39.6 | 37 → 1 | 0 → 0 | 16.8 → 16.8 | −1.6 → +5.4 | +3.1 → +0.7 |
+| x-timeline-400 | +13.6 → +13.5 | +31.1 → +20.9 | 0 → 0 | 0 → 0 | 39.1 → 40.6 | 40 → 2 | 0 → 0 | 16.8 → 16.8 | −0.5 → +10.9 | +2.4 → +1.2 |
+| bluesky-feed-300 | +10.7 → +11.4 | +8.6 → +10.3 | 0 → 0 | 0 → 0 | 10 → 52.1 | 15 → 1 | 0 → 0 | 16.8 → 16.8 | +0.2 → +9.8 | +1.4 → +0.7 |
+
+### With 4x CPU throttling, before → after
+
+| Fixture | load Δ (ms) | Script Δ (ms) | TBT Δ (ms) | Long tasks | First badge (ms) | Badges at settle | Scroll long tasks | Scroll max frame gap (ms) | Scroll script Δ (ms) | Heap Δ (MB) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| reddit-feed-300 | +41.5 → +40.8 | +62.8 → +43.6 | 0 → 0 | 0 → 0 | 85.2 → 68.1 | 30 → 5 | 0 → 0 | 16.8 → 16.8 | 0 → +18.5 | +1.4 → +0.8 |
+| reddit-comments-1500 | +44.9 → +42.2 | +123 → +47.5 | **+48 → 0** | **1 → 0** | 153 → 77.5 | 37 → 1 | 0 → 0 | 16.8 → 16.8 | +6.5 → +29.4 | +3.1 → +0.7 |
+| x-timeline-400 | +46.2 → +42.4 | +134 → +84.1 | 0 → 0 | 0 → 0 | 119 → 84.1 | 40 → 2 | 0 → 0 | 16.8 → 16.8 | +2.2 → +43.8 | +2.4 → +1.2 |
+| bluesky-feed-300 | +47.3 → +45.4 | +35.3 → +42.2 | 0 → 0 | 0 → 0 | 73.3 → 42.4 | 15 → 1 | 0 → 0 | 16.8 → 16.8 | −0.1 → +28.2 | +1.4 → +0.7 |
+
+DOMContentLoaded still moved by at most ±2 ms (−5.5 ms on X at 4x, as before). "Badges at
+settle" now counts the badges near the first screen, not the whole page: that is the point of
+fix 3. Live insertion on the Reddit feed (50 posts appended after scrolling to the bottom) now
+mounts 3 badges instead of 6, the ones within a screen of the viewport, after 69 ms at 1x and
+70 ms at 4x, with no long task. The X page's last badge (538 ms at 1x) is still the Tier 1
+verdicts arriving with the second timeline fetch.
+
+**Every post the reader scrolls to still gets its badge.** A one-off Playwright check scrolled
+each fixture one viewport at a time (400 ms per step, 1280×800) with the previous build and with
+this one, counting the badges inside the viewport at every step. After the last step both builds
+had mounted the same totals (30, 37, 40 and 15). On the Reddit feed, X and Bluesky the visible
+count matched at every step (14, 57 and 44 steps). On the comment thread it matched at 126 of 128
+steps; at the other two, one account's earlier comment had no badge yet. That account's first
+comment renders no avatar and its later ones a default avatar, and the Unsure verdict needs the
+avatar signal, so it only appears once a later comment comes near and then badges all of that
+account's comments. This is the evidence-accrual consequence recorded in ADR-0019, not a missed
+post; live Reddit renders the same author row on every comment by an account.
+
+A 4x CPU profile of the comment thread (unminified build) puts the extension's self time at
+46.9 ms, down from 126.5 ms; 27.5 ms of it is bundle evaluation and 10.9 ms the first slices of
+analysis.
+
+### Verdict after the fixes
+
+**The target now holds on every fixture at both speeds**: no long task and no blocking time
+from navigation to settle, none while scrolling, no dropped frames (the longest frame gap stays
+16.8 ms, the same as bare), and badges arrive as the analysis of each screen finishes.
+
+| Fixture | Meets "next to no impact; badges lazy-load as analysis finishes"? |
+| --- | --- |
+| reddit-feed-300 | Yes. Script −30% at 4x, heap −0.6 MB; the first screen's badges land 62–68 ms after `load`. |
+| reddit-comments-1500 | Yes, and this is the one that changed verdict: the ~94 ms first-pass long task is gone (TBT +48 → 0 ms at 4x), script −61% at 4x, heap +3.1 → +0.7 MB. |
+| x-timeline-400 | Yes. Script −37% at 4x; Tier 1 rescoring of unchanged bodies is skipped. |
+| bluesky-feed-300 | Yes, with a cost moved rather than removed: load-time script is about the same, and scrolling now costs 28 ms of script at 4x (no long task, no dropped frame). The first badge at 1x lands later (10 → 52 ms after `load`) because analysis now waits for the IntersectionObserver and an idle slot. |
+
+What did not move:
+
+- **The `load` event shift (10–38 ms at 1x, 41–45 ms at 4x) is unchanged.** It is not the
+  analysis pass: that pass shrank by more than half on the comment thread and the shift stayed
+  within noise. The profile points at bundle evaluation (27.5 ms at 4x) and content-script
+  startup, so fix 9 (defer startup work) and a smaller bundle are the levers for it.
+- **Scrolling now does work.** Analysis moved from load to the moment posts come near, so scroll
+  script grew by 4–11 ms at 1x and 18–44 ms at 4x across the whole scroll, spread over idle
+  slices. Each analysed post that mounts a badge is a mutation, and on X and Bluesky every
+  mutation still rescans the whole document (hotspot 6); fix 7 is the next step and would cut
+  most of the X and Bluesky scroll cost.
+- Not done from the ranked list: relaying response text instead of a parsed object, the
+  per-page locale and selected-reasons-only rendering (rest of fix 4), owning the mount (rest of
+  fix 5), fixes 7, 8 and 9.
+
 ## Measurement caveats
 
 - **Fast machine.** An M5 Pro is several times faster than a typical laptop. The 4x CDP throttle

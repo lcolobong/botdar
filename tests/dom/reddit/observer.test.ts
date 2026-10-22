@@ -7,6 +7,10 @@ import {
   UNDISCOVERED_SELECTOR,
   observeRedditFeed,
 } from "@/src/platforms/reddit/observer";
+import {
+  controlledObserver,
+  installControlledIntersectionObserver,
+} from "../controlledIntersectionObserver";
 import { OLD_REDDIT_POST, loadRedditFixture, snippet } from "./fixtures";
 
 interface Harness {
@@ -175,6 +179,72 @@ describe("observeRedditFeed", () => {
     expect(harness.posts).toHaveLength(2);
     harness.stop();
     Object.assign(window, { requestIdleCallback: undefined });
+  });
+
+  it("analyses a long thread in slices, yielding when the idle period runs out", () => {
+    const callbacks: Array<(deadline: IdleDeadline) => void> = [];
+    const requestIdleCallback = vi.fn((callback: (deadline: IdleDeadline) => void): number => {
+      callbacks.push(callback);
+      return callbacks.length;
+    });
+    Object.assign(window, { requestIdleCallback });
+    loadRedditFixture("comments.html");
+    const harness: Harness = observe();
+    const exhausted: IdleDeadline = { didTimeout: false, timeRemaining: () => 0 };
+
+    callbacks.shift()?.(exhausted);
+    expect(handles(harness.posts)).toEqual(["quiet_lantern_4821"]);
+    callbacks.shift()?.(exhausted);
+    expect(handles(harness.posts)).toEqual(["quiet_lantern_4821", "mossy_teapot"]);
+    while (callbacks.length > 0) callbacks.shift()?.(exhausted);
+    expect(harness.posts).toHaveLength(4);
+
+    harness.stop();
+    Object.assign(window, { requestIdleCallback: undefined });
+  });
+
+  describe("near the viewport", () => {
+    let restore: () => void = () => undefined;
+    beforeEach(() => {
+      restore = installControlledIntersectionObserver();
+    });
+    afterEach(() => restore());
+
+    it("analyses a post only once it comes near, and the rest as they approach", async () => {
+      loadRedditFixture("feed.html");
+      const harness: Harness = observe();
+      await settle();
+      const [first, second] = document.querySelectorAll("shreddit-post");
+      if (first === undefined || second === undefined) throw new Error("fixture missing");
+      expect(harness.posts).toHaveLength(0);
+      expect(controlledObserver().observed).toEqual(new Set([first, second]));
+
+      controlledObserver().deliver([first, second], false);
+      controlledObserver().deliver([second], true);
+      await settle();
+      expect(handles(harness.posts)).toEqual(["brisk_falcon_2210"]);
+
+      controlledObserver().deliver([first], true);
+      await settle();
+      expect(handles(harness.posts)).toEqual(["brisk_falcon_2210", "quiet_lantern_4821"]);
+      expect(controlledObserver().observed.size).toBe(0);
+      harness.stop();
+    });
+
+    it("stops watching a post that leaves the page before it comes near", async () => {
+      loadRedditFixture("feed.html");
+      const harness: Harness = observe();
+      await settle();
+      const first: Element | null = document.querySelector("shreddit-post");
+      if (first === null) throw new Error("fixture missing");
+
+      first.remove();
+      await settle();
+
+      expect(controlledObserver().observed.has(first)).toBe(false);
+      expect(harness.removed).toEqual([]);
+      harness.stop();
+    });
   });
 
   it("stops reporting after stop", async () => {

@@ -5,6 +5,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { PostRef } from "@/src/core/types";
 import { IDLE_TIMEOUT_MS, observeBlueskyFeed } from "@/src/platforms/bluesky/observer";
+import {
+  controlledObserver,
+  installControlledIntersectionObserver,
+} from "../controlledIntersectionObserver";
 
 const FEED_HTML: string = readFileSync(
   join(import.meta.dirname, "..", "..", "fixtures", "bluesky", "html", "feed.html"),
@@ -131,6 +135,25 @@ describe("observeBlueskyFeed", () => {
       timeout: IDLE_TIMEOUT_MS,
     });
     expect(harness.posts.at(-1)?.ref.handle).toBe("idle.example.com");
+  });
+
+  it("analyses a post once it comes near the viewport and forgets one removed before", async () => {
+    harness.stop();
+    const restore: () => void = installControlledIntersectionObserver();
+    harness = start();
+    expect(harness.posts).toHaveLength(0);
+    const [alice, kai] = [...controlledObserver().observed];
+    if (alice === undefined || kai === undefined) throw new Error("fixture has no posts");
+
+    controlledObserver().deliver([kai], true);
+    await settle();
+    expect(harness.posts.map((post) => post.ref.handle)).toEqual(["kai09127364.bsky.social"]);
+
+    alice.remove();
+    await settle();
+    expect(controlledObserver().observed.has(alice)).toBe(false);
+    expect(harness.removed).toEqual([]);
+    restore();
   });
 
   it("stops reporting after stop", async () => {

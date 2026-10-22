@@ -1,9 +1,15 @@
 /**
  * Feed observer for X (docs/architecture.md, "X", Observer and Routing). One MutationObserver on
- * the body, coalesced into a single pass per idle period; removed posts are released because X
- * virtualizes its list; `pushState` is invisible to the isolated world, so the URL is compared on
- * every pass and on popstate.
+ * the body, coalesced into a single discovery pass per idle period; a discovered post is analysed
+ * once it comes near the viewport (src/core/nearViewport.ts), in budgeted slices
+ * (src/core/idleSlices.ts); removed posts are released because X virtualizes its list;
+ * `pushState` is invisible to the isolated world, so the URL is compared on every pass and on
+ * popstate.
  */
+import type { ShouldYield, SliceScheduler } from "@/src/core/idleSlices";
+import { IDLE_TIMEOUT_MS, createSliceScheduler, drainQueue } from "@/src/core/idleSlices";
+import type { NearViewportGate } from "@/src/core/nearViewport";
+import { createNearViewportGate } from "@/src/core/nearViewport";
 import type { PostRef } from "@/src/core/types";
 import { POST_SELECTOR, findUnbadgedPosts, toPostRef } from "./dom";
 
@@ -16,7 +22,7 @@ export interface FeedObserverOptions {
 }
 
 /** Longest wait for an idle slot, and the plain timer delay where requestIdleCallback is missing. */
-export const PASS_DELAY_MS = 150;
+export const PASS_DELAY_MS: number = IDLE_TIMEOUT_MS;
 
 const ELEMENT_NODE = 1;
 
@@ -27,56 +33,62 @@ export function observeFeed(options: FeedObserverOptions): () => void {
     return () => undefined;
   }
   const tracked = new WeakMap<Element, PostRef>();
+  /** Near the viewport but not analysed yet, in the order they came near. */
+  const queue = new Set<Element>();
   let lastHref: string = view.location.href;
-  let pendingPass: number | undefined;
+  let discoveryPending = true;
   let stopped = false;
 
   const release = (element: Element): void => {
+    gate.unwatch(element);
+    queue.delete(element);
     if (tracked.delete(element)) {
       options.onRemoved(element);
     }
   };
 
-  const pass = (): void => {
-    pendingPass = undefined;
-    if (stopped) {
+  const analyse = (article: Element): void => {
+    if (tracked.has(article) || !article.isConnected) {
       return;
     }
+    const post: PostRef | undefined = toPostRef(article);
+    if (post !== undefined) {
+      tracked.set(article, post);
+      options.onPost(post);
+    }
+  };
+
+  const discover = (): void => {
     if (view.location.href !== lastHref) {
       lastHref = view.location.href;
       options.onRouteChange?.(lastHref);
     }
     for (const article of findUnbadgedPosts(root)) {
-      if (tracked.has(article)) {
-        continue;
-      }
-      const post: PostRef | undefined = toPostRef(article);
-      if (post !== undefined) {
-        tracked.set(article, post);
-        options.onPost(post);
+      if (!tracked.has(article)) {
+        gate.watch(article);
       }
     }
   };
 
+  const runSlice = (shouldYield: ShouldYield): boolean => {
+    if (stopped) {
+      return false;
+    }
+    if (discoveryPending) {
+      discoveryPending = false;
+      discover();
+    }
+    return drainQueue(queue, analyse, shouldYield);
+  };
+
+  const scheduler: SliceScheduler = createSliceScheduler(view, PASS_DELAY_MS, runSlice);
+  const gate: NearViewportGate = createNearViewportGate(view, (article) => {
+    queue.add(article);
+    scheduler.schedule();
+  });
   const schedule = (): void => {
-    if (pendingPass !== undefined || stopped) {
-      return;
-    }
-    pendingPass =
-      typeof view.requestIdleCallback === "function"
-        ? view.requestIdleCallback(pass, { timeout: PASS_DELAY_MS })
-        : view.setTimeout(pass, PASS_DELAY_MS);
-  };
-
-  const cancelPending = (): void => {
-    if (pendingPass === undefined) {
-      return;
-    }
-    if (typeof view.cancelIdleCallback === "function") {
-      view.cancelIdleCallback(pendingPass);
-    }
-    view.clearTimeout(pendingPass);
-    pendingPass = undefined;
+    discoveryPending = true;
+    scheduler.schedule();
   };
 
   const onMutations = (records: MutationRecord[]): void => {
@@ -102,7 +114,8 @@ export function observeFeed(options: FeedObserverOptions): () => void {
 
   return () => {
     stopped = true;
-    cancelPending();
+    scheduler.dispose();
+    gate.disconnect();
     observer.disconnect();
     view.removeEventListener("popstate", schedule);
   };
