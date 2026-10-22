@@ -54,8 +54,11 @@ export interface FixtureSource {
   readonly path: string;
   /** The same file relative to the repository root, for the manifest. */
   readonly file: string;
-  readonly kind: "recorded" | "placeholder";
+  readonly kind: "recorded" | "placeholder" | "store";
 }
+
+/** Query parameter that makes the server answer with the store-listing page instead of the recording. */
+export const storeFixtureQuery = "fixture=store";
 
 const repoRoot: URL = new URL("../../", import.meta.url);
 const certificateDir: URL = new URL("./cert/", import.meta.url);
@@ -71,10 +74,21 @@ function repoRelative(path: string): string {
 }
 
 /**
- * The named or else the preferred recorded page under tests/fixtures/<platform>/html/; the
- * placeholder is the fallback when nothing is recorded.
+ * With `preferStore`, the realistic store-listing page tests/fixtures/store/<platform>.html when it
+ * exists; otherwise the named or else the preferred recorded page under
+ * tests/fixtures/<platform>/html/, with the placeholder as the fallback when nothing is recorded.
  */
-export function resolveFixture(platform: SmokePlatformId, fixtureFile?: string): FixtureSource {
+export function resolveFixture(
+  platform: SmokePlatformId,
+  fixtureFile?: string,
+  preferStore = false,
+): FixtureSource {
+  const storePath: string = fileURLToPath(
+    new URL(`tests/fixtures/store/${platform}.html`, repoRoot),
+  );
+  if (preferStore && existsSync(storePath)) {
+    return { path: storePath, file: repoRelative(storePath), kind: "store" };
+  }
   const recordedDir: string = fileURLToPath(new URL(`tests/fixtures/${platform}/html/`, repoRoot));
   if (existsSync(recordedDir)) {
     const recordedPages: string[] = readdirSync(recordedDir)
@@ -93,8 +107,9 @@ export function resolveFixture(platform: SmokePlatformId, fixtureFile?: string):
   return { path, file: repoRelative(path), kind: "placeholder" };
 }
 
-export function fixtureUrl(scene: SmokeFeedScene): string {
-  return `https://${smokeHostnames[scene.platform]}${scene.path}`;
+export function fixtureUrl(scene: SmokeFeedScene, preferStore = false): string {
+  const query: string = preferStore ? `?${storeFixtureQuery}` : "";
+  return `https://${smokeHostnames[scene.platform]}${scene.path}${query}`;
 }
 
 export interface ApiFixtureRoute {
@@ -146,7 +161,8 @@ export interface FixtureServer {
 
 function handleRequest(request: IncomingMessage, response: ServerResponse): void {
   const hostname: string = (request.headers.host ?? "").split(":")[0] ?? "";
-  const requestPath: string = (request.url ?? "/").split("?")[0] ?? "/";
+  const [requestPath = "/", requestQuery = ""] = (request.url ?? "/").split("?");
+  const preferStore: boolean = requestQuery === storeFixtureQuery;
   const servesRequest = (route: { platform: SmokePlatformId; path: string }): boolean =>
     smokeHostnames[route.platform] === hostname && route.path === requestPath;
   // GET or POST alike: X posts some GraphQL operations and the interceptor relays both.
@@ -166,7 +182,7 @@ function handleRequest(request: IncomingMessage, response: ServerResponse): void
     return;
   }
   const markup: string = readFileSync(
-    resolveFixture(scene.platform, scene.fixtureFile).path,
+    resolveFixture(scene.platform, scene.fixtureFile, preferStore).path,
     "utf8",
   );
   response.writeHead(200, {

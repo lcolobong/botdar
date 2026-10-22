@@ -6,11 +6,11 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { BrowserContext, Page } from "playwright";
+import type { BrowserContext, Locator, Page } from "playwright";
 import { fixtureUrl, smokeFeedScenes } from "./fixtureServer.ts";
 import type { SmokeFeedScene, SmokePlatformId } from "./fixtureServer.ts";
-import type { CardBox, HoverTarget, SceneRecord, SmokeTheme, Viewport } from "./scenes.ts";
-import { findHoverTarget, openThemedPage, waitForBadges, waitForCardOpen } from "./scenes.ts";
+import type { CardBox, SceneRecord, SmokeTheme, Viewport } from "./scenes.ts";
+import { openThemedPage, waitForCardOpen } from "./scenes.ts";
 
 export const storeViewport: Viewport = { width: 1280, height: 800 };
 
@@ -18,17 +18,20 @@ export const storeViewport: Viewport = { width: 1280, height: 800 };
 const popupViewport: Viewport = { width: 340, height: 470 };
 const pageSettleMs = 300;
 const hoverSettleMs = 150;
+const badgeWaitMs = 5_000;
 
 interface StoreFeedScene {
   readonly file: string;
   readonly platform: SmokePlatformId;
   readonly theme: SmokeTheme;
+  /** The accessible name of the badge whose card the capture opens. */
+  readonly badgeName: string;
 }
 
 const storeFeedScenes: readonly StoreFeedScene[] = [
-  { file: "01-x-feed-card.png", platform: "x", theme: "light" },
-  { file: "02-bluesky-dark-card.png", platform: "bluesky", theme: "dark" },
-  { file: "03-reddit-declared.png", platform: "reddit", theme: "light" },
+  { file: "01-x-feed-card.png", platform: "x", theme: "light", badgeName: "Likely bot" },
+  { file: "02-bluesky-dark-card.png", platform: "bluesky", theme: "dark", badgeName: "Likely bot" },
+  { file: "03-reddit-declared.png", platform: "reddit", theme: "light", badgeName: "Declared bot" },
 ];
 
 function record(
@@ -68,19 +71,30 @@ async function captureFeedWithCard(
   }
   const page: Page = await openThemedPage(context, storeScene.theme, viewport, true);
   try {
-    await page.goto(fixtureUrl(feedScene), { waitUntil: "domcontentloaded" });
-    const badgeMounted: boolean = await waitForBadges(page);
-    const target: HoverTarget | undefined = badgeMounted ? await findHoverTarget(page) : undefined;
-    if (target === undefined) {
-      return record(storeScene.file, storeScene.theme, "skipped", "no badge mounted");
+    await page.goto(fixtureUrl(feedScene, true), { waitUntil: "domcontentloaded" });
+    const badgeControl: Locator = page
+      .locator("botdar-badge")
+      .getByRole("button", { name: storeScene.badgeName, exact: true })
+      .first();
+    const badgeMounted: boolean = await badgeControl
+      .waitFor({ state: "attached", timeout: badgeWaitMs })
+      .then(() => true)
+      .catch(() => false);
+    if (!badgeMounted) {
+      return record(
+        storeScene.file,
+        storeScene.theme,
+        "skipped",
+        `no "${storeScene.badgeName}" badge mounted`,
+      );
     }
-    await target.control.hover();
+    await badgeControl.hover();
     const cardBox: CardBox | undefined = await waitForCardOpen(page);
     await page.waitForTimeout(hoverSettleMs);
     await page.screenshot({ path: join(outDir, storeScene.file) });
     const reason: string | undefined =
       cardBox === undefined ? "card did not open within the wait; captured anyway" : undefined;
-    return record(storeScene.file, storeScene.theme, "captured", reason, target.name);
+    return record(storeScene.file, storeScene.theme, "captured", reason, storeScene.badgeName);
   } finally {
     await page.close();
   }
