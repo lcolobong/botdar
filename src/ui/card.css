@@ -1,0 +1,132 @@
+/* Hover card and shared controls from the design system bundle.css. */
+.bd-card {
+  width: var(--card-width);
+  box-sizing: border-box;
+  background: var(--surface-raised);
+  color: var(--ink);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-sans);
+  padding: var(--space-3);
+}
+.bd-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.bd-card__title {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+.bd-card__handle {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-muted);
+  margin: 2px 0 0;
+}
+.bd-card__reasons {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: var(--space-2);
+}
+.bd-card__reason {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+.bd-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  position: relative;
+  top: -1px;
+  display: inline-block;
+}
+.bd-dot--0 {
+  background: var(--source-tier-0);
+}
+.bd-dot--1 {
+  background: var(--source-tier-1);
+}
+.bd-dot--2 {
+  background: var(--source-tier-2);
+}
+.bd-card__legend {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+  margin: var(--space-2) 0 0;
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.bd-card__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.bd-card__note {
+  margin: var(--space-2) 0 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-muted);
+}
+.bd-card__caveat {
+  margin: var(--space-2) 0 0;
+  font-size: 13px;
+  line-height: 18px;
+}
+.bd-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--hairline);
+  font-size: 12px;
+  line-height: 16px;
+}
+.bd-btn {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--tier-typical-line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.bd-btn:hover {
+  background: var(--surface-sunken);
+}
+.bd-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.bd-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.bd-btn--link {
+  border: 0;
+  padding: 4px 0;
+  color: var(--brand);
+  background: transparent;
+}
+.bd-btn--sent {
+  border-color: transparent;
+  color: var(--ink-muted);
+}
