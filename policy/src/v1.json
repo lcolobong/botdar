@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "version": 1,
+  "issuedAt": "2026-10-22T00:00:00Z",
+  "minExtensionVersion": "0.1.0",
+  "platforms": {
+    "x": { "enabled": true, "tiers": { "t1": true, "t2": true } },
+    "reddit": { "enabled": true, "tiers": { "t1": true, "t2": true } },
+    "bluesky": { "enabled": true, "tiers": { "t1": true, "t2": true } }
+  }
+}
