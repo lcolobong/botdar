@@ -33,6 +33,8 @@ export interface SmokeFeedScene {
   readonly path: string;
   /** A specific recorded page under tests/fixtures/<platform>/html/; otherwise the preferred one. */
   readonly fixtureFile?: string;
+  /** A page anywhere in the repository, relative to its root; wins over fixtureFile. */
+  readonly fixturePath?: string;
   /** Carried into the manifest, for a scene that is expected to draw nothing. */
   readonly note?: string;
 }
@@ -107,6 +109,15 @@ export function resolveFixture(
   return { path, file: repoRelative(path), kind: "placeholder" };
 }
 
+/** The page a scene serves: its fixturePath when it names one, else the recorded or store page. */
+export function resolveSceneFixture(scene: SmokeFeedScene, preferStore = false): FixtureSource {
+  if (scene.fixturePath === undefined) {
+    return resolveFixture(scene.platform, scene.fixtureFile, preferStore);
+  }
+  const path: string = fileURLToPath(new URL(scene.fixturePath, repoRoot));
+  return { path, file: scene.fixturePath, kind: "recorded" };
+}
+
 export function fixtureUrl(scene: SmokeFeedScene, preferStore = false): string {
   const query: string = preferStore ? `?${storeFixtureQuery}` : "";
   return `https://${smokeHostnames[scene.platform]}${scene.path}${query}`;
@@ -154,19 +165,34 @@ export function hostResolverRules(port: number): string {
   return [...mappings, "MAP * ~NOTFOUND"].join(", ");
 }
 
+/** What a server answers: the smoke routes by default; the perf runner passes its own. */
+export interface FixtureRoutes {
+  readonly feedScenes: readonly SmokeFeedScene[];
+  readonly apiRoutes: readonly ApiFixtureRoute[];
+}
+
+export const smokeFixtureRoutes: FixtureRoutes = {
+  feedScenes: smokeFeedScenes,
+  apiRoutes: apiFixtureRoutes,
+};
+
 export interface FixtureServer {
   readonly port: number;
   close(): Promise<void>;
 }
 
-function handleRequest(request: IncomingMessage, response: ServerResponse): void {
+function handleRequest(
+  routes: FixtureRoutes,
+  request: IncomingMessage,
+  response: ServerResponse,
+): void {
   const hostname: string = (request.headers.host ?? "").split(":")[0] ?? "";
   const [requestPath = "/", requestQuery = ""] = (request.url ?? "/").split("?");
   const preferStore: boolean = requestQuery === storeFixtureQuery;
   const servesRequest = (route: { platform: SmokePlatformId; path: string }): boolean =>
     smokeHostnames[route.platform] === hostname && route.path === requestPath;
   // GET or POST alike: X posts some GraphQL operations and the interceptor relays both.
-  const apiRoute: ApiFixtureRoute | undefined = apiFixtureRoutes.find(servesRequest);
+  const apiRoute: ApiFixtureRoute | undefined = routes.apiRoutes.find(servesRequest);
   if (apiRoute !== undefined) {
     response.writeHead(200, {
       "content-type": "application/json; charset=utf-8",
@@ -175,16 +201,13 @@ function handleRequest(request: IncomingMessage, response: ServerResponse): void
     response.end(readFileSync(new URL(apiRoute.file, repoRoot)));
     return;
   }
-  const scene: SmokeFeedScene | undefined = smokeFeedScenes.find(servesRequest);
+  const scene: SmokeFeedScene | undefined = routes.feedScenes.find(servesRequest);
   if (scene === undefined) {
     response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
     response.end("no smoke fixture at this route");
     return;
   }
-  const markup: string = readFileSync(
-    resolveFixture(scene.platform, scene.fixtureFile, preferStore).path,
-    "utf8",
-  );
+  const markup: string = readFileSync(resolveSceneFixture(scene, preferStore).path, "utf8");
   response.writeHead(200, {
     "content-type": "text/html; charset=utf-8",
     "cache-control": "no-store",
@@ -192,13 +215,16 @@ function handleRequest(request: IncomingMessage, response: ServerResponse): void
   response.end(markup);
 }
 
-export function startFixtureServer(port = 0): Promise<FixtureServer> {
+export function startFixtureServer(
+  port = 0,
+  routes: FixtureRoutes = smokeFixtureRoutes,
+): Promise<FixtureServer> {
   const server: Server = createServer(
     {
       key: readFileSync(new URL("smoke-test-only.key.pem", certificateDir)),
       cert: readFileSync(new URL("smoke-test-only.cert.pem", certificateDir)),
     },
-    handleRequest,
+    (request, response) => handleRequest(routes, request, response),
   );
   return new Promise((resolve, reject) => {
     server.once("error", reject);
