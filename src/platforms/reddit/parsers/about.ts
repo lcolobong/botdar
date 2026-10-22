@@ -5,6 +5,7 @@
  * distinguished from a usable profile so the source can cache the outcome rather than retry.
  */
 import type { PartialSignals } from "../../../core/types";
+import { isDefaultAvatarUrl, isPlausibleUsername } from "../conventions";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -16,13 +17,6 @@ export type AboutParseResult =
 const ACCOUNT_KIND = "t2";
 const MAX_BIO_LENGTH = 500;
 const MAX_DISPLAY_NAME_LENGTH = 100;
-const USERNAME_PATTERN = /^[A-Za-z0-9_-]{1,20}$/;
-/**
- * Reddit's stock avatars live under redditstatic.com as `avatars/defaults/v2/avatar_default_N.png`
- * (current) or `avatars/avatar_default_NN_HEX.png` (older). Uploaded avatars and snoovatars are served
- * from redditmedia.com and never match.
- */
-const DEFAULT_AVATAR_PATTERN = /redditstatic\.com\/avatars\/(?:defaults\/|avatar_default_)/i;
 
 // MARK: - Type guards
 
@@ -74,7 +68,7 @@ function hasDefaultAvatarOf(data: UnknownRecord): boolean | undefined {
   if (iconUrl === undefined) {
     return undefined;
   }
-  return iconUrl.length === 0 || DEFAULT_AVATAR_PATTERN.test(iconUrl);
+  return iconUrl.length === 0 || isDefaultAvatarUrl(iconUrl);
 }
 
 function toSignals(data: UnknownRecord): PartialSignals {
@@ -122,7 +116,7 @@ export function parseAboutResponse(body: unknown): AboutParseResult {
   }
   const data: UnknownRecord | undefined = readRecord(body, "data");
   const username: string | undefined = readString(data, "name");
-  if (data === undefined || username === undefined || !USERNAME_PATTERN.test(username)) {
+  if (data === undefined || username === undefined || !isPlausibleUsername(username)) {
     return { status: "unavailable" };
   }
   const handle: string = username.toLowerCase();

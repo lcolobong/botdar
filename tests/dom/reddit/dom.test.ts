@@ -1,0 +1,166 @@
+// @vitest-environment happy-dom
+// @vitest-environment-options {"url": "https://www.reddit.com/"}
+
+import type { RedditPostRef } from "@/src/platforms/reddit/dom";
+import {
+  authorNameOf,
+  densityFor,
+  extractDomSignals,
+  findAuthorAnchor,
+  kindOf,
+  toPostRef,
+} from "@/src/platforms/reddit/dom";
+import { OLD_REDDIT_COMMENT_THREAD, OLD_REDDIT_POST, loadRedditFixture, snippet } from "./fixtures";
+
+function post(index: number): Element {
+  const element: Element | undefined = document.querySelectorAll("shreddit-post")[index];
+  if (element === undefined) throw new Error(`no post at ${index}`);
+  return element;
+}
+
+function comment(author: string): Element {
+  const element: Element | null = document.querySelector(`shreddit-comment[author="${author}"]`);
+  if (element === null) throw new Error(`no comment by ${author}`);
+  return element;
+}
+
+function refOf(element: Element): RedditPostRef {
+  const ref: RedditPostRef | null = toPostRef(element);
+  if (ref === null) throw new Error("expected a post ref");
+  return ref;
+}
+
+describe("feed fixture", () => {
+  beforeEach(() => loadRedditFixture("feed.html"));
+
+  it("hydrates the declarative shadow roots", () => {
+    expect(post(0).shadowRoot).not.toBeNull();
+    expect(post(0).querySelector("template")).toBeNull();
+  });
+
+  it("classifies posts and reads the author attribute with its casing", () => {
+    expect(kindOf(post(0))).toBe("post");
+    expect(authorNameOf(post(0))).toBe("Quiet_Lantern_4821");
+    expect(densityFor("post")).toBe("reddit-post");
+  });
+
+  it("anchors on the slotted credit-bar author link", () => {
+    const anchor: Element | null = findAuthorAnchor(post(0), "post");
+    expect(anchor?.getAttribute("href")).toBe("/user/Quiet_Lantern_4821/");
+    expect(anchor?.getRootNode()).toBe(document);
+  });
+
+  it("falls back to the shadow root when nothing is slotted", () => {
+    const anchor: Element | null = findAuthorAnchor(post(1), "post");
+    expect(anchor?.getAttribute("href")).toBe("/user/Brisk_Falcon_2210/");
+    expect(anchor?.getRootNode()).toBe(post(1).shadowRoot);
+  });
+
+  it("builds a PostRef with the lowercased handle", () => {
+    expect(refOf(post(0))).toMatchObject({
+      kind: "post",
+      ref: { platform: "reddit", handle: "quiet_lantern_4821" },
+      isReply: false,
+    });
+    expect(refOf(post(0)).nativeLabel).toBeUndefined();
+    expect(refOf(post(1)).nativeLabel).toBe("automated");
+  });
+
+  it("extracts Tier 0 signals and never maps created-timestamp to account age", () => {
+    expect(extractDomSignals(refOf(post(0)))).toEqual({ displayName: "Quiet_Lantern_4821" });
+    expect(extractDomSignals(refOf(post(1)))).toEqual({
+      displayName: "Brisk_Falcon_2210",
+      declaredAutomated: true,
+      hasDefaultAvatar: true,
+    });
+  });
+});
+
+describe("comments fixture", () => {
+  beforeEach(() => loadRedditFixture("comments.html"));
+
+  it("anchors each comment on its own slotted meta row, not a reply's", () => {
+    const top: RedditPostRef = refOf(comment("Mossy_Teapot"));
+    expect(top.kind).toBe("comment");
+    expect(top.isReply).toBe(false);
+    expect(top.anchor.getAttribute("href")).toBe("/user/Mossy_Teapot/");
+    expect(top.anchor.parentElement?.parentElement?.parentElement).toBe(top.element);
+  });
+
+  it("marks nested comments as replies", () => {
+    expect(refOf(comment("Quiet_Lantern_4821")).isReply).toBe(true);
+    expect(refOf(comment("Deal_Scout_90210")).isReply).toBe(true);
+    expect(densityFor("comment")).toBe("reddit-comment");
+  });
+
+  it("reads the avatar from the author link image", () => {
+    expect(extractDomSignals(refOf(comment("Mossy_Teapot"))).hasDefaultAvatar).toBe(false);
+    expect(extractDomSignals(refOf(comment("Deal_Scout_90210"))).hasDefaultAvatar).toBe(true);
+    expect(extractDomSignals(refOf(comment("Quiet_Lantern_4821")))).not.toHaveProperty(
+      "hasDefaultAvatar",
+    );
+  });
+
+  it("skips a deleted author", () => {
+    expect(authorNameOf(comment("[deleted]"))).toBeUndefined();
+    expect(toPostRef(comment("[deleted]"))).toBeNull();
+  });
+});
+
+describe("app tag", () => {
+  it("accepts the guessed selectors", () => {
+    const tagged: Element = snippet(`
+      <shreddit-post author="Tag_Bot_1">
+        <div slot="credit-bar">
+          <a href="/user/Tag_Bot_1/">u/Tag_Bot_1</a>
+          <shreddit-tag type="app">registered app</shreddit-tag>
+        </div>
+      </shreddit-post>`);
+    expect(refOf(tagged).nativeLabel).toBe("automated");
+    expect(extractDomSignals(refOf(tagged)).declaredAutomated).toBe(true);
+  });
+
+  it("does not fire on text that merely contains APP", () => {
+    const plain: Element = snippet(`
+      <shreddit-post author="Happy_User">
+        <div slot="credit-bar">
+          <a href="/user/Happy_User/">u/Happy_User</a>
+          <span>APPLE pie thread</span>
+        </div>
+      </shreddit-post>`);
+    expect(refOf(plain).nativeLabel).toBeUndefined();
+    expect(extractDomSignals(refOf(plain))).not.toHaveProperty("declaredAutomated");
+  });
+});
+
+describe("old.reddit", () => {
+  it("reads a link thing", () => {
+    const ref: RedditPostRef = refOf(snippet(OLD_REDDIT_POST));
+    expect(ref).toMatchObject({
+      kind: "post",
+      ref: { handle: "quiet_lantern_4821" },
+      isReply: false,
+    });
+    expect(ref.anchor.classList.contains("author")).toBe(true);
+    expect(extractDomSignals(ref)).toEqual({ displayName: "Quiet_Lantern_4821" });
+  });
+
+  it("reads nested comment things and anchors each on its own tagline", () => {
+    const thread: Element = snippet(OLD_REDDIT_COMMENT_THREAD);
+    const parent: RedditPostRef = refOf(thread);
+    const nested: Element | null = thread.querySelector('.thing[data-author="Deal_Scout_90210"]');
+    if (nested === null) throw new Error("nested comment missing");
+    const child: RedditPostRef = refOf(nested);
+    expect(parent.kind).toBe("comment");
+    expect(parent.isReply).toBe(false);
+    expect(parent.anchor.textContent).toBe("Mossy_Teapot");
+    expect(child.isReply).toBe(true);
+    expect(child.anchor.textContent).toBe("Deal_Scout_90210");
+  });
+
+  it("ignores elements that are not posts", () => {
+    expect(kindOf(snippet("<div class='entry'></div>"))).toBeUndefined();
+    expect(toPostRef(snippet("<article><a href='/user/x/'>x</a></article>"))).toBeNull();
+    expect(toPostRef(snippet('<shreddit-post author="Nowhere_1"></shreddit-post>'))).toBeNull();
+  });
+});
