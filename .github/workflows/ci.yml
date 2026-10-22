@@ -17,6 +17,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
+      # The build comes first so tests/unit/manifest.test.ts checks the real built manifest.
+      - run: pnpm build
       - run: pnpm test
       - run: pnpm zip
       - run: pnpm zip:firefox

@@ -9,7 +9,11 @@ import {
   detectHostTheme,
   mountBadge,
   mountCard,
+  shadowStyles,
 } from "@/src/ui/mount";
+
+const BADGE_CSS = ":host { --botdar-test: badge; }";
+const CARD_CSS = ":host { --botdar-test: card; }";
 
 const fakeContext = (): ContentScriptContext =>
   ({ options: {}, onInvalidated: () => () => undefined }) as unknown as ContentScriptContext;
@@ -119,7 +123,7 @@ describe("mountBadge", () => {
     const anchor = makeAnchor();
     const { render } = trackedRender();
 
-    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "dark");
+    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "dark", BADGE_CSS);
 
     expect(anchor.nextElementSibling).toBe(mounted.shadowHost);
     expect(mounted.shadowHost.tagName.toLowerCase()).toBe(BADGE_ELEMENT_NAME);
@@ -128,12 +132,36 @@ describe("mountBadge", () => {
     expect(mounted.shadowHost.shadowRoot?.textContent).toContain("badge");
   });
 
+  it("writes the given stylesheet into the shadow root without fetching anything", async () => {
+    const anchor = makeAnchor();
+    const { render } = trackedRender();
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "light", BADGE_CSS);
+
+    expect(mounted.shadowHost.shadowRoot?.querySelector("style")?.textContent).toContain(BADGE_CSS);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it("lays the badge host out inline with the handle", async () => {
+    const anchor = makeAnchor();
+    const { render } = trackedRender();
+
+    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "light", BADGE_CSS);
+
+    const hostStyle: CSSStyleDeclaration = getComputedStyle(mounted.shadowHost);
+    expect(hostStyle.display).toBe("inline-flex");
+    expect(hostStyle.verticalAlign).toBe("middle");
+    expect(hostStyle.marginLeft).toBe("4px");
+  });
+
   it("reuses an existing badge sibling and updates its theme", async () => {
     const anchor = makeAnchor();
     const { render } = trackedRender();
-    const first: MountedUi = await mountBadge(fakeContext(), anchor, render, "light");
+    const first: MountedUi = await mountBadge(fakeContext(), anchor, render, "light", BADGE_CSS);
 
-    const second: MountedUi = await mountBadge(fakeContext(), anchor, render, "dark");
+    const second: MountedUi = await mountBadge(fakeContext(), anchor, render, "dark", BADGE_CSS);
 
     expect(second).toBe(first);
     expect(render).toHaveBeenCalledTimes(1);
@@ -146,8 +174,8 @@ describe("mountBadge", () => {
     const { render } = trackedRender();
 
     const [first, second] = await Promise.all([
-      mountBadge(fakeContext(), anchor, render, "light"),
-      mountBadge(fakeContext(), anchor, render, "light"),
+      mountBadge(fakeContext(), anchor, render, "light", BADGE_CSS),
+      mountBadge(fakeContext(), anchor, render, "light", BADGE_CSS),
     ]);
 
     expect(second).toBe(first);
@@ -160,7 +188,7 @@ describe("mountBadge", () => {
     anchor.after(orphan);
     const { render } = trackedRender();
 
-    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "dark");
+    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "dark", BADGE_CSS);
 
     expect(mounted.shadowHost).toBe(orphan);
     expect(orphan.dataset.theme).toBe("dark");
@@ -172,15 +200,28 @@ describe("mountBadge", () => {
   it("unmounts the rendered UI and removes the host on remove", async () => {
     const anchor = makeAnchor();
     const { render, unmount } = trackedRender();
-    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "light");
+    const mounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "light", BADGE_CSS);
 
     mounted.remove();
 
     expect(unmount).toHaveBeenCalledTimes(1);
     expect(mounted.shadowHost.isConnected).toBe(false);
-    const remounted: MountedUi = await mountBadge(fakeContext(), anchor, render, "light");
+    const remounted: MountedUi = await mountBadge(
+      fakeContext(),
+      anchor,
+      render,
+      "light",
+      BADGE_CSS,
+    );
     expect(remounted).not.toBe(mounted);
     expect(render).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("shadowStyles", () => {
+  it("joins the sheets with newlines in the given order", () => {
+    expect(shadowStyles(":host { a: 1 }", ":host { b: 2 }")).toBe(":host { a: 1 }\n:host { b: 2 }");
+    expect(shadowStyles()).toBe("");
   });
 });
 
@@ -193,19 +234,21 @@ describe("mountCard", () => {
       return () => undefined;
     });
 
-    const first: MountedUi = await mountCard(fakeContext(), render, "light");
-    const second: MountedUi = await mountCard(fakeContext(), render, "dark");
+    const first: MountedUi = await mountCard(fakeContext(), render, "light", CARD_CSS);
+    const second: MountedUi = await mountCard(fakeContext(), render, "dark", CARD_CSS);
 
     expect(second.shadowHost).toBe(first.shadowHost);
     expect(first.shadowHost.parentElement).toBe(document.body);
     expect(first.shadowHost.tagName.toLowerCase()).toBe(CARD_ELEMENT_NAME);
     expect(first.shadowHost.dataset.theme).toBe("dark");
+    expect(first.shadowHost.shadowRoot?.querySelector("style")?.textContent).toContain(CARD_CSS);
+    expect(getComputedStyle(first.shadowHost).position).toBe("fixed");
     expect(render).toHaveBeenCalledTimes(1);
     expect(document.body.querySelectorAll(CARD_ELEMENT_NAME)).toHaveLength(1);
 
     second.remove();
     expect(document.body.querySelectorAll(CARD_ELEMENT_NAME)).toHaveLength(0);
-    const third: MountedUi = await mountCard(fakeContext(), render, "light");
+    const third: MountedUi = await mountCard(fakeContext(), render, "light", CARD_CSS);
     expect(third.shadowHost).not.toBe(first.shadowHost);
     expect(render).toHaveBeenCalledTimes(2);
   });
