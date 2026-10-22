@@ -61,7 +61,11 @@ Gab (tiny audience).
 ## Non-platform work after MVP
 
 - Safari Web Extension wrapper for iOS and macOS Safari.
+- Persisted on-device Tier 2 cache (seven days, salted-hash keys) in v1.1; see
+  [decisions/ADR-0018](decisions/ADR-0018-no-shared-cache-yet.md).
 - Optional cloud layer behind the existing seam: LLM content analysis, coordination detection across
-  accounts, shared verdict cache. Requires a privacy policy update and a Limited Use disclosure.
+  accounts, shared signal cache. Requires a privacy policy update and a Limited Use disclosure; the
+  shared cache is deferred with conditions in ADR-0018 and explored in
+  [shared-cache-exploration.md](shared-cache-exploration.md).
 - A tiny trained model per platform once local feedback and calibration data exist.
 - A Bluesky labeler is a separate decision; see [decisions/ADR-0015](decisions/ADR-0015-bluesky-extension-not-labeler.md).

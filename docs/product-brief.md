@@ -103,5 +103,6 @@ in [design.md](design.md).
 ## References
 
 - [research/landscape.md](research/landscape.md), [research/feasibility.md](research/feasibility.md),
-  [research/heuristics.md](research/heuristics.md), [research/platforms.md](research/platforms.md)
+  [research/heuristics.md](research/heuristics.md), [research/platforms.md](research/platforms.md),
+  [research/shared-cache-costs-and-law.md](research/shared-cache-costs-and-law.md)
 - [architecture.md](architecture.md), [scoring-spec.md](scoring-spec.md), [decisions/](decisions/)
