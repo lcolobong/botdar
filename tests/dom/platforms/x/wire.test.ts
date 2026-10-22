@@ -16,6 +16,7 @@ import type {
   SourceTier,
 } from "@/src/core/types";
 import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME } from "@/src/ui/mount";
+import { adoptedCssOf } from "../../adoptedCss";
 import { createXAdapter } from "@/src/platforms/x/adapter";
 import { BADGED_ATTRIBUTE, markBadged, toPostRef, unmarkBadged } from "@/src/platforms/x/dom";
 import { QueryIdRegistry } from "@/src/platforms/x/queryIds";
@@ -206,8 +207,7 @@ describe("wirePlatform badges", () => {
 
   it("writes the bundled stylesheet into the badge and card shadow roots", async () => {
     await badgesSettled(2);
-    const styleOf = (host: Element | null): string =>
-      host?.shadowRoot?.querySelector("style")?.textContent ?? "";
+    const styleOf = (host: Element | null): string => adoptedCssOf(host);
     expect(styleOf(badgeHosts()[0] ?? null)).toContain(SHADOW_CSS);
     await vi.waitFor(() =>
       expect(styleOf(document.querySelector(CARD_ELEMENT_NAME))).toContain(SHADOW_CSS),
