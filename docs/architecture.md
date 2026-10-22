@@ -305,7 +305,9 @@ timers and observers register on `ctx` so an extension update invalidates cleanl
 1. `attach(post)` runs Tier 0 immediately, merges any Tier 1 data already received for that handle,
    scores, and renders. The observers attach a post when it comes within a screen of the viewport,
    not when it is discovered (ADR-0019).
-2. Tier 1 emissions arrive asynchronously and trigger a rescore for every mounted badge of that handle.
+2. Tier 1 emissions arrive asynchronously and trigger a rescore for every mounted badge of that handle,
+   unless the emission changed no value or tier of an account that already has a verdict (a relayed
+   body often repeats the previous one).
 3. Tier 2 is scheduled on hover only, goes through the cache and rate limiter, then rescoring.
 4. **Tier-merge rule:** a higher tier overwrites a lower tier's value for the same field; within the same
    tier, newer wins. `provenance` records the tier for each field so confidence can be computed.
