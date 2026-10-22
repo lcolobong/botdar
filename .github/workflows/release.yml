@@ -1,0 +1,41 @@
+name: Release
+# Builds the Chrome and Firefox packages for a version tag and attaches them, with the Firefox
+# sources archive, to a GitHub Release whose body is the tag message. Store submission is manual:
+# this workflow never publishes to the Chrome Web Store or AMO.
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm zip
+      - run: pnpm zip:firefox
+      - name: Read the tag message
+        # A shallow checkout may hold the tag as a plain ref, so fetch the annotated tag object
+        # before reading its message. A lightweight tag falls back to its commit message.
+        run: |
+          git fetch --force --no-tags origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > release-notes.md
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file release-notes.md \
+            --verify-tag \
+            .output/*.zip
