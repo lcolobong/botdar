@@ -1,0 +1,39 @@
+{
+  "data": {
+    "user_result_by_screen_name": {
+      "result": {
+        "__typename": "User",
+        "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDAz",
+        "rest_id": "1000000000000000003",
+        "about_profile": {
+          "account_based_in": "United States",
+          "created_country_accurate": true,
+          "learn_more_url": "https://help.x.com/en/rules-and-policies/about-account",
+          "location_accurate": true,
+          "source": "App Store",
+          "username_changes": { "count": 3 }
+        },
+        "affiliates_highlighted_label": {},
+        "avatar": {
+          "image_url": "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png"
+        },
+        "core": {
+          "created_at": "Sat Jan 03 09:12:45 +0000 2026",
+          "name": "Kai",
+          "screen_name": "kai09127364"
+        },
+        "is_blue_verified": true,
+        "privacy": { "protected": false },
+        "profile_image_shape": "Circle",
+        "verification": { "verified": true, "verified_type": "Blue" },
+        "verification_info": {
+          "is_identity_verified": false,
+          "reason": {
+            "description": "This account is verified.",
+            "verified_since_msec": "1767500000000"
+          }
+        }
+      }
+    }
+  }
+}

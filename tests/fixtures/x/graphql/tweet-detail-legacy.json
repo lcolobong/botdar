@@ -1,0 +1,241 @@
+{
+  "data": {
+    "threaded_conversation_with_injections_v2": {
+      "instructions": [
+        {
+          "type": "TimelineAddEntries",
+          "entries": [
+            {
+              "entryId": "tweet-1600000000000000001",
+              "sortIndex": "1600000000000000001",
+              "content": {
+                "entryType": "TimelineTimelineItem",
+                "__typename": "TimelineTimelineItem",
+                "itemContent": {
+                  "itemType": "TimelineTweet",
+                  "__typename": "TimelineTweet",
+                  "tweet_results": {
+                    "result": {
+                      "__typename": "Tweet",
+                      "rest_id": "1600000000000000001",
+                      "core": {
+                        "user_results": {
+                          "result": {
+                            "__typename": "User",
+                            "id": "VXNlcjoyMDAwMDAwMDAwMDAwMDAwMDAx",
+                            "rest_id": "2000000000000000001",
+                            "affiliates_highlighted_label": {},
+                            "has_graduated_access": true,
+                            "is_blue_verified": false,
+                            "profile_image_shape": "Circle",
+                            "legacy": {
+                              "can_dm": false,
+                              "created_at": "Mon Mar 02 11:05:00 +0000 2015",
+                              "default_profile": false,
+                              "default_profile_image": false,
+                              "description": "Old-shape bio, still served on thread pages.",
+                              "entities": { "description": { "urls": [] } },
+                              "fast_followers_count": 0,
+                              "favourites_count": 9800,
+                              "followers_count": 1520,
+                              "friends_count": 300,
+                              "listed_count": 12,
+                              "location": "Toronto",
+                              "media_count": 410,
+                              "name": "Legacy Poster",
+                              "normal_followers_count": 1520,
+                              "pinned_tweet_ids_str": [],
+                              "possibly_sensitive": false,
+                              "profile_image_url_https": "https://pbs.twimg.com/profile_images/2000000000000000001/legacy_normal.jpg",
+                              "profile_interstitial_type": "",
+                              "screen_name": "legacy_poster",
+                              "statuses_count": 25600,
+                              "verified": false,
+                              "want_retweets": true,
+                              "withheld_in_countries": []
+                            }
+                          }
+                        }
+                      },
+                      "legacy": {
+                        "full_text": "Thread: what the old user shape looks like.",
+                        "lang": "en",
+                        "reply_count": 2
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "entryId": "conversationthread-1600000000000000002",
+              "sortIndex": "1600000000000000000",
+              "content": {
+                "entryType": "TimelineTimelineModule",
+                "__typename": "TimelineTimelineModule",
+                "displayType": "VerticalConversation",
+                "items": [
+                  {
+                    "entryId": "conversationthread-1600000000000000002-tweet-1600000000000000002",
+                    "item": {
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1600000000000000002",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoyMDAwMDAwMDAwMDAwMDAwMDAy",
+                                  "rest_id": "2000000000000000002",
+                                  "affiliates_highlighted_label": {
+                                    "label": {
+                                      "badge": {
+                                        "url": "https://pbs.twimg.com/profile_images/2000000000000000001/legacy_bigger.jpg"
+                                      },
+                                      "description": "Automated by @legacy_poster",
+                                      "url": {
+                                        "url": "https://x.com/legacy_poster",
+                                        "urlType": "DeepLink"
+                                      },
+                                      "userLabelDisplayType": "Badge",
+                                      "userLabelType": "AutomatedLabel"
+                                    }
+                                  },
+                                  "is_blue_verified": false,
+                                  "legacy": {
+                                    "created_at": "Thu Aug 18 16:40:12 +0000 2022",
+                                    "default_profile": true,
+                                    "default_profile_image": false,
+                                    "description": "Posts a daily summary. Maintained by @legacy_poster.",
+                                    "entities": { "description": { "urls": [] } },
+                                    "followers_count": 86,
+                                    "friends_count": 1,
+                                    "name": "Daily Summary Helper",
+                                    "profile_image_url_https": "https://pbs.twimg.com/profile_images/2000000000000000002/helper_normal.png",
+                                    "screen_name": "helper_sum_7781",
+                                    "statuses_count": 1460,
+                                    "verified": false
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "full_text": "Summary for today: 3 replies, 1 mention.",
+                              "in_reply_to_status_id_str": "1600000000000000001",
+                              "lang": "en"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "conversationthread-1600000000000000002-tweet-1600000000000000003",
+                    "item": {
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1600000000000000003",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoyMDAwMDAwMDAwMDAwMDAwMDAz",
+                                  "rest_id": "2000000000000000003",
+                                  "affiliates_highlighted_label": {},
+                                  "is_blue_verified": false,
+                                  "legacy": {
+                                    "created_at": "Sun Sep 28 03:14:59 +0000 2025",
+                                    "default_profile": true,
+                                    "default_profile_image": true,
+                                    "description": "",
+                                    "entities": { "description": { "urls": [] } },
+                                    "followers_count": 3,
+                                    "friends_count": 412,
+                                    "name": "sam",
+                                    "profile_image_url_https": "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
+                                    "screen_name": "sam_k_2025",
+                                    "statuses_count": 57,
+                                    "verified": false,
+                                    "verified_type": "Government"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "full_text": "first",
+                              "in_reply_to_status_id_str": "1600000000000000001",
+                              "lang": "en"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "conversationthread-1600000000000000002-tweet-1600000000000000004",
+                    "item": {
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "TweetTombstone",
+                            "tombstone": {
+                              "__typename": "TextTombstone",
+                              "text": {
+                                "rtl": false,
+                                "text": "This Post is from a suspended account. Learn more",
+                                "entities": []
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "conversationthread-1600000000000000002-tweet-1600000000000000005",
+                    "item": {
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1600000000000000005",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "UserUnavailable",
+                                  "reason": "Suspended",
+                                  "unavailable_message": {
+                                    "rtl": false,
+                                    "text": "This account is suspended.",
+                                    "entities": []
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": { "full_text": "", "lang": "und" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

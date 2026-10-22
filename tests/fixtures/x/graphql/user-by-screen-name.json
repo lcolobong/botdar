@@ -1,0 +1,66 @@
+{
+  "data": {
+    "user": {
+      "result": {
+        "__typename": "User",
+        "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDAx",
+        "rest_id": "1000000000000000001",
+        "affiliates_highlighted_label": {},
+        "avatar": {
+          "image_url": "https://pbs.twimg.com/profile_images/1000000000000000001/alice_normal.jpg"
+        },
+        "core": {
+          "created_at": "Wed Oct 10 20:19:24 +0000 2018",
+          "name": "Alice Example",
+          "screen_name": "Alice_Example"
+        },
+        "dm_permissions": { "can_dm": false },
+        "has_graduated_access": true,
+        "is_blue_verified": false,
+        "legacy": {
+          "created_at": "Wed Oct 10 20:19:24 +0000 2018",
+          "default_profile": false,
+          "default_profile_image": false,
+          "description": "Stale legacy bio that the core shape supersedes.",
+          "entities": { "description": { "urls": [] } },
+          "fast_followers_count": 0,
+          "favourites_count": 1200,
+          "followers_count": 340,
+          "friends_count": 210,
+          "listed_count": 2,
+          "location": "Lisbon, Portugal",
+          "media_count": 40,
+          "name": "Alice (legacy)",
+          "normal_followers_count": 340,
+          "pinned_tweet_ids_str": [],
+          "possibly_sensitive": false,
+          "profile_banner_url": "https://pbs.twimg.com/profile_banners/1000000000000000001/1539202764",
+          "profile_image_url_https": "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
+          "profile_interstitial_type": "",
+          "screen_name": "Alice_Example",
+          "statuses_count": 4100,
+          "want_retweets": true,
+          "withheld_in_countries": []
+        },
+        "location": { "location": "Lisbon, Portugal" },
+        "media_permissions": { "can_media_tag": true },
+        "parody_commentary_fan_label": "None",
+        "profile_image_shape": "Circle",
+        "privacy": { "protected": false },
+        "profile_bio": {
+          "description": "Reads more than she writes. Opinions are my own.",
+          "entities": { "description": { "urls": [] } }
+        },
+        "relationship_counts": { "followers": 341, "following": 211 },
+        "relationship_perspectives": { "following": false },
+        "tipjar_settings": {},
+        "tweet_counts": { "tweets": 4101, "media_tweets": 40 },
+        "verification": { "verified": false },
+        "verification_info": { "is_identity_verified": false },
+        "highlights_info": { "can_highlight_tweets": true, "highlighted_tweets": "0" },
+        "business_account": {},
+        "creator_subscriptions_count": 0
+      }
+    }
+  }
+}

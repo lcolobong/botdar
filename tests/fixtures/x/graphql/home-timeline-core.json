@@ -1,0 +1,279 @@
+{
+  "data": {
+    "home": {
+      "home_timeline_urt": {
+        "instructions": [
+          {
+            "type": "TimelineAddEntries",
+            "entries": [
+              {
+                "entryId": "tweet-1700000000000000001",
+                "sortIndex": "1700000000000000001",
+                "content": {
+                  "entryType": "TimelineTimelineItem",
+                  "__typename": "TimelineTimelineItem",
+                  "itemContent": {
+                    "itemType": "TimelineTweet",
+                    "__typename": "TimelineTweet",
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "1700000000000000001",
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDAx",
+                              "rest_id": "1000000000000000001",
+                              "affiliates_highlighted_label": {},
+                              "avatar": {
+                                "image_url": "https://pbs.twimg.com/profile_images/1000000000000000001/alice_normal.jpg"
+                              },
+                              "core": {
+                                "created_at": "Wed Oct 10 20:19:24 +0000 2018",
+                                "name": "Alice Example",
+                                "screen_name": "Alice_Example"
+                              },
+                              "dm_permissions": { "can_dm": false },
+                              "has_graduated_access": true,
+                              "is_blue_verified": false,
+                              "legacy": {
+                                "default_profile": false,
+                                "default_profile_image": false,
+                                "pinned_tweet_ids_str": [],
+                                "want_retweets": true,
+                                "withheld_in_countries": []
+                              },
+                              "location": { "location": "Lisbon, Portugal" },
+                              "media_permissions": { "can_media_tag": true },
+                              "parody_commentary_fan_label": "None",
+                              "profile_image_shape": "Circle",
+                              "privacy": { "protected": false },
+                              "profile_bio": {
+                                "description": "Reads more than she writes. Opinions are my own.",
+                                "entities": { "description": { "urls": [] } }
+                              },
+                              "relationship_counts": { "followers": 340, "following": 210 },
+                              "relationship_perspectives": { "following": false },
+                              "tipjar_settings": {},
+                              "tweet_counts": { "tweets": 4100, "media_tweets": 40 },
+                              "verification": { "verified": false }
+                            }
+                          }
+                        },
+                        "quoted_status_result": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1699999999999999999",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDAy",
+                                  "rest_id": "1000000000000000002",
+                                  "affiliates_highlighted_label": {},
+                                  "avatar": {
+                                    "image_url": "https://pbs.twimg.com/profile_images/1000000000000000002/brand_normal.png"
+                                  },
+                                  "core": {
+                                    "created_at": "Tue Mar 21 14:02:11 +0000 2006",
+                                    "name": "Example News Desk",
+                                    "screen_name": "example_news"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {
+                                    "default_profile": false,
+                                    "default_profile_image": false,
+                                    "pinned_tweet_ids_str": ["1690000000000000000"],
+                                    "withheld_in_countries": []
+                                  },
+                                  "location": { "location": "" },
+                                  "profile_bio": {
+                                    "description": "Breaking news and analysis from Example.",
+                                    "entities": { "description": { "urls": [] } }
+                                  },
+                                  "relationship_counts": {
+                                    "followers": 2500000,
+                                    "following": 1200
+                                  },
+                                  "tweet_counts": { "tweets": 980000, "media_tweets": 120000 },
+                                  "verification": { "verified": true, "verified_type": "Business" }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "full_text": "Our live coverage starts now.",
+                              "lang": "en"
+                            }
+                          }
+                        },
+                        "legacy": {
+                          "full_text": "This is worth a read.",
+                          "is_quote_status": true,
+                          "lang": "en",
+                          "quoted_status_id_str": "1699999999999999999"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "entryId": "tweet-1700000000000000002",
+                "sortIndex": "1700000000000000000",
+                "content": {
+                  "entryType": "TimelineTimelineItem",
+                  "__typename": "TimelineTimelineItem",
+                  "itemContent": {
+                    "itemType": "TimelineTweet",
+                    "__typename": "TimelineTweet",
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "1700000000000000002",
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDAz",
+                              "rest_id": "1000000000000000003",
+                              "affiliates_highlighted_label": {},
+                              "avatar": {
+                                "image_url": "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png"
+                              },
+                              "core": {
+                                "created_at": "Sat Jan 03 09:12:45 +0000 2026",
+                                "name": "Kai",
+                                "screen_name": "kai09127364"
+                              },
+                              "is_blue_verified": true,
+                              "legacy": {
+                                "default_profile": true,
+                                "default_profile_image": true,
+                                "pinned_tweet_ids_str": [],
+                                "withheld_in_countries": []
+                              },
+                              "location": "",
+                              "profile_bio": { "description": "", "entities": {} },
+                              "relationship_counts": { "followers": 12, "following": 2400 },
+                              "tweet_counts": { "tweets": 8900, "media_tweets": 3 },
+                              "verification": { "verified": true, "verified_type": "Blue" }
+                            }
+                          }
+                        },
+                        "legacy": {
+                          "full_text": "Agreed 💯",
+                          "in_reply_to_screen_name": "Alice_Example",
+                          "lang": "und"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "entryId": "promoted-tweet-1700000000000000003",
+                "sortIndex": "1699999999999999990",
+                "content": {
+                  "entryType": "TimelineTimelineItem",
+                  "__typename": "TimelineTimelineItem",
+                  "itemContent": {
+                    "itemType": "TimelineTweet",
+                    "__typename": "TimelineTweet",
+                    "promotedMetadata": {
+                      "advertiser_results": {},
+                      "disclosureType": "NoDisclosure"
+                    },
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "1700000000000000003",
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "rest_id": "1000000000000000001",
+                              "core": {
+                                "created_at": "Wed Oct 10 20:19:24 +0000 2018",
+                                "name": "Alice Example",
+                                "screen_name": "Alice_Example"
+                              },
+                              "is_blue_verified": false
+                            }
+                          }
+                        },
+                        "legacy": { "full_text": "Repeated author, same rest_id.", "lang": "en" }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "entryId": "who-to-follow-1700000000000000004",
+                "sortIndex": "1699999999999999980",
+                "content": {
+                  "entryType": "TimelineTimelineModule",
+                  "__typename": "TimelineTimelineModule",
+                  "displayType": "Vertical",
+                  "header": { "text": "Who to follow" },
+                  "items": [
+                    {
+                      "entryId": "who-to-follow-1700000000000000004-user-1000000000000000004",
+                      "item": {
+                        "itemContent": {
+                          "itemType": "TimelineUser",
+                          "__typename": "TimelineUser",
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA0",
+                              "rest_id": "1000000000000000004",
+                              "affiliates_highlighted_label": {},
+                              "avatar": {
+                                "image_url": "https://pbs.twimg.com/profile_images/1000000000000000004/maria_normal.jpg"
+                              },
+                              "core": {
+                                "created_at": "Fri Jun 14 08:30:00 +0000 2013",
+                                "name": "Maria Dev",
+                                "screen_name": "maria_dev"
+                              },
+                              "is_blue_verified": false,
+                              "legacy": {
+                                "default_profile_image": false,
+                                "pinned_tweet_ids_str": []
+                              },
+                              "location": { "location": "Berlin" },
+                              "profile_bio": {
+                                "description": "Compilers by day, gardens by night.",
+                                "entities": { "description": { "urls": [] } }
+                              },
+                              "relationship_counts": { "followers": 15200, "following": 870 },
+                              "tweet_counts": { "tweets": 31000, "media_tweets": 2100 },
+                              "verification": { "verified": false }
+                            }
+                          },
+                          "userDisplayType": "User"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "entryId": "cursor-bottom-1699999999999999970",
+                "sortIndex": "1699999999999999970",
+                "content": {
+                  "entryType": "TimelineTimelineCursor",
+                  "__typename": "TimelineTimelineCursor",
+                  "value": "DAABCgABGy8Y-example-cursor",
+                  "cursorType": "Bottom"
+                }
+              }
+            ]
+          }
+        ],
+        "metadata": { "scribeConfig": { "page": "home" } }
+      }
+    }
+  }
+}
