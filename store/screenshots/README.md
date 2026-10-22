@@ -26,7 +26,11 @@ Regenerate all five with:
 pnpm build && pnpm smoke -- --only store --viewport 1280x800 --out store/screenshots
 ```
 
-then delete the `popup-alone.png` and `manifest.json` it also writes. Each file is 1280x800 at
+The three feed captures are served from `tests/fixtures/store/` (realistic pages with the same authors
+as the recorded fixtures); the popup and options captures seed a fetched policy first, so they read
+"Policy updated today" and "Version 1, signature verified".
+
+Then delete the `popup-alone.png` and `manifest.json` it also writes. Each file is 1280x800 at
 device scale 1, RGB without alpha.
 
 The Chrome Web Store also takes an optional 440x280 small promo tile and a 1400x560 marquee; make
