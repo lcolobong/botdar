@@ -1,0 +1,407 @@
+<!doctype html>
+<!--
+  Three timeline cells in the shape X renders in 2026: article[data-testid="tweet"], the
+  [data-testid="User-Name"] block with the display-name link above the "@handle · time" row,
+  [data-testid="Tweet-User-Avatar"] with the avatar img, and [data-testid="tweetText"].
+  Post 2 carries the "Automated" label row and a default avatar; post 3 is a reply.
+  Class names are trimmed to a representative few; selectors never rely on them.
+-->
+<html lang="en" dir="ltr" style="background-color: rgb(255, 255, 255)">
+  <head>
+    <meta charset="utf-8" />
+    <title>Home / X</title>
+  </head>
+  <body>
+    <div id="react-root">
+      <main role="main">
+        <div aria-label="Timeline: Your Home Timeline" class="css-175oi2r">
+          <div data-testid="cellInnerDiv">
+            <article
+              data-testid="tweet"
+              role="article"
+              tabindex="0"
+              aria-labelledby="id__a1 id__a2 id__a3"
+              class="css-175oi2r r-1loqt21 r-18u37iz r-1ny4l3l r-1udh08x"
+            >
+              <div class="css-175oi2r r-18u37iz">
+                <div class="css-175oi2r r-onrtq4 r-18kxxzh r-1b7u577">
+                  <div data-testid="Tweet-User-Avatar" class="css-175oi2r">
+                    <div class="css-175oi2r r-1adg3ll r-bztko3">
+                      <a
+                        href="/alice_example"
+                        role="link"
+                        aria-hidden="true"
+                        tabindex="-1"
+                        class="css-175oi2r r-1pi2tsx r-13qz1uu r-o7ynqc r-6416eg r-1ny4l3l r-1loqt21"
+                      >
+                        <img
+                          alt=""
+                          draggable="true"
+                          src="https://pbs.twimg.com/profile_images/1000000000000000001/alice_normal.jpg"
+                          class="css-9pa8cd"
+                        />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div class="css-175oi2r r-1iusvr4 r-16y2uox r-1777fci r-kzbkwu">
+                  <div class="css-175oi2r r-zl2h9q">
+                    <div class="css-175oi2r r-k4xj1c r-18u37iz r-1wtj0ep">
+                      <div
+                        data-testid="User-Name"
+                        class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l r-1awozwy r-18u37iz"
+                      >
+                        <div class="css-175oi2r r-1awozwy r-18u37iz r-1wbh5a2 r-dnmrzs r-1ny4l3l">
+                          <div class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l">
+                            <a
+                              href="/alice_example"
+                              role="link"
+                              class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l r-1loqt21"
+                            >
+                              <div
+                                dir="ltr"
+                                class="css-146c3p1 r-bcqeeo r-1ttztb7 r-qvutc0 r-b88u0q"
+                              >
+                                <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3">
+                                  <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3"
+                                    >Alice Example</span
+                                  >
+                                </span>
+                              </div>
+                            </a>
+                          </div>
+                        </div>
+                        <div class="css-175oi2r r-18u37iz r-1wbh5a2 r-13hce6t">
+                          <div class="css-175oi2r r-1d09ksm r-18u37iz r-1wbh5a2">
+                            <div class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l">
+                              <a
+                                href="/alice_example"
+                                role="link"
+                                tabindex="-1"
+                                class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l r-1loqt21"
+                              >
+                                <div
+                                  dir="ltr"
+                                  class="css-146c3p1 r-dnmrzs r-1udh08x r-1udbk01 r-3s2u2q"
+                                >
+                                  <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3"
+                                    >@alice_example</span
+                                  >
+                                </div>
+                              </a>
+                            </div>
+                            <div
+                              dir="ltr"
+                              aria-hidden="true"
+                              class="css-146c3p1 r-1q142lx r-s1qlax"
+                            >
+                              <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3">·</span>
+                            </div>
+                            <div class="css-175oi2r r-18u37iz r-1q142lx">
+                              <a
+                                href="/alice_example/status/1800000000000000001"
+                                dir="ltr"
+                                aria-label="Oct 21"
+                                role="link"
+                                class="css-146c3p1 r-1loqt21 r-xoduu5 r-1q142lx r-1w6e6rj"
+                              >
+                                <time datetime="2026-10-21T14:03:00.000Z">Oct 21</time>
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="css-175oi2r">
+                    <div
+                      data-testid="tweetText"
+                      dir="auto"
+                      lang="en"
+                      class="css-146c3p1 r-bcqeeo r-1ttztb7 r-qvutc0 r-37j5jr r-a023e6"
+                    >
+                      <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3"
+                        >Reading more than I write today.</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div data-testid="cellInnerDiv">
+            <article
+              data-testid="tweet"
+              role="article"
+              tabindex="0"
+              aria-labelledby="id__b1 id__b2 id__b3"
+              class="css-175oi2r r-1loqt21 r-18u37iz r-1ny4l3l r-1udh08x"
+            >
+              <div class="css-175oi2r r-18u37iz">
+                <div class="css-175oi2r r-onrtq4 r-18kxxzh r-1b7u577">
+                  <div data-testid="Tweet-User-Avatar" class="css-175oi2r">
+                    <div class="css-175oi2r r-1adg3ll r-bztko3">
+                      <a
+                        href="/kai09127364"
+                        role="link"
+                        aria-hidden="true"
+                        tabindex="-1"
+                        class="css-175oi2r r-1pi2tsx r-13qz1uu r-o7ynqc r-6416eg r-1ny4l3l r-1loqt21"
+                      >
+                        <img
+                          alt=""
+                          draggable="true"
+                          src="https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png"
+                          class="css-9pa8cd"
+                        />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div class="css-175oi2r r-1iusvr4 r-16y2uox r-1777fci r-kzbkwu">
+                  <div class="css-175oi2r r-zl2h9q">
+                    <div class="css-175oi2r r-k4xj1c r-18u37iz r-1wtj0ep">
+                      <div
+                        data-testid="User-Name"
+                        class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l r-1awozwy r-18u37iz"
+                      >
+                        <div class="css-175oi2r r-1awozwy r-18u37iz r-1wbh5a2 r-dnmrzs r-1ny4l3l">
+                          <div class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l">
+                            <a
+                              href="/kai09127364"
+                              role="link"
+                              class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l r-1loqt21"
+                            >
+                              <div
+                                dir="ltr"
+                                class="css-146c3p1 r-bcqeeo r-1ttztb7 r-qvutc0 r-b88u0q"
+                              >
+                                <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3">
+                                  <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3">Kai</span>
+                                </span>
+                              </div>
+                            </a>
+                          </div>
+                          <div
+                            class="css-175oi2r r-1awozwy r-18u37iz r-1wbh5a2 r-dnmrzs r-1ny4l3l r-xoduu5"
+                          >
+                            <svg
+                              viewBox="0 0 22 22"
+                              aria-label="Verified account"
+                              role="img"
+                              class="r-4qtqp9 r-yyyyoo r-1xvli5t r-bnwqim r-lrvibr r-m6rgpd r-1cvl2hr r-f9ja8p r-og9te1 r-3t4u6i"
+                            >
+                              <g>
+                                <path
+                                  d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.434 1.218.877 1.688.47.443 1.054.747 1.687.878.633.132 1.29.084 1.897-.136.274.586.705 1.084 1.246 1.439.54.354 1.17.551 1.816.569.647-.016 1.276-.213 1.817-.567s.972-.854 1.245-1.44c.604.239 1.266.296 1.903.164.636-.132 1.22-.447 1.68-.907.46-.46.776-1.044.908-1.681s.075-1.299-.165-1.903c.586-.274 1.084-.705 1.439-1.246.354-.54.551-1.17.569-1.816zM9.662 14.85l-3.429-3.428 1.293-1.302 2.072 2.072 4.4-4.794 1.347 1.246z"
+                                ></path>
+                              </g>
+                            </svg>
+                          </div>
+                        </div>
+                        <div class="css-175oi2r r-18u37iz r-1wbh5a2 r-13hce6t">
+                          <div class="css-175oi2r r-1d09ksm r-18u37iz r-1wbh5a2">
+                            <div class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l">
+                              <a
+                                href="/kai09127364"
+                                role="link"
+                                tabindex="-1"
+                                class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l r-1loqt21"
+                              >
+                                <div
+                                  dir="ltr"
+                                  class="css-146c3p1 r-dnmrzs r-1udh08x r-1udbk01 r-3s2u2q"
+                                >
+                                  <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3"
+                                    >@kai09127364</span
+                                  >
+                                </div>
+                              </a>
+                            </div>
+                            <div
+                              dir="ltr"
+                              aria-hidden="true"
+                              class="css-146c3p1 r-1q142lx r-s1qlax"
+                            >
+                              <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3">·</span>
+                            </div>
+                            <div class="css-175oi2r r-18u37iz r-1q142lx">
+                              <a
+                                href="/kai09127364/status/1800000000000000002"
+                                dir="ltr"
+                                aria-label="2 hours ago"
+                                role="link"
+                                class="css-146c3p1 r-1loqt21 r-xoduu5 r-1q142lx r-1w6e6rj"
+                              >
+                                <time datetime="2026-10-22T08:10:00.000Z">2h</time>
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="css-175oi2r r-1awozwy r-18u37iz r-1wbh5a2 r-dnmrzs">
+                          <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                            class="r-4qtqp9 r-yyyyoo r-dnmrzs r-bnwqim r-lrvibr r-m6rgpd r-1xvli5t r-1hdv0qi"
+                          >
+                            <g>
+                              <path
+                                d="M19.5 7H17V5.5C17 4.12 15.88 3 14.5 3h-5C8.12 3 7 4.12 7 5.5V7H4.5C3.12 7 2 8.12 2 9.5v8C2 18.88 3.12 20 4.5 20h15c1.38 0 2.5-1.12 2.5-2.5v-8C22 8.12 20.88 7 19.5 7zM9 5.5c0-.28.22-.5.5-.5h5c.28 0 .5.22.5.5V7H9V5.5zM8.5 15c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm7 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"
+                              ></path>
+                            </g>
+                          </svg>
+                          <span dir="ltr" class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3"
+                            >Automated</span
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="css-175oi2r">
+                    <div
+                      data-testid="tweetText"
+                      dir="auto"
+                      lang="en"
+                      class="css-146c3p1 r-bcqeeo r-1ttztb7 r-qvutc0 r-37j5jr r-a023e6"
+                    >
+                      <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3"
+                        >Hourly weather for Lisbon: 19°C, clear.</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div data-testid="cellInnerDiv">
+            <article
+              data-testid="tweet"
+              role="article"
+              tabindex="0"
+              aria-labelledby="id__c1 id__c2 id__c3"
+              class="css-175oi2r r-1loqt21 r-18u37iz r-1ny4l3l r-1udh08x"
+            >
+              <div class="css-175oi2r r-18u37iz">
+                <div class="css-175oi2r r-onrtq4 r-18kxxzh r-1b7u577">
+                  <div data-testid="Tweet-User-Avatar" class="css-175oi2r">
+                    <div class="css-175oi2r r-1adg3ll r-bztko3">
+                      <a
+                        href="/maria_dev"
+                        role="link"
+                        aria-hidden="true"
+                        tabindex="-1"
+                        class="css-175oi2r r-1pi2tsx r-13qz1uu r-o7ynqc r-6416eg r-1ny4l3l r-1loqt21"
+                      >
+                        <img
+                          alt=""
+                          draggable="true"
+                          src="https://pbs.twimg.com/profile_images/1000000000000000004/maria_normal.jpg"
+                          class="css-9pa8cd"
+                        />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div class="css-175oi2r r-1iusvr4 r-16y2uox r-1777fci r-kzbkwu">
+                  <div class="css-175oi2r r-zl2h9q">
+                    <div class="css-175oi2r r-k4xj1c r-18u37iz r-1wtj0ep">
+                      <div
+                        data-testid="User-Name"
+                        class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l r-1awozwy r-18u37iz"
+                      >
+                        <div class="css-175oi2r r-1awozwy r-18u37iz r-1wbh5a2 r-dnmrzs r-1ny4l3l">
+                          <div class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l">
+                            <a
+                              href="/maria_dev"
+                              role="link"
+                              class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l r-1loqt21"
+                            >
+                              <div
+                                dir="ltr"
+                                class="css-146c3p1 r-bcqeeo r-1ttztb7 r-qvutc0 r-b88u0q"
+                              >
+                                <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3">
+                                  <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3"
+                                    >Maria 🛠️</span
+                                  >
+                                </span>
+                              </div>
+                            </a>
+                          </div>
+                        </div>
+                        <div class="css-175oi2r r-18u37iz r-1wbh5a2 r-13hce6t">
+                          <div class="css-175oi2r r-1d09ksm r-18u37iz r-1wbh5a2">
+                            <div class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l">
+                              <a
+                                href="/maria_dev"
+                                role="link"
+                                tabindex="-1"
+                                class="css-175oi2r r-1wbh5a2 r-dnmrzs r-1ny4l3l r-1loqt21"
+                              >
+                                <div
+                                  dir="ltr"
+                                  class="css-146c3p1 r-dnmrzs r-1udh08x r-1udbk01 r-3s2u2q"
+                                >
+                                  <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3"
+                                    >@Maria_Dev</span
+                                  >
+                                </div>
+                              </a>
+                            </div>
+                            <div
+                              dir="ltr"
+                              aria-hidden="true"
+                              class="css-146c3p1 r-1q142lx r-s1qlax"
+                            >
+                              <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3">·</span>
+                            </div>
+                            <div class="css-175oi2r r-18u37iz r-1q142lx">
+                              <a
+                                href="/maria_dev/status/1800000000000000003"
+                                dir="ltr"
+                                aria-label="14 minutes ago"
+                                role="link"
+                                class="css-146c3p1 r-1loqt21 r-xoduu5 r-1q142lx r-1w6e6rj"
+                              >
+                                <time datetime="2026-10-22T09:56:00.000Z">14m</time>
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="css-175oi2r r-1wbh5a2">
+                    <div
+                      dir="ltr"
+                      class="css-146c3p1 r-bcqeeo r-1ttztb7 r-qvutc0 r-37j5jr r-a023e6 r-rjixqe r-16dba41"
+                    >
+                      <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3">Replying to </span>
+                      <a href="/alice_example" role="link" class="css-146c3p1 r-1loqt21 r-1q142lx">
+                        <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3">@alice_example</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="css-175oi2r">
+                    <div
+                      data-testid="tweetText"
+                      dir="auto"
+                      lang="en"
+                      class="css-146c3p1 r-bcqeeo r-1ttztb7 r-qvutc0 r-37j5jr r-a023e6"
+                    >
+                      <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-poiln3"
+                        >Same here. Automated reading lists never stick for me.</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
