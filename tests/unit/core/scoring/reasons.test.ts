@@ -309,8 +309,14 @@ describe("caveatFor", () => {
   });
 
   it("uses only the closing line when there is no evidence", () => {
-    expect(caveatFor({ ...base, tier: "unknown", evidenceByMagnitude: [] })).toBe(
+    expect(caveatFor({ ...base, evidenceByMagnitude: [] })).toBe(
       "This is a pattern read, not a verdict. Humans trip these signals every day.",
+    );
+  });
+
+  it("says there is too little to read for an unknown verdict", () => {
+    expect(caveatFor({ ...base, tier: "unknown", evidenceByMagnitude: [] })).toBe(
+      "Too little is visible about this account to read it either way.",
     );
   });
 });

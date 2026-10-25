@@ -6,6 +6,7 @@
 import type { AccountSignals, Evidence, Feature, SourceTier, Verdict, VerdictTier } from "../types";
 import { applyGroupCaps, featureContribution } from "./contributions";
 import {
+  NO_REASON,
   declaredReasonFor,
   caveatFor,
   confidenceNoteFor,
@@ -27,6 +28,16 @@ const ALL_TIERS: readonly SourceTier[] = [0, 1, 2];
 /** An evidence item counts towards the independence rule from this contribution upwards. */
 const STRONG_CONTRIBUTION = 0.6;
 const MANY_MIN_CONFIDENCE = 0.5;
+/**
+ * A typical read is reported as Likely human only from this confidence up; below it the verdict is
+ * unknown (No read). On Reddit that means a Tier 2 lookup delivered (ADR-0020).
+ */
+const LIKELY_HUMAN_MIN_CONFIDENCE = 0.5;
+/**
+ * ...and only with at least this many worded evidence items beyond the handle's shape that do not
+ * point towards automation.
+ */
+const LIKELY_HUMAN_MIN_EVIDENCE = 2;
 const LOW_CONFIDENCE_BELOW = 0.4;
 const CONFIDENCE_NOTE_BELOW = 0.7;
 
@@ -96,6 +107,28 @@ function hasIndependentStrongEvidence(evidence: Evidence[]): boolean {
   return strongGroups.size >= 2;
 }
 
+/**
+ * "Likely human" is a claim, so a typical read has to earn it. With little data the low prior alone
+ * lands an account in typical: on Reddit's page an obvious self-declared bot scored typical from one
+ * non-signal (a username outside the suggested pattern). Every platform scores the handle's shape
+ * from the name on the post, so handle evidence never counts towards the minimum. A handle or other
+ * signal that lifts the account above typical is unaffected.
+ */
+function earnsLikelyHuman(evidence: Evidence[], confidence: number): boolean {
+  // An item whose template has nothing to say (a pattern that is absent) would leave the card
+  // claiming Likely human with fewer reasons than the rule asks for, so only worded items count.
+  // An item that points towards automation ("Joined 6 weeks ago", "Default avatar") cannot vouch
+  // for an ordinary account either, however low the total stays. Neutral items do count: most
+  // ordinary observations ("Custom avatar", a karma split) sit in a zero bin, and requiring a
+  // negative bin would leave Reddit only its age bin, so no Reddit account could ever earn it.
+  const ordinaryBeyondHandle: number = evidence.filter(
+    (item) => item.group !== "handle" && item.reason !== NO_REASON && item.contribution <= 0,
+  ).length;
+  return (
+    confidence >= LIKELY_HUMAN_MIN_CONFIDENCE && ordinaryBeyondHandle >= LIKELY_HUMAN_MIN_EVIDENCE
+  );
+}
+
 function bucket(
   probability: number,
   evidence: Evidence[],
@@ -155,16 +188,17 @@ export function scoreAccount(
     sourcesMissing,
     options.sourcesAvailable,
   );
+  const unknown: Verdict = {
+    ...unscored,
+    tier: "unknown",
+    reasons: [],
+    confidence: 0,
+    ...(confidenceNote === undefined ? {} : { confidenceNote }),
+    caveat: caveatFor({ tier: "unknown", evidenceByMagnitude: [], signals, now, sourcesMissing }),
+    lowConfidence: true,
+  };
   if (features.length === 0) {
-    return {
-      ...unscored,
-      tier: "unknown",
-      reasons: [],
-      confidence: 0,
-      ...(confidenceNote === undefined ? {} : { confidenceNote }),
-      caveat: caveatFor({ tier: "unknown", evidenceByMagnitude: [], signals, now, sourcesMissing }),
-      lowConfidence: true,
-    };
+    return unknown;
   }
 
   const evidence: Evidence[] = evidenceFor(features, signals, weights, now);
@@ -176,6 +210,9 @@ export function scoreAccount(
 
   const uncappedTier: VerdictTier = bucket(probability, evidence, confidence, weights.thresholds);
   const tier: VerdictTier = lowConfidence && uncappedTier === "many" ? "some" : uncappedTier;
+  if (tier === "typical" && !earnsLikelyHuman(evidence, confidence)) {
+    return unknown;
+  }
   const attachedNote: string | undefined =
     confidence < CONFIDENCE_NOTE_BELOW ? confidenceNote : undefined;
 

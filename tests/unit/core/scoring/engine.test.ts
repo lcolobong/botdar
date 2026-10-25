@@ -40,6 +40,117 @@ describe("scoreAccount short-circuits", () => {
   });
 });
 
+describe("scoreAccount earning Likely human", () => {
+  const ordinary: Feature[] = [
+    feature("x.postsPerDay", 3, "activity", 1),
+    feature("x.accountAgeDays", 2000, "age", 1),
+  ];
+
+  it("returns unknown when the handle is all the evidence and it reads typical", () => {
+    const verdict: Verdict = score([
+      feature("x.handleNameDigits", false, "handle"),
+      feature("x.handleTrailingDigits", 0, "handle"),
+    ]);
+    expect(verdict.tier).toBe("unknown");
+    expect(verdict.reasons).toEqual([]);
+    expect(verdict.confidence).toBe(0);
+    expect(verdict.lowConfidence).toBe(true);
+    expect(verdict.caveat).toBe("Too little is visible about this account to read it either way.");
+  });
+
+  it("returns unknown when no feature is known to the weights table", () => {
+    expect(score([feature("x.somethingNew", 3, "activity")]).tier).toBe("unknown");
+  });
+
+  it("is typical with two items beyond the handle at confidence 0.5 or more", () => {
+    const verdict: Verdict = score([feature("x.handleNameDigits", false, "handle"), ...ordinary]);
+    expect(verdict.tier).toBe("typical");
+    expect(verdict.reasons.length).toBeGreaterThan(0);
+  });
+
+  it("returns unknown with one item beyond the handle", () => {
+    const verdict: Verdict = score([
+      feature("x.handleNameDigits", false, "handle"),
+      feature("x.accountAgeDays", 2000, "age", 1),
+    ]);
+    expect(verdict.tier).toBe("unknown");
+  });
+
+  it("does not count an item whose pattern is absent and has nothing to say", () => {
+    const verdict: Verdict = score([
+      feature("x.accountAgeDays", 2000, "age", 1),
+      feature("x.newAndBlue", false, "verification", 1),
+    ]);
+    expect(verdict.tier).toBe("unknown");
+  });
+
+  it("gives a Likely human card at least two reasons", () => {
+    const verdict: Verdict = score(ordinary);
+    expect(verdict.tier).toBe("typical");
+    expect(verdict.reasons.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("does not let observations that point towards automation earn Likely human", () => {
+    const youngDefault: Verdict = scoreAccount(
+      [
+        feature("reddit.accountAgeDays", 42, "age", 2),
+        feature("reddit.noAvatar", true, "profile"),
+        feature("reddit.noVerifiedEmail", true, "profile", 2),
+      ],
+      signalsWith({ tiersDelivered: [0, 2] }),
+      defaultWeights.reddit,
+      { ...options, sourcesAvailable: [0, 2] },
+    );
+    expect(youngDefault.probability).toBeLessThan(0.3);
+    expect(youngDefault.tier).toBe("unknown");
+  });
+
+  it("lets neutral ordinary observations earn Likely human on Reddit", () => {
+    const longStanding: Verdict = scoreAccount(
+      [
+        feature("reddit.accountAgeDays", 2600, "age", 2),
+        feature("reddit.noAvatar", false, "profile"),
+        feature("reddit.noVerifiedEmail", false, "profile", 2),
+      ],
+      signalsWith({ tiersDelivered: [0, 2] }),
+      defaultWeights.reddit,
+      { ...options, sourcesAvailable: [0, 2] },
+    );
+    expect(longStanding.tier).toBe("typical");
+    expect(longStanding.reasons).toEqual(["Account is 7 years old", "Custom avatar"]);
+  });
+
+  it("returns unknown below confidence 0.5, as on Reddit before a lookup delivers", () => {
+    const tier0Only: Verdict = scoreAccount(
+      [
+        feature("reddit.generatedName", false, "handle"),
+        feature("reddit.noAvatar", false, "profile"),
+        feature("reddit.noVerifiedEmail", false, "profile"),
+      ],
+      signalsWith({ tiersDelivered: [0] }),
+      defaultWeights.reddit,
+      { ...options, sourcesAvailable: [0, 2] },
+    );
+    expect(tier0Only.tier).toBe("unknown");
+    expect(score(ordinary, [0]).tier).toBe("unknown");
+    expect(score(ordinary, [0, 1]).tier).toBe("typical");
+  });
+
+  it("leaves Unsure and Likely bot untouched at low confidence", () => {
+    expect(score([feature("x.postsPerDay", 200, "activity")], [0]).tier).toBe("some");
+  });
+
+  it("keeps a handle-only read that a policy prior lifts above typical", () => {
+    const verdict: Verdict = scoreAccount(
+      [feature("x.handleNameDigits", true, "handle"), feature("x.handleBigramLL", -5, "handle")],
+      signalsWith({ tiersDelivered: ALL_TIERS }),
+      { ...testWeights, prior: -0.5 },
+      options,
+    );
+    expect(verdict.tier).toBe("some");
+  });
+});
+
 describe("scoreAccount golden table", () => {
   it("typical: an old, quiet account with negative evidence", () => {
     const verdict: Verdict = score([
@@ -83,15 +194,20 @@ describe("scoreAccount golden table", () => {
   });
 
   it("typical: three handle features are capped as a group before the logistic", () => {
+    // Two neutral items beyond the handle keep this a Likely human read rather than unknown.
     const verdict: Verdict = score([
       feature("x.handleNameDigits", true, "handle"),
       feature("x.handleTrailingDigits", 6, "handle"),
       feature("x.handleBigramLL", -5, "handle"),
+      feature("x.postsPerDay", 3, "activity"),
+      feature("x.followingRatio", 2, "graph"),
     ]);
     expect(verdict.evidence.map((item) => item.contribution)).toEqual([
       expect.closeTo(0.48, 10),
       expect.closeTo(0.42, 10),
       expect.closeTo(0.3, 10),
+      0,
+      0,
     ]);
     expect(verdict.logOdds).toBeCloseTo(-1.3, 10);
     expect(verdict.tier).toBe("typical");
@@ -163,8 +279,8 @@ describe("scoreAccount verdict shape", () => {
   });
 
   it("carries the evidence group and tier through", () => {
-    const verdict: Verdict = score([strongAge]);
-    expect(verdict.evidence[0]).toMatchObject({ group: "age", tier: 1 });
+    const verdict: Verdict = score([strongAge, strongActivity]);
+    expect(verdict.evidence.find((item) => item.group === "age")).toMatchObject({ tier: 1 });
   });
 
   it("stamps the policy version and the supplied clock", () => {
@@ -186,12 +302,19 @@ describe("scoreAccount verdict shape", () => {
 describe("scoreAccount wording", () => {
   it("renders reasons through the templates using the post-cap contribution sign", () => {
     const verdict: Verdict = scoreAccount(
-      [strongActivity, feature("x.accountAgeDays", 2190, "age", 1)],
+      [
+        strongActivity,
+        feature("x.accountAgeDays", 2190, "age", 1),
+        feature("x.followingRatio", 0.5, "graph", 1),
+      ],
       signalsWith({ tiersDelivered: ALL_TIERS, values: { createdAt: NOW - 2190 * DAY_MS } }),
       testWeights,
       options,
     );
-    expect(verdict.reasons).toEqual(["~200 posts/day since joining", "Account is 6 years old"]);
+    expect(verdict.reasons.slice(0, 2)).toEqual([
+      "~200 posts/day since joining",
+      "Account is 6 years old",
+    ]);
     expect(verdict.evidence[0]?.reason).toBe("~200 posts/day since joining");
   });
 

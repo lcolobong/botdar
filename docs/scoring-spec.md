@@ -291,6 +291,21 @@ Input: `Feature[]` from the platform adapter, the effective platform config, and
      `contribution ≥ 0.6` from **distinct** groups (the independence rule); `confidence ≥ 0.5`.
    - Otherwise `some` if `p ≥ thresholds.some`.
    - Otherwise `typical`.
+   - **Likely human is earned.** A `typical` result stays `typical` only when `confidence ≥ 0.5`
+     and at least two worded evidence items lie outside the `handle` group; otherwise it becomes
+     `unknown`, shaped as in step 2 (badge "No read"). An item is worded when its template has
+     something to say (step 9); an absent pattern such as "not verified early" is silent and does not
+     count, so a Likely human card always lists at least two reasons. Nor does an item that points
+     towards automation (`contribution > 0`, such as "Joined 6 weeks ago" or "Default avatar"): a
+     young account with a default avatar can stay under `thresholds.some` and must not get a card
+     that says it looks ordinary. Neutral items (`contribution = 0`, such as "Custom avatar") count,
+     since most ordinary observations sit in a zero bin. With little data the low prior
+     alone lands an account in `typical`: on Reddit's page an obvious self-declared bot scored
+     `typical` from one non-signal (a username outside the suggested pattern). On Reddit the
+     confidence bar means a Tier 2 lookup delivered. Every adapter scores the handle's shape from the
+     name on the post, so handle evidence never counts towards the two. `some`, `many` and `declared`
+     are unaffected, so no flagged read is lost. The constants sit beside the `many` gate in
+     `src/core/scoring/engine.ts`.
 8. **Low-confidence cap.** `lowConfidence = confidence < 0.4`. When true the tier is capped at `some` and
    the badge renders hollow. A `confidenceNote` is attached whenever `confidence < 0.7`, naming the
    missing tier in plain words ("Profile details not loaded yet" / "Extra lookups are off").

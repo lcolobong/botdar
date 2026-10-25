@@ -84,8 +84,8 @@ export interface Evidence {
 
 /**
  * Internal tier names are stable; rendered labels map onto them per label style (ADR-0017):
- * many = Likely bot, some = Unsure, declared = Declared bot, typical = optional Likely human,
- * unknown = never drawn.
+ * many = Likely bot, some = Unsure, declared = Declared bot, typical = Likely human,
+ * unknown = no read (nothing beyond the handle, or no features at all).
  */
 export type VerdictTier = "typical" | "some" | "many" | "declared" | "unknown";
 
