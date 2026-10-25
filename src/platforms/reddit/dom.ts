@@ -62,6 +62,13 @@ const AVATAR_IMAGE_SELECTOR = "img, faceplate-img";
  */
 const AUTHOR_FLAIR_SELECTOR =
   '[data-credit-bar-flair-content], .credit-bar-user-flair, shreddit-comment-author-flair, shreddit-author-flair, [slot="authorFlair"], [class*="flair" i], [data-testid*="flair" i]';
+/**
+ * Home-feed cards (view-context AggregateFeed, recorded 2026-10-25) show the community and the
+ * post time but never an author link, although the author still arrives in the `author`
+ * attribute. The badge then anchors after the time, where the card's metadata ends; the hover
+ * card names the account, so the reader is not left guessing what the badge is about.
+ */
+const POST_TIME_SELECTOR = "time, faceplate-timeago";
 const MAX_DISPLAY_NAME_LENGTH = 100;
 
 // MARK: - Element classification
@@ -140,6 +147,16 @@ export function findAuthorAnchor(
     const toAuthor: Element | undefined = links.find((link) => profilePathName(link) === author);
     const anchor: Element | undefined = toAuthor ?? links[0];
     if (anchor !== undefined) return anchor;
+  }
+  return postTimeAnchor(element, kind);
+}
+
+/** The home feed's stand-in for an author link; comments and old Reddit always render one. */
+function postTimeAnchor(element: Element, kind: RedditPostKind): Element | null {
+  if (kind !== "post" || isOldRedditThing(element)) return null;
+  for (const row of metaRowsOf(element, kind)) {
+    const time: Element | null = row.querySelector(POST_TIME_SELECTOR);
+    if (time !== null) return time;
   }
   return null;
 }

@@ -234,6 +234,35 @@ describe("live post page markup (2026-10-25)", () => {
     expect(signals.declaredBy).toBe("flair");
   });
 
+  // Trimmed from the live home feed (2026-10-25): a card shows the community and the time, and
+  // no author link at all; the author is only in the attribute.
+  it("anchors a home-feed card after its time when no author link is rendered", () => {
+    const card: Element = snippet(`
+      <shreddit-post author="Lucky_Falcon_1580" view-context="AggregateFeed" view-type="cardView">
+        <span slot="credit-bar" class="flex">
+          <span id="feed-post-credit-bar-t3_live2" class="flex">
+            <span data-post-click-location="subreddit-link">
+              <a data-testid="subreddit-name" href="https://www.reddit.com/r/FortyNiners/">r/FortyNiners</a>
+            </span>
+            <span>•</span>
+            <time datetime="2026-10-25T19:04:42.625Z">5h</time>
+            <shreddit-join-button data-testid="credit-bar-join-button" name="FortyNiners"></shreddit-join-button>
+          </span>
+        </span>
+      </shreddit-post>`);
+    const post: RedditPostRef = refOf(card);
+    expect(post.ref.handle).toBe("lucky_falcon_1580");
+    expect(post.anchor.tagName.toLowerCase()).toBe("time");
+    expect(extractDomSignals(post)).not.toHaveProperty("hasDefaultAvatar");
+  });
+
+  it("still returns no ref for a comment without any author row", () => {
+    const bare: Element = snippet(
+      `<shreddit-comment author="Quiet_One" depth="0"><time datetime="2026-10-25T19:04:42Z">5h</time></shreddit-comment>`,
+    );
+    expect(toPostRef(bare)).toBeNull();
+  });
+
   it("reads the avatar from the comment's avatar slot", () => {
     expect(extractDomSignals(refOf(liveComment())).hasDefaultAvatar).toBe(false);
     const reply: Element | null = liveComment().querySelector(
