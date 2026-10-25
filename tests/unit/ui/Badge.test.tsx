@@ -54,6 +54,22 @@ describe("Badge", () => {
     );
   });
 
+  it("draws No read as a neutral question-mark badge", () => {
+    const button: HTMLButtonElement = mount({ tier: "unknown", lowConfidence: true });
+    expect(labelText(button)).toBe("No read");
+    expect(button.getAttribute("aria-label")).toBe("No read");
+    expect(button.className).toContain("bd-badge--unknown");
+    expect(button.className).toContain("bd-badge--hollow");
+    expect(button.querySelector("svg circle")).not.toBeNull();
+  });
+
+  it("reads Checking with a pulsing glyph while an unknown account's lookup runs", () => {
+    const button: HTMLButtonElement = mount({ tier: "unknown", loading: true });
+    expect(labelText(button)).toBe("Checking");
+    expect(button.getAttribute("aria-label")).toBe("Checking");
+    expect(button.className).toContain("bd-badge--loading");
+  });
+
   it("adds the hollow, paused and loading state classes", () => {
     const button: HTMLButtonElement = mount({ lowConfidence: true, paused: true, loading: true });
     expect(button.className).toContain("bd-badge--hollow");

@@ -54,6 +54,33 @@ describe("HoverCard", () => {
     expect((card.querySelector(".bd-btn") as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it("shows a No read card with its explanation and no reasons, caveat or feedback", () => {
+    const card: HTMLElement = mount({
+      tier: "unknown",
+      reasons: [],
+      explanation: "The platform returned no profile details.",
+      confidenceNote: "Extra lookups not run yet",
+    });
+    expect(card.querySelector(".bd-card__title")?.textContent).toBe("No read");
+    expect(card.querySelector(".bd-card__explain")?.textContent).toBe(
+      "The platform returned no profile details.",
+    );
+    expect(card.querySelector(".bd-card__reasons")).toBeNull();
+    expect(card.querySelector(".bd-card__caveat")).toBeNull();
+    expect(card.querySelector(".bd-card__note")).toBeNull();
+    expect(card.querySelector(".bd-btn--link")?.textContent).toBe("Settings");
+    expect(card.querySelectorAll(".bd-btn")).toHaveLength(1);
+    expect(card.querySelector(".bd-badge--unknown")).not.toBeNull();
+  });
+
+  it("titles a No read card Checking while its lookup runs", () => {
+    const card: HTMLElement = mount({ tier: "unknown", reasons: [], loading: true });
+    expect(card.querySelector(".bd-card__title")?.textContent).toBe("Checking");
+    expect(card.querySelector("[role=dialog]")?.getAttribute("aria-label")).toBe(
+      "Checking: @news_update_48213",
+    );
+  });
+
   it("calls the feedback handler and shows the sent state", () => {
     const onFeedback = vi.fn();
     const card: HTMLElement = mount({ onFeedback });

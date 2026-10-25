@@ -10,6 +10,7 @@ export interface BadgeProps {
   lowConfidence: boolean;
   /** Dashed outline: lookups are paused by policy or conservative mode. */
   paused: boolean;
+  /** A Tier 2 lookup for this account is running: the glyph pulses, and No read reads "Checking". */
   loading: boolean;
   /** Reddit comment rows show the glyph alone unless the user asked for labels. */
   glyphOnlyAtCommentDensity: boolean;
@@ -23,6 +24,7 @@ const TIER_CLASS: Record<BadgeTier, string> = {
   some: "bd-badge--some",
   declared: "bd-badge--declared",
   typical: "bd-badge--human",
+  unknown: "bd-badge--unknown",
 };
 
 const DENSITY_CLASS: Record<BadgeDensity, string> = {
@@ -36,7 +38,7 @@ export function Badge(props: BadgeProps) {
   const glyphOnly =
     props.labelStyle === "icon" ||
     (props.density === "reddit-comment" && props.glyphOnlyAtCommentDensity);
-  const text = glyphOnly ? null : visibleLabel(props.tier, props.labelStyle);
+  const text = glyphOnly ? null : visibleLabel(props.tier, props.labelStyle, props.loading);
   const classes = [
     "bd-badge",
     TIER_CLASS[props.tier],
@@ -52,7 +54,7 @@ export function Badge(props: BadgeProps) {
     <button
       type="button"
       class={classes}
-      aria-label={accessibleLabel(props.tier)}
+      aria-label={accessibleLabel(props.tier, props.loading)}
       aria-describedby={props.describedBy}
       onMouseEnter={props.onOpen}
       onMouseLeave={props.onClose}
