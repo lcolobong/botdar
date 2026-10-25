@@ -20,9 +20,11 @@ Copy this list into the release PR and check every item.
 
 - [ ] [test-plan.md](test-plan.md) manual checklist completed on Chrome and Firefox.
 - [ ] Data-egress check passed on each platform.
-- [ ] Live-markup check: on each platform, logged in, the console count of badge hosts is non-zero on a
-      feed and a thread (see test-plan.md "Manual checklist"); the Reddit HTML fixtures are hand-written,
-      so this is the only check that catches markup drift.
+- [ ] Fixtures re-recorded for each platform's feed and thread with `pnpm capture`, the DOM tests and
+      `pnpm smoke` run against the new recordings, and the recordings reviewed for names before commit.
+- [ ] Live check (test-plan.md "Live check per platform PR") done on each platform with the release
+      build; anchor misses zero in the popup diagnostics.
+- [ ] `grep -rn GUESS src/` is empty, or every hit has a tracker row saying which recording will confirm it.
 - [ ] Calibration pass done (first release) or thresholds reviewed (later releases).
 - [ ] Before/after media captured for every user-visible change.
 

@@ -32,8 +32,20 @@
 
 ## Fixtures
 
-Recorded platform responses go under `tests/fixtures/<platform>/`. Run `pnpm fixtures:anonymize` before
-committing; it replaces handles, ids and names with stable fakes.
+- Recorded platform responses and pages go under `tests/fixtures/<platform>/`.
+- **Record before building.** The first commit of a platform adapter, or of a new surface on an
+  existing platform, is a recording of the live page made with `pnpm capture` (see
+  `scripts/capture/run.ts` and [ADR-0021](docs/decisions/ADR-0021-record-live-markup-before-building.md)).
+  A selector that no recording has confirmed is marked `GUESS` in the code with what was assumed.
+- Every HTML fixture header says whether it is a recording or a hand-written snippet, the URL shape
+  it came from and the date. Hand-written snippets cover edge cases; they never stand in for a
+  surface that has not been recorded.
+- `pnpm capture` anonymises as it records; `pnpm fixtures:anonymize -- <file> --platform <p>` does
+  the same for a file you already have. Both replace usernames, ids and avatar paths with stable
+  fakes and leave display names and post text for you to read before committing. Raw captures live
+  under `.output/capture/`, which git ignores; never copy one into the repo.
+- A PR that changes what a platform shows records a live check by the maintainer in its test plan
+  (test-plan.md "Live check per platform PR"), done or skipped with the reason.
 
 ## Docs and tracker
 
