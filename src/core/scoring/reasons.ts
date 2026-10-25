@@ -257,6 +257,7 @@ const DECLARED_CLOSING =
   "The account operator chose to label it as automated. That is the platform's recommended, transparent practice.";
 /** Replaces the suspicion caveat on a Likely human card: there is no flagged signal to excuse. */
 const TYPICAL_CLOSING = "These signals look like an ordinary account; nothing here is proof.";
+const UNKNOWN_CLOSING = "Too little is visible about this account to read it either way.";
 
 export interface CaveatContext {
   tier: VerdictTier;
@@ -269,6 +270,9 @@ export interface CaveatContext {
 export function caveatFor(context: CaveatContext): string {
   if (context.tier === "declared") {
     return DECLARED_CLOSING;
+  }
+  if (context.tier === "unknown") {
+    return UNKNOWN_CLOSING;
   }
   if (context.tier === "typical") {
     return context.sourcesMissing.length > 0
@@ -324,6 +328,7 @@ export function allFixedStrings(): string[] {
     LONG_LIVED_CLOSING,
     DECLARED_CLOSING,
     TYPICAL_CLOSING,
+    UNKNOWN_CLOSING,
     ...([0, 1, 2] as const).flatMap((tier) => [
       missingTierNote(tier, true),
       missingTierNote(tier, false),
