@@ -461,6 +461,144 @@ describe("AccountResolver", () => {
     });
   });
 
+  describe("on-sight lookups", () => {
+    it("looks each account up once, however many of its posts come into view", async () => {
+      const { resolver, resolve } = makeHarness();
+      const first: BadgeHandle = resolver.attach(post());
+      const second: BadgeHandle = resolver.attach(post());
+      await Promise.all([first.lookupOnSight(), second.lookupOnSight()]);
+      await resolver.attach(post()).lookupOnSight();
+      expect(resolve).toHaveBeenCalledTimes(1);
+      expect(first.lookupStatus()).toBe("delivered");
+    });
+
+    it("does not retry an account whose lookup returned nothing, but a hover still does", async () => {
+      const { resolver, resolve } = makeHarness();
+      resolve.mockResolvedValueOnce(null);
+      const handle: BadgeHandle = resolver.attach(post());
+      await handle.lookupOnSight();
+      await resolver.attach(post()).lookupOnSight();
+      expect(resolve).toHaveBeenCalledTimes(1);
+      expect(handle.lookupStatus()).toBe("empty");
+      await handle.lookup();
+      expect(resolve).toHaveBeenCalledTimes(2);
+    });
+
+    it("serves the cache without a request", async () => {
+      const cache = new TtlLruCache<string, PartialSignals>(10, TIER2_CACHE_TTL_MS);
+      cache.set("someone", { followers: 99 });
+      const { resolver, resolve } = makeHarness({ t1: true, t2: true }, { cache });
+      const handle: BadgeHandle = resolver.attach(post());
+      await handle.lookupOnSight();
+      expect(resolve).not.toHaveBeenCalled();
+      expect(handle.lookupStatus()).toBe("delivered");
+    });
+
+    it("queues past the limiter's burst and stays pending until a token frees", async () => {
+      const { resolver, resolve } = makeHarness();
+      const handles: BadgeHandle[] = ["a", "b", "c"].map((handle) => resolver.attach(post(handle)));
+      const lookups: Array<Promise<void>> = handles.map((handle) => handle.lookupOnSight());
+      expect(resolve).toHaveBeenCalledTimes(2);
+      expect(handles[2]?.lookupStatus()).toBe("pending");
+
+      await vi.advanceTimersByTimeAsync(1000);
+      await Promise.all(lookups);
+      expect(resolve).toHaveBeenCalledTimes(3);
+      expect(handles[2]?.lookupStatus()).toBe("delivered");
+    });
+
+    it("lets a hover jump the queue", async () => {
+      const { resolver, resolve } = makeHarness();
+      const handles: BadgeHandle[] = ["a", "b", "c", "d"].map((handle) =>
+        resolver.attach(post(handle)),
+      );
+      handles.forEach((handle) => void handle.lookupOnSight());
+      void handles[3]?.lookup();
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(resolve.mock.calls.map((call) => (call[0] as AccountRef).handle)).toEqual([
+        "a",
+        "b",
+        "d",
+      ]);
+    });
+
+    it("drops queued lookups when Tier 2 is turned off, and skips them while it is off", async () => {
+      const { resolver, resolve } = makeHarness();
+      const handles: BadgeHandle[] = ["a", "b", "c"].map((handle) => resolver.attach(post(handle)));
+      const queued: Promise<void> = Promise.all(
+        handles.map((handle) => handle.lookupOnSight()),
+      ).then(() => undefined);
+      resolver.updateConfig(config({ t1: true, t2: false }));
+      await queued;
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(resolve).toHaveBeenCalledTimes(2);
+      expect(handles[2]?.lookupStatus()).toBe("off");
+      await resolver.attach(post("e")).lookupOnSight();
+      expect(resolve).toHaveBeenCalledTimes(2);
+    });
+
+    it("skips accounts while an active source needs a login", async () => {
+      const { resolver, resolve, adapter } = makeHarness();
+      const active: SignalSource | undefined = adapter.sources.find(
+        (source) => source.kind === "active",
+      );
+      if (active === undefined) throw new Error("no active source");
+      active.loginRequired = () => true;
+      const handle: BadgeHandle = resolver.attach(post());
+      await handle.lookupOnSight();
+      expect(resolve).not.toHaveBeenCalled();
+      expect(handle.lookupStatus()).toBe("loginRequired");
+    });
+
+    it("counts on-sight lookups and cache hits for the diagnostics panel", async () => {
+      resetDiagnostics();
+      const cache = new TtlLruCache<string, PartialSignals>(10, TIER2_CACHE_TTL_MS);
+      cache.set("cached", { followers: 99 });
+      const { resolver } = makeHarness({ t1: true, t2: true }, { cache });
+      await resolver.attach(post("cached")).lookupOnSight();
+      await resolver.attach(post("fresh")).lookupOnSight();
+      expect(diagnosticsSnapshot().lookups).toMatchObject({ started: 1, cached: 1, delivered: 1 });
+    });
+
+    it("does not spin when no active source can run the lookup", async () => {
+      const { resolver, adapter } = makeHarness();
+      adapter.sources = adapter.sources.filter((source) => source.kind !== "active");
+      const handle: BadgeHandle = resolver.attach(post());
+      const listener = vi.fn();
+      handle.subscribe(listener);
+      void handle.lookupOnSight();
+      for (let tick = 0; tick < 200; tick += 1) await Promise.resolve();
+      expect(listener.mock.calls.length).toBeLessThanOrEqual(1);
+      expect(handle.lookupStatus()).not.toBe("pending");
+    });
+
+    it("keeps a lookup the limiter turned away pending and retries it after a pause", async () => {
+      const { resolver, resolve, limiter } = makeHarness();
+      vi.spyOn(limiter, "tryAcquire").mockReturnValueOnce(false);
+      const handle: BadgeHandle = resolver.attach(post());
+      const listener = vi.fn();
+      handle.subscribe(listener);
+      void handle.lookupOnSight();
+      for (let tick = 0; tick < 200; tick += 1) await Promise.resolve();
+      expect(resolve).not.toHaveBeenCalled();
+      expect(listener).not.toHaveBeenCalled();
+      expect(handle.lookupStatus()).toBe("pending");
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(resolve).toHaveBeenCalledTimes(1);
+      expect(handle.lookupStatus()).toBe("delivered");
+    });
+
+    it("drops a queued account whose posts all left", async () => {
+      const { resolver, resolve } = makeHarness();
+      ["a", "b"].forEach((handle) => void resolver.attach(post(handle)).lookupOnSight());
+      const gone: PostRef = post("c");
+      void resolver.attach(gone).lookupOnSight();
+      resolver.detach(gone);
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(resolve).toHaveBeenCalledTimes(2);
+    });
+  });
+
   it("never runs a lookup on attach; Tier 2 waits for hover", async () => {
     const { resolver, resolve } = makeHarness();
     resolver.attach(post());

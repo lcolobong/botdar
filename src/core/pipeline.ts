@@ -7,6 +7,7 @@
  */
 
 import type { TtlLruCache } from "./cache";
+import { LookupQueue } from "./lookupQueue";
 import type { RateLimiter } from "./ratelimit";
 import { recordLookup } from "./diagnostics.ts";
 import { RateLimitedError } from "./ratelimit";
@@ -45,17 +46,23 @@ export type VerdictListener = (verdict: Verdict) => void;
 
 /**
  * Where an account's Tier 2 lookup stands, for the badge's loading state and the No read card.
- * `off`: the effective config has no Tier 2. `pending`: a lookup is running. `delivered`: one
- * returned data. `loginRequired`: an active source paused itself after a logged-out answer.
- * `empty`: a lookup ran and returned nothing. `idle`: none has run for this account yet.
+ * `off`: the effective config has no Tier 2. `pending`: a lookup is queued or running.
+ * `delivered`: one returned data. `loginRequired`: an active source paused itself after a
+ * logged-out answer. `empty`: a lookup ran and returned nothing. `idle`: none has run for this
+ * account yet.
  */
 export type LookupStatus = "off" | "idle" | "pending" | "delivered" | "empty" | "loginRequired";
 
 export interface BadgeHandle {
   subscribe: (listener: VerdictListener) => () => void;
   current: () => Verdict;
-  /** Schedules the Tier 2 lookup (on hover) and resolves after rescoring. */
+  /** Runs the Tier 2 lookup now (hover), ahead of any queued on-sight lookup; resolves after rescoring. */
   lookup: () => Promise<void>;
+  /**
+   * Queues the Tier 2 lookup when the post comes into view: at most one attempt per account per
+   * page, and none while a source needs a login. Resolves after rescoring, or at once when skipped.
+   */
+  lookupOnSight: () => Promise<void>;
   lookupStatus: () => LookupStatus;
 }
 
@@ -162,6 +169,7 @@ export class AccountResolver {
   private readonly entries = new Map<string, AccountEntry>();
   private readonly attachedPosts = new Map<Element, AttachedPost>();
   private readonly abortController = new AbortController();
+  private readonly onSightQueue: LookupQueue;
   private stopPassiveSources: Array<() => void> = [];
   private config: EffectivePlatformConfig;
   private disposed = false;
@@ -174,6 +182,11 @@ export class AccountResolver {
     this.limiter = options.limiter;
     this.cache = options.cache;
     this.now = options.now ?? Date.now;
+    this.onSightQueue = new LookupQueue({
+      limiter: this.limiter,
+      now: this.now,
+      run: (handle) => this.runQueuedLookup(handle),
+    });
     this.startPassiveSources();
   }
 
@@ -206,6 +219,7 @@ export class AccountResolver {
       },
       current: () => entry.verdict ?? this.recompute(entry),
       lookup: () => this.requestLookup(post.ref),
+      lookupOnSight: () => this.requestLookupOnSight(post.ref),
       lookupStatus: () => this.lookupStatusOf(entry),
     };
     this.attachedPosts.set(post.element, { entry, handle, listeners });
@@ -231,6 +245,7 @@ export class AccountResolver {
     }
     const entry: AccountEntry = this.entryFor(ref);
     if (entry.pendingLookup !== null) {
+      this.onSightQueue.promote(ref.handle);
       return entry.pendingLookup;
     }
     const cached: PartialSignals | undefined = this.cache.get(ref.handle);
@@ -240,17 +255,82 @@ export class AccountResolver {
       return;
     }
     recordLookup("started");
-    entry.pendingLookup = this.runActiveSources(entry).finally(() => {
-      entry.pendingLookup = null;
+    this.trackPending(entry, this.runActiveSources(entry));
+    return entry.pendingLookup ?? undefined;
+  }
+
+  /** The on-sight variant of `requestLookup` (ADR-0020): queued behind the limiter, once per account. */
+  requestLookupOnSight(ref: AccountRef): Promise<void> {
+    if (!this.config.tiers.t2 || this.disposed || !this.hasActiveLookupSource()) {
+      return Promise.resolve();
+    }
+    const entry: AccountEntry = this.entryFor(ref);
+    if (entry.pendingLookup !== null) {
+      return entry.pendingLookup;
+    }
+    const alreadyTried: boolean = entry.lookupAttempted || entry.sourcesAvailable.has(2);
+    if (alreadyTried || this.activeSourceNeedsLogin()) {
+      return Promise.resolve();
+    }
+    const cached: PartialSignals | undefined = this.cache.get(ref.handle);
+    if (cached !== undefined) {
+      recordLookup("cached");
+      this.absorb(entry, cached, 2);
+      return Promise.resolve();
+    }
+    this.trackPending(entry, this.onSightQueue.enqueue(ref.handle));
+    return entry.pendingLookup ?? Promise.resolve();
+  }
+
+  private trackPending(entry: AccountEntry, lookup: Promise<unknown>): void {
+    const pending: Promise<void> = lookup.then(
+      () => undefined,
+      () => undefined,
+    );
+    entry.pendingLookup = pending;
+    void pending.then(() => {
+      if (entry.pendingLookup === pending) {
+        entry.pendingLookup = null;
+      }
     });
-    return entry.pendingLookup;
+  }
+
+  /**
+   * The queue's runner. An account whose posts all left, or whose lookups stopped making sense
+   * (Tier 2 turned off, a login wall), is dropped as done; its badges hear the settled status.
+   */
+  private runQueuedLookup(handle: string): Promise<boolean> {
+    const entry: AccountEntry | undefined = this.entries.get(handle);
+    if (entry === undefined || this.disposed) {
+      return Promise.resolve(true);
+    }
+    const stillWanted: boolean =
+      this.config.tiers.t2 && entry.posts.size > 0 && this.hasActiveLookupSource();
+    if (!stillWanted || this.activeSourceNeedsLogin()) {
+      this.absorb(entry, null, 2);
+      return Promise.resolve(true);
+    }
+    const cached: PartialSignals | undefined = this.cache.get(handle);
+    if (cached !== undefined) {
+      recordLookup("cached");
+      this.absorb(entry, cached, 2, true);
+      return Promise.resolve(true);
+    }
+    recordLookup("started");
+    return this.runActiveSources(entry, { settleWhenTurnedAway: false });
+  }
+
+  private hasActiveLookupSource(): boolean {
+    return this.adapter.sources.some(
+      (source) => source.kind === "active" && source.tier === 2 && source.resolve !== undefined,
+    );
   }
 
   private lookupStatusOf(entry: AccountEntry): LookupStatus {
     if (!this.config.tiers.t2) {
       return "off";
     }
-    if (entry.lookupRunning) {
+    if (entry.lookupRunning || this.onSightQueue.has(entry.signals.ref.handle)) {
       return "pending";
     }
     if (entry.sourcesAvailable.has(2)) {
@@ -271,6 +351,9 @@ export class AccountResolver {
   /** `config.changed`: rescore every mounted badge and start or stop passive sources to match. */
   updateConfig(config: EffectivePlatformConfig): void {
     this.config = config;
+    if (!config.tiers.t2) {
+      this.onSightQueue.clear();
+    }
     this.stopPassive();
     this.startPassiveSources();
     for (const entry of this.entries.values()) {
@@ -282,6 +365,7 @@ export class AccountResolver {
 
   dispose(): void {
     this.disposed = true;
+    this.onSightQueue.clear();
     this.stopPassive();
     this.abortController.abort();
     this.attachedPosts.clear();
@@ -332,11 +416,20 @@ export class AccountResolver {
     this.absorb(this.entryFor(ref), partial, source.tier);
   }
 
-  private async runActiveSources(entry: AccountEntry): Promise<void> {
+  /**
+   * Resolves whether any source ran; false when the limiter turned the whole lookup away. A hover
+   * settles even then, so its card leaves the loading state; the queue does not
+   * (`settleWhenTurnedAway: false`), because it will try again and the badge is still pending.
+   */
+  private async runActiveSources(
+    entry: AccountEntry,
+    { settleWhenTurnedAway }: { settleWhenTurnedAway: boolean } = { settleWhenTurnedAway: true },
+  ): Promise<boolean> {
     const ref: AccountRef = entry.signals.ref;
     const collected: PartialSignals = {};
     let delivered = false;
     let outcome: "empty" | "rateLimited" | "failed" = "empty";
+    let ran = false;
     entry.lookupRunning = true;
     for (const source of this.adapter.sources) {
       if (source.kind !== "active" || source.tier !== 2 || source.resolve === undefined) {
@@ -348,6 +441,7 @@ export class AccountResolver {
         break;
       }
       entry.lookupAttempted = true;
+      ran = true;
       try {
         const partial: PartialSignals | null = await source.resolve(ref, {
           signal: this.abortController.signal,
@@ -369,15 +463,19 @@ export class AccountResolver {
     }
     entry.lookupRunning = false;
     if (this.disposed) {
-      return;
+      return ran;
     }
     recordLookup(delivered ? "delivered" : outcome);
+    if (!ran && !settleWhenTurnedAway) {
+      return false;
+    }
     if (delivered) {
       this.cache.set(ref.handle, collected);
     }
     // Rescore even when nothing arrived or nothing changed, so every badge of the account and a
     // waiting hover card leave their loading state.
     this.absorb(entry, delivered ? collected : null, 2, true);
+    return ran;
   }
 
   /**
