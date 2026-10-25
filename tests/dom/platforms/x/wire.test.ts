@@ -155,9 +155,9 @@ afterEach(() => {
 });
 
 describe("wirePlatform badges", () => {
-  it("mounts badges only for drawn tiers and marks those posts", async () => {
-    await badgesSettled(2);
-    expect(badgedHandles()).toEqual(["kai09127364", "maria_dev"]);
+  it("mounts a badge for every tier but a hidden Likely human, and marks those posts", async () => {
+    await badgesSettled(3);
+    expect(badgedHandles()).toEqual(["kai09127364", "maria_dev", "mila48213907"]);
     const [declared, many] = badgeHosts();
     expect(declared && badgeButton(declared).getAttribute("aria-label")).toBe("Declared bot");
     expect(many && badgeButton(many).getAttribute("aria-label")).toBe("Likely bot");
@@ -165,30 +165,30 @@ describe("wirePlatform badges", () => {
   });
 
   it("draws the Likely human badge once the setting is on, and removes it again", async () => {
-    await badgesSettled(2);
+    await badgesSettled(3);
     harness.settings.showLikelyHuman = true;
     harness.wiring.refresh();
-    await badgesSettled(3);
-    expect(badgedHandles()).toEqual(["alice_example", "kai09127364", "maria_dev"]);
+    await badgesSettled(4);
+    expect(badgedHandles()).toEqual(["alice_example", "kai09127364", "maria_dev", "mila48213907"]);
     harness.settings.showLikelyHuman = false;
     harness.wiring.refresh();
-    await badgesSettled(2);
-    expect(badgedHandles()).toEqual(["kai09127364", "maria_dev"]);
+    await badgesSettled(3);
+    expect(badgedHandles()).toEqual(["kai09127364", "maria_dev", "mila48213907"]);
   });
 
   it("re-renders label style and the paused state in place", async () => {
-    await badgesSettled(2);
+    await badgesSettled(3);
     harness.settings.labelStyle = "sus";
     harness.config.tiers.t2 = false;
     harness.wiring.refresh();
     const [, many] = badgeHosts();
     expect(many && badgeButton(many).textContent).toBe("Sus");
     expect(many && badgeButton(many).className).toContain("bd-badge--paused");
-    expect(badgeHosts()).toHaveLength(2);
+    expect(badgeHosts()).toHaveLength(3);
   });
 
   it("removes every badge when the platform is disabled", async () => {
-    await badgesSettled(2);
+    await badgesSettled(3);
     harness.config.enabled = false;
     harness.wiring.refresh();
     await badgesSettled(0);
@@ -196,18 +196,18 @@ describe("wirePlatform badges", () => {
   });
 
   it("unmounts the badge and the mark when a post is released", async () => {
-    await badgesSettled(2);
+    await badgesSettled(3);
     const kai: PostRef | undefined = harness.posts[1];
     if (kai === undefined) throw new Error("fixture post missing");
     harness.wiring.release(kai.element);
-    expect(badgeHosts()).toHaveLength(1);
-    expect(badgedHandles()).toEqual(["maria_dev"]);
+    expect(badgeHosts()).toHaveLength(2);
+    expect(badgedHandles()).toEqual(["maria_dev", "mila48213907"]);
     harness.wiring.release(kai.element);
-    expect(badgeHosts()).toHaveLength(1);
+    expect(badgeHosts()).toHaveLength(2);
   });
 
   it("writes the bundled stylesheet into the badge and card shadow roots", async () => {
-    await badgesSettled(2);
+    await badgesSettled(3);
     const styleOf = (host: Element | null): string => adoptedCssOf(host);
     expect(styleOf(badgeHosts()[0] ?? null)).toContain(SHADOW_CSS);
     await vi.waitFor(() =>
@@ -215,8 +215,8 @@ describe("wirePlatform badges", () => {
     );
   });
 
-  it("never mounts for a post whose badge is not drawable at attach time", async () => {
-    await badgesSettled(2);
+  it("never mounts for a post whose badge is hidden at attach time", async () => {
+    await badgesSettled(3);
     const alice: Element | undefined = timelineArticles()[0];
     expect(alice?.querySelector(BADGE_ELEMENT_NAME)).toBeNull();
     expect(alice?.hasAttribute(BADGED_ATTRIBUTE)).toBe(false);
@@ -225,7 +225,7 @@ describe("wirePlatform badges", () => {
 
 describe("wirePlatform hover card", () => {
   it("opens the card from the badge, runs the lookup, records feedback and closes", async () => {
-    await badgesSettled(2);
+    await badgesSettled(3);
     await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());
     const cardHost: HTMLElement | null = document.querySelector(CARD_ELEMENT_NAME);
     if (cardHost === null) throw new Error("card host missing");
@@ -267,8 +267,41 @@ describe("wirePlatform hover card", () => {
     }
   });
 
+  it("reads Checking while an unknown account's lookup runs, then explains the No read", async () => {
+    await badgesSettled(3);
+    await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());
+    const cardHost: HTMLElement | null = document.querySelector(CARD_ELEMENT_NAME);
+    const noRead: HTMLElement | undefined = badgeHosts()[2];
+    if (cardHost === null || noRead === undefined) throw new Error("fixture badge missing");
+    expect(badgeButton(noRead).getAttribute("aria-label")).toBe("No read");
+    let finish: (partial: PartialSignals | null) => void = () => undefined;
+    harness.lookup.mockImplementationOnce(
+      () => new Promise<PartialSignals | null>((resolvePartial) => (finish = resolvePartial)),
+    );
+
+    vi.useFakeTimers();
+    try {
+      badgeButton(noRead).dispatchEvent(new Event("mouseenter"));
+      await vi.advanceTimersByTimeAsync(150);
+      expect(badgeButton(noRead).getAttribute("aria-label")).toBe("Checking");
+      expect(cardHost.shadowRoot?.querySelector(".bd-card__title")?.textContent).toBe("Checking");
+
+      finish(null);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(badgeButton(noRead).getAttribute("aria-label")).toBe("No read");
+      const card: ShadowRoot | null = cardHost.shadowRoot;
+      expect(card?.querySelector(".bd-card__title")?.textContent).toBe("No read");
+      expect(card?.querySelector(".bd-card__explain")?.textContent).toMatch(
+        /^The platform returned no profile details/,
+      );
+      expect(card?.querySelector(".bd-card__reasons")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("skips the lookup while Tier 2 is off", async () => {
-    await badgesSettled(2);
+    await badgesSettled(3);
     await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());
     harness.config.tiers.t2 = false;
     const [, many] = badgeHosts();

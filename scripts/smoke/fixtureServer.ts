@@ -47,7 +47,6 @@ export const smokeFeedScenes: readonly SmokeFeedScene[] = [
     scene: "comments",
     path: "/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/",
     fixtureFile: "comments.html",
-    note: "no badge expected: before a profile lookup no author earns Likely human, and an unknown read draws nothing",
   },
   { platform: "bluesky", scene: "feed", path: "/" },
 ];

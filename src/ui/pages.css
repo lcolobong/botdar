@@ -225,9 +225,6 @@ body {
   justify-content: center;
   flex: none;
 }
-.bd-tier .bd-badge--none {
-  color: var(--tier-unknown-fg);
-}
 .bd-block {
   padding: var(--space-3);
   border-radius: var(--radius-sm);

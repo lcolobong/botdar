@@ -37,8 +37,8 @@ describe("badge labels", () => {
     expect(glyphFor("unknown")).toBe("question");
   });
 
-  it("never draws unknown, and draws typical only when Likely human is on", () => {
-    expect(shouldDrawBadge("unknown", true)).toBe(false);
+  it("draws No read for unknown, and typical only when Likely human is on", () => {
+    expect(shouldDrawBadge("unknown", false)).toBe(true);
     expect(shouldDrawBadge("typical", false)).toBe(false);
     expect(shouldDrawBadge("typical", true)).toBe(true);
     expect(shouldDrawBadge("many", false)).toBe(true);

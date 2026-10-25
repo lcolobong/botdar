@@ -24,6 +24,7 @@ const TIER_NOTES: readonly TierNote[] = [
     tier: "typical",
     note: "Nothing stands out. Turn it off in settings for a quieter feed",
   },
+  { tier: "unknown", note: "Too little to go on yet; the card says why" },
 ];
 
 const noop = (): void => undefined;
@@ -59,10 +60,6 @@ function BadgePanel() {
             {note}
           </div>
         ))}
-        <div class="bd-tier">
-          <span class="bd-badge bd-badge--paused bd-badge--none">No badge</span>
-          Not enough data yet
-        </div>
       </div>
     </>
   );

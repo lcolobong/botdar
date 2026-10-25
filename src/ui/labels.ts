@@ -47,9 +47,7 @@ export function glyphFor(tier: BadgeTier): Glyph {
   return LABELS[tier].glyph;
 }
 
-/** Whether a verdict tier draws a badge at all under the current settings. */
+/** Whether a verdict tier draws a badge under the current settings: all but a hidden Likely human. */
 export function shouldDrawBadge(tier: VerdictTier, showLikelyHuman: boolean): boolean {
-  if (tier === "unknown") return false;
-  if (tier === "typical") return showLikelyHuman;
-  return true;
+  return tier !== "typical" || showLikelyHuman;
 }

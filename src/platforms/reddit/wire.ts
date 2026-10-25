@@ -39,6 +39,7 @@ import { createHoverController } from "../../ui/hoverController";
 import { shouldDrawBadge } from "../../ui/labels";
 import type { MountedUi } from "../../ui/mount";
 import { detectHostTheme, mountBadge, mountCard } from "../../ui/mount";
+import { noReadCardProps } from "../../ui/noRead";
 import { redditAdapter } from "./adapter";
 
 export interface RedditRuntime {
@@ -169,10 +170,8 @@ export async function wireReddit(
     const slot: BadgeSlot | null = openSlot;
     if (slot === null || cardContainer === null) return;
     const verdict: Verdict = slot.verdict;
-    if (!shouldDrawBadge(verdict.tier, true)) {
-      controller.closeNow();
-      return;
-    }
+    // No tier hides an open card any more: a badge that stops being drawn (Likely human turned
+    // off) is unmounted, and unmountBadge closes the card first.
     render(
       h(HoverCard, {
         id: CARD_ID,
@@ -182,6 +181,7 @@ export async function wireReddit(
         reasons: reasonsOf(verdict),
         ...(verdict.confidenceNote === undefined ? {} : { confidenceNote: verdict.confidenceNote }),
         caveat: verdict.caveat,
+        ...noReadCardProps(verdict, slot.handle),
         loading: lookupPending,
         lowConfidence: verdict.lowConfidence,
         showLegend: !legendShown,
