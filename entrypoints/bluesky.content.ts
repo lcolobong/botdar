@@ -2,6 +2,7 @@ import tokensCss from "../src/ui/tokens.css?inline";
 import badgeCss from "../src/ui/badge.css?inline";
 import cardCss from "../src/ui/card.css?inline";
 import { shadowStyles } from "../src/ui/mount";
+import { registerDiagnosticsHandlers } from "../src/core/diagnosticsHandlers.ts";
 import { wireBluesky } from "../src/platforms/bluesky/wire";
 
 // "manual" keeps the three stylesheets inside the bundle (imported with `?inline`) and hands them to
@@ -13,6 +14,7 @@ export default defineContentScript({
   runAt: "document_idle",
   cssInjectionMode: "manual",
   async main(ctx) {
+    ctx.onInvalidated(registerDiagnosticsHandlers("bluesky"));
     const stop: () => void = await wireBluesky(ctx, shadowStyles(tokensCss, badgeCss, cardCss));
     ctx.onInvalidated(stop);
   },

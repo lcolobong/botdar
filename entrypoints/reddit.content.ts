@@ -2,6 +2,7 @@ import tokensCss from "../src/ui/tokens.css?inline";
 import badgeCss from "../src/ui/badge.css?inline";
 import cardCss from "../src/ui/card.css?inline";
 import { shadowStyles } from "../src/ui/mount";
+import { registerDiagnosticsHandlers } from "../src/core/diagnosticsHandlers.ts";
 import { wireReddit } from "../src/platforms/reddit/wire.ts";
 
 export default defineContentScript({
@@ -11,6 +12,7 @@ export default defineContentScript({
   cssInjectionMode: "manual",
   runAt: "document_idle",
   async main(ctx) {
+    ctx.onInvalidated(registerDiagnosticsHandlers("reddit"));
     await wireReddit(ctx, shadowStyles(tokensCss, badgeCss, cardCss));
   },
 });

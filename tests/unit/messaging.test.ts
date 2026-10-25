@@ -2,6 +2,7 @@ import { fakeBrowser } from "wxt/testing/fake-browser";
 import type { ConfigChangedBroadcast, EffectiveConfigByPlatform } from "@/src/core/messaging";
 import {
   broadcastToTabs,
+  sendToActiveTab,
   isEffectivePlatformConfig,
   isResponseFor,
   isRuntimeMessage,
@@ -31,6 +32,18 @@ describe("messaging type guards", () => {
     expect(isEffectivePlatformConfig({ ...xConfig, tiers: { t1: true } })).toBe(false);
     expect(isEffectivePlatformConfig({ ...xConfig, rateLimitPerMinute: "20" })).toBe(false);
     expect(isEffectivePlatformConfig(null)).toBe(false);
+  });
+
+  it("accepts the diagnostics requests and rejects a snapshot request without the flag", () => {
+    expect(isRuntimeMessage({ type: "diagnostics.get" })).toBe(true);
+    expect(isRuntimeMessage({ type: "snapshot.export", anonymize: false })).toBe(true);
+    expect(isRuntimeMessage({ type: "snapshot.export" })).toBe(false);
+    expect(isResponseFor("diagnostics.get", { platform: "x", stats: { startedAt: 1 } })).toBe(
+      false,
+    );
+    expect(isResponseFor("snapshot.export", { html: "", fileName: "a.html", identifiers: 0 })).toBe(
+      true,
+    );
   });
 
   it("narrows runtime messages by type and payload", () => {
@@ -146,6 +159,42 @@ describe("sendRequest and onRequest", () => {
 
     await expect(sendRequest({ type: "policy.refresh" })).rejects.toThrow();
     expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendToActiveTab", () => {
+  beforeEach(() => fakeBrowser.reset());
+
+  // The fake has no window until one is created; the current-window filter needs one.
+  async function openActiveTab(): Promise<number | undefined> {
+    const created = await fakeBrowser.windows.create({ focused: true });
+    const tab = await fakeBrowser.tabs.create({
+      url: "https://www.reddit.com/",
+      active: true,
+      windowId: created?.id,
+    });
+    return tab.id;
+  }
+
+  it("sends to the active tab and validates the reply", async () => {
+    const tabId: number | undefined = await openActiveTab();
+    const sendMessage = vi.fn().mockResolvedValue({
+      html: "<!doctype html>",
+      fileName: "botdar-reddit-2026-10-25.html",
+      identifiers: 3,
+    });
+    fakeBrowser.tabs.sendMessage = sendMessage;
+    const reply = await sendToActiveTab({ type: "snapshot.export", anonymize: true });
+    expect(sendMessage).toHaveBeenCalledWith(tabId, { type: "snapshot.export", anonymize: true });
+    expect(reply.identifiers).toBe(3);
+  });
+
+  it("rejects when the reply is malformed or there is no active tab", async () => {
+    await openActiveTab();
+    fakeBrowser.tabs.sendMessage = vi.fn().mockResolvedValue({ stats: {} });
+    await expect(sendToActiveTab({ type: "diagnostics.get" })).rejects.toThrow("Malformed");
+    fakeBrowser.reset();
+    await expect(sendToActiveTab({ type: "diagnostics.get" })).rejects.toThrow("No active tab");
   });
 });
 

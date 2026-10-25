@@ -3,6 +3,7 @@ import badgeCss from "../src/ui/badge.css?inline";
 import cardCss from "../src/ui/card.css?inline";
 import { TtlLruCache } from "../src/core/cache.ts";
 import { recordFeedback, removeFeedback } from "../src/core/feedback.ts";
+import { registerDiagnosticsHandlers } from "../src/core/diagnosticsHandlers.ts";
 import { onRequest, sendRequest } from "../src/core/messaging.ts";
 import { AccountResolver, TIER2_CACHE_TTL_MS } from "../src/core/pipeline.ts";
 import type { Scorer } from "../src/core/pipeline.ts";
@@ -53,6 +54,8 @@ export default defineContentScript({
   cssInjectionMode: "manual",
   runAt: "document_idle",
   async main(ctx) {
+    // Before the first await, so the popup's diagnostics answer even when wiring stalls or fails.
+    ctx.onInvalidated(registerDiagnosticsHandlers("x"));
     const registry = new QueryIdRegistry();
     const stopRegistry: () => void = registry.startObserving();
     let settings: Settings = await loadSettings();
