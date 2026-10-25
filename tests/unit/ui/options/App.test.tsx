@@ -68,7 +68,14 @@ beforeEach(() => {
 describe("options App", () => {
   it("lays out the sections with the platform domains and the privacy footer", async () => {
     const container: HTMLDivElement = await mount();
-    expect(headings(container)).toEqual(["Platforms", "Lookups", "Badges", "Feedback", "Policy"]);
+    expect(headings(container)).toEqual([
+      "Platforms",
+      "Lookups",
+      "Badges",
+      "Developer",
+      "Feedback",
+      "Policy",
+    ]);
     expect(rowTitles(container).slice(0, 3)).toEqual(["X", "Reddit", "Bluesky"]);
     expect(rowCaptions(container).slice(0, 3)).toEqual([
       "x.com and twitter.com",
@@ -111,6 +118,16 @@ describe("options App", () => {
     });
   });
 
+  it("persists the developer diagnostics toggle, off by default", async () => {
+    const container: HTMLDivElement = await mount();
+    const toggle: HTMLButtonElement | null = container.querySelector(
+      '[role=switch][aria-label="Diagnostics in the popup"]',
+    );
+    expect(toggle?.getAttribute("aria-checked")).toBe("false");
+    toggle?.click();
+    await vi.waitFor(async () => expect((await storedSettings()).developerMode).toBe(true));
+  });
+
   it("counts the stored reports and exports them as botdar-feedback.json", async () => {
     await recordFeedback(feedback("one"));
     await recordFeedback(feedback("two"));
@@ -133,11 +150,16 @@ describe("options App", () => {
     );
     const blob: Blob | undefined = createObjectURL.mock.calls[0]?.[0] as Blob | undefined;
     expect(blob?.type).toBe("application/json");
-    expect(revokeObjectURL).toHaveBeenCalledWith("blob:botdar/feedback");
+    // The URL is revoked on a timer so a slow download can still open the blob.
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(revokeObjectURL).toHaveBeenCalledWith("blob:botdar/feedback"), {
+      timeout: 15_000,
+      interval: 500,
+    });
     click.mockRestore();
     createObjectURL.mockRestore();
     revokeObjectURL.mockRestore();
-  });
+  }, 20_000);
 
   it("clears feedback only after the confirmation step", async () => {
     await recordFeedback(feedback("one"));

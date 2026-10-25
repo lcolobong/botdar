@@ -18,6 +18,8 @@ export interface Settings {
   labelStyle: LabelStyle;
   showLikelyHuman: boolean;
   redditCommentLabels: RedditCommentLabels;
+  /** Shows the popup's diagnostics section: per-page counts and the page snapshot export. */
+  developerMode: boolean;
 }
 
 export const SETTINGS_STORAGE_KEY = "settings.v1";
@@ -31,6 +33,7 @@ export const defaultSettings: Settings = deepFreeze({
   labelStyle: "plain",
   showLikelyHuman: false,
   redditCommentLabels: "glyph",
+  developerMode: false,
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -69,6 +72,7 @@ export function parseSettings(stored: unknown): Settings {
       REDDIT_COMMENT_LABELS,
       defaultSettings.redditCommentLabels,
     ),
+    developerMode: booleanOr(record.developerMode, defaultSettings.developerMode),
   });
 }
 

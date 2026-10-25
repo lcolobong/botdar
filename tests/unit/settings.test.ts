@@ -30,6 +30,7 @@ function customSettings(): Settings {
     labelStyle: "sus",
     showLikelyHuman: true,
     redditCommentLabels: "label",
+    developerMode: true,
   };
 }
 
@@ -45,6 +46,7 @@ describe("defaultSettings", () => {
       labelStyle: "plain",
       showLikelyHuman: false,
       redditCommentLabels: "glyph",
+      developerMode: false,
     });
     expect(Object.isFrozen(defaultSettings.platforms)).toBe(true);
   });
