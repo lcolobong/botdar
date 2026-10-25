@@ -296,8 +296,12 @@ Input: `Feature[]` from the platform adapter, the effective platform config, and
    missing tier in plain words ("Profile details not loaded yet" / "Extra lookups are off").
 9. **Reasons.** Take evidence with `|contribution| ≥ 0.3`, sort by magnitude, keep the top 4, at least 2
    when available. Render each through its template. Negative evidence renders too, so a reader sees what
-   pulled the score down ("Account is 6 years old").
-10. **Caveat.** Chosen by the group of the largest positive contribution (table below).
+   pulled the score down ("Account is 6 years old"), and a Likely human card lists what looks ordinary
+   ("Custom avatar", "Verified email"). A template that has nothing true to say for its value (a
+   handle with no digit run, an account not verified early) renders nothing, and that item is skipped,
+   also when filling up to two.
+10. **Caveat.** For `typical`, the ordinary-account line (below). Otherwise chosen by the group of the
+    largest positive contribution (table below).
 
 Everything after step 2 is pure and unit-tested against a golden table of synthetic accounts.
 
@@ -310,24 +314,27 @@ counts with thousands separators.
 |---|---|---|
 | `x.postsPerDay`, `bsky.postsPerDay` | "~{rate} posts/day since joining" | activity: "High-volume human posters, news desks and brand accounts show the same pattern." |
 | `x.accountAgeDays`, `reddit.accountAgeDays`, `bsky.accountAgeDays` | "Joined {ago} ago" / negative: "Account is {age} old" | age: "Every account was new once; a recent join date means little on its own." |
-| `x.followingRatio`, `bsky.followsRatio` | "Following {following}, followed by {followers}" | graph: "People who follow widely before anyone follows back look the same." |
-| `x.handleNameDigits`, `x.handleTrailingDigits`, `bsky.handleDigitsOnBskySocial` | "Handle is a name followed by {n} digits" | handle: "Many people accept the platform's suggested handle and never change it." |
-| `x.handleBigramLL` | "Handle looks randomly generated" | handle: as above |
-| `x.defaultAvatarEmptyBio`, `bsky.noAvatarEmptyBio` | "No profile photo and no bio" / "No profile photo" / "No bio" | profile: "Privacy-minded people often leave profiles blank." |
-| `x.newAndBlue` | "Verified within {age} of joining" | verification: "Paid verification is available to any new account." |
+| `x.followingRatio`, `bsky.followsRatio` | "Following {following}, followed by {followers}" / negative: "Followed by {followers}, following {following}" | graph: "People who follow widely before anyone follows back look the same." |
+| `x.handleNameDigits`, `x.handleTrailingDigits`, `bsky.handleDigitsOnBskySocial` | "Handle is a name followed by {n} digits" / no contribution: nothing | handle: "Many people accept the platform's suggested handle and never change it." |
+| `x.handleBigramLL` | "Handle looks randomly generated" / no contribution: nothing | handle: as above |
+| `x.defaultAvatarEmptyBio`, `bsky.noAvatarEmptyBio` | "No profile photo and no bio" / "No profile photo" / "No bio" / "Has a profile photo and a bio" | profile: "Privacy-minded people often leave profiles blank." |
+| `x.newAndBlue` | "Verified within {age} of joining" / false: nothing | verification: "Paid verification is available to any new account." |
 | `x.replyShare` | "{pct}% of recent posts are replies" | content: "Some people only ever reply; that is a style, not automation." |
 | `x.usernameChanges` | "Username changed {n} times" | profile: as above |
-| `x.countryLocaleMismatch` | "Account based in {country}" | geo: "Location is inferred by the platform and is often wrong for travellers and VPN users." |
+| `x.countryLocaleMismatch` | "Account based in {country}" / false: nothing | geo: "Location is inferred by the platform and is often wrong for travellers and VPN users." |
 | `reddit.karmaPerDay` | "~{rate} karma/day on a {age}-old account" | activity: as above |
 | `reddit.postToCommentKarma` | "Post karma {link}, comment karma {comment}" | content: "Prolific posters who rarely comment look the same." |
-| `reddit.generatedName` | "Username matches Reddit's auto-generated pattern" | handle: as above |
-| `reddit.noAvatar` | "Default avatar" | profile: as above |
-| `reddit.noVerifiedEmail` | "No verified email" | profile: as above |
+| `reddit.generatedName` | "Username matches Reddit's auto-generated pattern" / false: nothing | handle: as above |
+| `reddit.noAvatar` | "Default avatar" / false: "Custom avatar" | profile: as above |
+| `reddit.noVerifiedEmail` | "No verified email" / false: "Verified email" | profile: as above |
 
 ### "Why this might be wrong" lines
 
 The caveat row always ends with one of these, chosen by context:
 
+- When tier is `typical` (Likely human), in place of the group caveat: "These signals look like an
+  ordinary account; nothing here is proof." followed by the missing-sources line when it applies.
+  The card never claims the account is a person, only that nothing stands out.
 - Default: "This is a pattern read, not a verdict. Humans trip these signals every day."
 - When `sourcesMissing` is non-empty: "Some signals could not be loaded, so this read is less certain."
 - When the account is older than two years: "Long-lived accounts are rarely automated; weigh this lightly."

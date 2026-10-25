@@ -1,5 +1,6 @@
 import { scoreAccount } from "@/src/core/scoring/engine";
 import type { PlatformWeights } from "@/src/core/scoring/types";
+import { defaultWeights } from "@/src/core/scoring/weights";
 import type { Feature, Verdict } from "@/src/core/types";
 import { ALL_TIERS, DAY_MS, NOW, feature, signalsWith, testWeights } from "./testWeights";
 
@@ -221,6 +222,25 @@ describe("scoreAccount wording", () => {
       { ...options, sourcesAvailable: [0] },
     );
     expect(verdict.confidenceNote).toBe("Profile details are off. Extra lookups are off");
+  });
+
+  it("words a Likely human card with what looks ordinary and no suspicion caveat", () => {
+    const verdict: Verdict = scoreAccount(
+      [
+        feature("reddit.accountAgeDays", 3300, "age", 2),
+        feature("reddit.generatedName", false, "handle"),
+        feature("reddit.noAvatar", false, "profile", 2),
+        feature("reddit.noVerifiedEmail", false, "profile", 2),
+      ],
+      signalsWith({ tiersDelivered: [0, 2], values: { createdAt: NOW - 3300 * DAY_MS } }),
+      defaultWeights.reddit,
+      { ...options, sourcesAvailable: [0, 2] },
+    );
+    expect(verdict.tier).toBe("typical");
+    expect(verdict.reasons).toEqual(["Account is 9 years old", "Custom avatar"]);
+    expect(verdict.caveat).toBe(
+      "These signals look like an ordinary account; nothing here is proof.",
+    );
   });
 
   it("gives declared accounts the declared caveat and no confidence note", () => {

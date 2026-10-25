@@ -1,4 +1,5 @@
 import {
+  NO_REASON,
   allFixedStrings,
   caveatFor,
   confidenceNoteFor,
@@ -125,6 +126,36 @@ describe("reason templates", () => {
     expect(render("reddit.noVerifiedEmail", true)).toBe("No verified email");
   });
 
+  it("words evidence that points towards an ordinary account", () => {
+    const signals: AccountSignals = signalsWith({
+      values: { createdAt: MARCH_2019, following: 120, followers: 900 },
+    });
+    expect(render("reddit.accountAgeDays", 2780, { contribution: -0.6, signals })).toBe(
+      "Account is 8 years old",
+    );
+    expect(render("x.followingRatio", 0.13, { contribution: -0.3, signals })).toBe(
+      "Followed by 900, following 120",
+    );
+    expect(render("bsky.followsRatio", 0.13, { contribution: -0.3 })).toBe(
+      "Followed by more accounts than it follows",
+    );
+    expect(render("reddit.noAvatar", false, { contribution: 0 })).toBe("Custom avatar");
+    expect(render("reddit.noVerifiedEmail", false, { contribution: 0 })).toBe("Verified email");
+    expect(render("x.defaultAvatarEmptyBio", 0, { contribution: 0 })).toBe(
+      "Has a profile photo and a bio",
+    );
+  });
+
+  it("has nothing to say about a pattern that is absent", () => {
+    expect(render("reddit.generatedName", false, { contribution: 0 })).toBe(NO_REASON);
+    expect(render("x.handleNameDigits", false, { contribution: 0 })).toBe(NO_REASON);
+    expect(render("x.handleTrailingDigits", 2, { contribution: 0 })).toBe(NO_REASON);
+    expect(render("bsky.handleDigitsOnBskySocial", false, { contribution: 0 })).toBe(NO_REASON);
+    expect(render("x.handleBigramLL", -2, { contribution: 0 })).toBe(NO_REASON);
+    expect(render("x.newAndBlue", false, { contribution: 0 })).toBe(NO_REASON);
+    expect(render("x.countryLocaleMismatch", false, { contribution: 0 })).toBe(NO_REASON);
+  });
+
   it("renders the feature id when no template exists", () => {
     expect(render("x.somethingNew", 1)).toBe("x.somethingNew");
   });
@@ -202,6 +233,12 @@ describe("selectReasons", () => {
     ]);
   });
 
+  it("skips evidence with nothing to say, also when filling in", () => {
+    const silent: Evidence = { ...evidence("g", 0, "handle"), reason: NO_REASON };
+    expect(selectReasons([sorted[0]!, silent, sorted[5]!])).toEqual(["reason:a", "reason:f"]);
+    expect(selectReasons([silent])).toEqual([]);
+  });
+
   it("returns what is available when there is less than two", () => {
     expect(selectReasons([sorted[0]!])).toEqual(["reason:a"]);
     expect(selectReasons([])).toEqual([]);
@@ -224,10 +261,23 @@ describe("caveatFor", () => {
   it("falls back to the strongest evidence when nothing is positive", () => {
     const caveat: string = caveatFor({
       ...base,
-      tier: "typical",
       evidenceByMagnitude: [evidence("age", -0.5, "age")],
     });
     expect(caveat).toMatch(/^Every account was new once/);
+  });
+
+  it("closes a Likely human card with the ordinary-account line instead of a suspicion caveat", () => {
+    const caveat: string = caveatFor({
+      ...base,
+      tier: "typical",
+      evidenceByMagnitude: [evidence("handle", 0.4, "handle"), evidence("age", -0.6, "age")],
+    });
+    expect(caveat).toBe("These signals look like an ordinary account; nothing here is proof.");
+    expect(
+      caveatFor({ ...base, tier: "typical", sourcesMissing: [2], evidenceByMagnitude: [] }),
+    ).toBe(
+      "These signals look like an ordinary account; nothing here is proof. Some signals could not be loaded, so this read is less certain.",
+    );
   });
 
   it("closes with the missing-sources line when a source did not deliver", () => {
