@@ -7,6 +7,7 @@ import type { LabelStyle, RedditCommentLabels, Settings } from "@/src/core/setti
 import { Segmented } from "../controls/Segmented";
 import type { SegmentedOption } from "../controls/Segmented";
 import { Toggle } from "../controls/Toggle";
+import { downloadText } from "../download";
 import { Mark } from "../Mark";
 import { patchSettings } from "../patchSettings";
 import { PLATFORM_DOMAINS, PLATFORM_NAMES } from "../platforms";
@@ -47,15 +48,6 @@ async function loadOptionsData(): Promise<OptionsData> {
   return { settings, feedbackCount: entries.length, status };
 }
 
-function downloadText(fileName: string, contents: string): void {
-  const url: string = URL.createObjectURL(new Blob([contents], { type: "application/json" }));
-  const anchor: HTMLAnchorElement = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
 export function feedbackCountLine(count: number): string {
   return `${count} ${count === 1 ? "report" : "reports"} stored on this device`;
 }
@@ -80,7 +72,9 @@ export function App({ now = Date.now }: AppProps) {
     void patchSettings(patch).then(reload);
   };
   const exportFeedback = (): void => {
-    void exportFeedbackJson().then((json) => downloadText(FEEDBACK_FILE_NAME, json));
+    void exportFeedbackJson().then((json) =>
+      downloadText(FEEDBACK_FILE_NAME, json, "application/json"),
+    );
   };
   const confirmClear = (): void => {
     void clearFeedback().then(() => {
@@ -179,6 +173,22 @@ export function App({ now = Date.now }: AppProps) {
           options={REDDIT_COMMENT_LABELS}
           value={settings.redditCommentLabels}
           onChange={(redditCommentLabels) => update({ redditCommentLabels })}
+        />
+      </div>
+
+      <h2>Developer</h2>
+      <div class="bd-row">
+        <div class="bd-row__text">
+          <p>Diagnostics in the popup</p>
+          <span class="bd-caption">
+            Shows what Botdar found on the current page and lets you save its markup for a bug
+            report. Off is fine for everyday use.
+          </span>
+        </div>
+        <Toggle
+          checked={settings.developerMode}
+          label="Diagnostics in the popup"
+          onChange={(developerMode) => update({ developerMode })}
         />
       </div>
 
