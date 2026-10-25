@@ -20,6 +20,9 @@ Copy this list into the release PR and check every item.
 
 - [ ] [test-plan.md](test-plan.md) manual checklist completed on Chrome and Firefox.
 - [ ] Data-egress check passed on each platform.
+- [ ] Live-markup check: on each platform, logged in, the console count of badge hosts is non-zero on a
+      feed and a thread (see test-plan.md "Manual checklist"); the Reddit HTML fixtures are hand-written,
+      so this is the only check that catches markup drift.
 - [ ] Calibration pass done (first release) or thresholds reviewed (later releases).
 - [ ] Before/after media captured for every user-visible change.
 
