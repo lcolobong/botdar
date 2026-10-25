@@ -7,10 +7,12 @@ Date: 2026-10-22. Architecture context in [architecture.md](architecture.md); sc
 
 - Every parser is tested against fixtures and against a deliberately mangled fixture. A parser returns
   partial signals; it never throws into the page. The X GraphQL, Reddit about.json and Bluesky AppView
-  fixtures are anonymised recordings; the Reddit HTML fixtures are hand-written approximations of
-  shreddit markup, which is how the absolute author links on the live post page went unnoticed until
-  the first manual test (2026-10-25). Any selector change must be checked against the live page, and
-  a snippet of the live markup goes into the DOM tests with the date it was captured.
+  fixtures are anonymised recordings. The HTML fixtures were hand-written approximations until
+  2026-10-25, which is how the absolute author links and the nested comment rows on the live Reddit
+  post page went unnoticed until the first manual test; they are being replaced by recordings made
+  with `pnpm capture` ([ADR-0021](decisions/ADR-0021-record-live-markup-before-building.md)). Every
+  HTML fixture header says which it is. A selector change cites the recording it was checked
+  against, and a selector no recording confirms is marked `GUESS` in the code.
 - Scoring is tested with a golden table of synthetic accounts and expected tiers so weight changes are
   reviewed as diffs.
 - The policy system has a full "cannot enable" matrix: no policy input may turn on a source, raise a
@@ -28,7 +30,18 @@ Date: 2026-10-22. Architecture context in [architecture.md](architecture.md); sc
 | DOM mounting | Vitest, happy-dom | badge mounts on saved tweet, shreddit and bsky snippets; idempotent on a second pass; unmounts on node removal; per-page state resets on route change |
 | Rate limiter and cache | Vitest fake timers | token refill, backoff ladder, circuit open reports the source as missing; TTL expiry and LRU eviction |
 | Background | Vitest + WXT fake browser | alarm registration, last-known-good untouched on every failure mode, config broadcast after refresh and after settings change |
-| Smoke and media | Playwright script, not a CI gate | built extension loaded against fixture pages served locally; screenshots of each tier and the hover card on each platform, light and dark; `--live` for manual captures in a logged-in profile. `pnpm smoke` runs it; see [scripts/smoke/README.md](../scripts/smoke/README.md) |
+| Smoke and media | Playwright script, not a CI gate | built extension loaded against fixture pages served locally; screenshots of each tier and the hover card on each platform, light and dark. `pnpm smoke` runs it; see [scripts/smoke/README.md](../scripts/smoke/README.md) |
+| Live recording | Playwright over the DevTools protocol (`scripts/capture/run.ts`, manual) | `pnpm capture` attaches to the maintainer's own signed-in Chrome (dedicated profile, `pnpm capture:chrome`), serialises a live page with its shadow roots, anonymises it into `tests/fixtures/<platform>/html/` and screenshots it with the extension running; the recordings feed the DOM tests and the smoke harness |
+
+## Live check per platform PR
+
+Before a PR that changes what a platform shows is merged, the maintainer loads the build unpacked,
+opens the platform signed in, and checks in about two minutes: a feed shows a badge on every author;
+a thread shows badges on the post and on comments or replies at every depth; hovering a badge opens
+the card with reasons; a known declared account (AutoModerator on Reddit, an Automated-labelled X
+account, a `bot`-labelled Bluesky account) shows Declared bot. The popup's diagnostics section
+(developer setting) gives the seen, badged and anchor-miss counts; anchor misses should be zero. The
+PR test plan records the check as done or skipped with the reason.
 
 ## Manual checklist (run before every release)
 

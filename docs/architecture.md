@@ -486,7 +486,8 @@ Results of these can change the design; they run before the X platform PR.
 | DOM | Vitest + happy-dom | Badge mounts on saved tweet, shreddit and Bluesky snippets; idempotent on double pass; unmount on removal; route-change reset |
 | Rate limiter, cache | Vitest fake timers | Bucket refill, backoff ladder, circuit open → `sourcesMissing` |
 | Background | Vitest + WXT fake browser | Alarm registration, LKG untouched on failure, `config.changed` broadcast |
-| Smoke and PR media | Playwright (`scripts/smoke/run.ts`, not a CI gate) | Built extension loaded against saved fixture pages; screenshots of each tier and the hover card; `--live` for logged-in manual captures |
+| Smoke and PR media | Playwright (`scripts/smoke/run.ts`, not a CI gate) | Built extension loaded against saved fixture pages; screenshots of each tier and the hover card |
+| Live recording | Playwright over CDP (`scripts/capture/run.ts`, manual) | Attaches to the maintainer's signed-in Chrome, serialises a live page with shadow roots, anonymises it into `tests/fixtures/`, screenshots it with the extension running (ADR-0021) |
 
 Not automatable: live X/Reddit/Bluesky end to end, GraphQL schema rotation (mitigated by a fixture
 re-record checklist and parsers that degrade to partials), store review, Firefox MAIN-world timing, visual

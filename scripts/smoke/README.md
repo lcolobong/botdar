@@ -23,6 +23,9 @@ expected to draw nothing carries a `note` that the manifest repeats.
 
 Feed fixtures are served over HTTPS under the real hostnames (`x.com`, `www.reddit.com`,
 `bsky.app`) by `fixtureServer.ts`, because the extension's host permissions allow nothing else.
+Any `.html` under `tests/fixtures/<platform>/html/` can be served, so a page recorded with
+`pnpm capture` (see `scripts/capture/run.ts`) becomes a smoke scene by adding a row to
+`smokeFeedScenes` with its `fixtureFile`.
 Chrome resolves those names to the local server through `--host-resolver-rules` and accepts the
 test-only certificate under `cert/` through `--ignore-certificate-errors`. A scene names its
 recorded page under `tests/fixtures/<platform>/html/`; otherwise the server prefers `feed.html`,
