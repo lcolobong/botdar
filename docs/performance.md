@@ -326,6 +326,57 @@ What did not move:
   per-page locale and selected-reasons-only rendering (rest of fix 4), owning the mount (rest of
   fix 5), fixes 7, 8 and 9.
 
+## Badges on every account
+
+Measured on 2026-10-25 on the same machine and browser, with the same runner and five runs per
+condition, after ADR-0020: every account near the viewport mounts a badge (Likely human on by
+default, No read for unknown accounts) and Reddit looks each author up on sight. "Before" is the
+build of `Record the performance after the fixes` on top of the diagnostics branch, re-measured in
+the same session; "after" is the tip of `badges-everywhere`. The fixture server answers Reddit's
+`about.json` with a 404, so every on-sight lookup on the Reddit fixtures runs and returns quickly
+(a live session waits on the network instead, off the main thread). Every cell is extension minus
+bare (Δ) or the extension run alone, median of five, before → after.
+
+### At full speed (1x), before → after
+
+| Fixture | load Δ (ms) | Script Δ (ms) | Layout Δ (ms) | TBT Δ (ms) | Long tasks | Badges at settle | Last badge (ms) | Scroll long tasks | Scroll max frame gap (ms) | Scroll script Δ (ms) | Heap Δ (MB) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| reddit-feed-300 | +11.4 → +11.1 | +10.3 → +10.7 | +3.3 → +5.2 | 0 → 0 | 0 → 0 | 5 → 45 | 62.2 → 64.2 | 0 → 0 | 16.8 → 16.8 | +9.0 → +15.8 | +0.8 → +1.1 |
+| reddit-comments-1500 | +40.4 → +39.6 | +12.4 → +15.6 | +0.7 → +8.5 | 0 → 0 | 0 → 0 | 1 → 24 | 41.5 → 40.7 | 0 → 0 | 16.8 → 16.8 | +9.1 → +6.7 | +0.7 → +0.9 |
+| x-timeline-400 | +10.9 → +15.3 | +24.2 → +22.6 | +3.8 → +4.7 | 0 → 0 | 0 → 0 | 2 → 15 | 541 → 44.4 | 0 → 0 | 16.8 → 16.8 | +13.9 → +14.2 | +1.2 → +1.4 |
+| bluesky-feed-300 | +10.3 → +11.9 | +10.1 → +10.3 | +3.1 → +3.7 | 0 → 0 | 0 → 0 | 1 → 7 | 52.9 → 52.6 | 0 → 0 | 16.8 → 16.8 | +14.7 → +17.5 | +0.7 → +0.8 |
+
+### With 4x CPU throttling, before → after
+
+| Fixture | load Δ (ms) | Script Δ (ms) | Layout Δ (ms) | TBT Δ (ms) | Long tasks | Badges at settle | Last badge (ms) | Scroll long tasks | Scroll max frame gap (ms) | Scroll script Δ (ms) | Heap Δ (MB) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| reddit-feed-300 | +41.7 → +42.0 | +44.9 → +53.0 | +10.0 → +18.9 | 0 → 0 | 0 → 0 | 5 → 45 | 59.1 → 110 | 0 → 0 | 16.8 → 16.8 | +22.8 → +30.2 | +0.8 → +1.1 |
+| reddit-comments-1500 | +46.9 → +41.5 | +45.5 → +55.2 | +4.3 → +24.9 | 0 → 0 | 0 → 0 | 1 → 24 | 78.3 → 179 | 0 → 0 | 16.8 → 16.8 | +32.6 → +44.1 | +0.8 → +1.0 |
+| x-timeline-400 | +41.3 → +41.1 | +79.2 → +85.9 | +12.2 → +11.7 | 0 → 0 | 0 → 0 | 2 → 15 | 90.1 → 93.1 | 0 → 0 | 16.8 → 16.8 | +33.9 → +44.9 | +1.3 → +1.4 |
+| bluesky-feed-300 | +45 → +45.1 | +43.5 → +43.4 | +11.2 → +14.6 | 0 → 0 | 0 → 0 | 1 → 7 | 44.1 → 49.8 | 0 → 0 | 16.8 → 16.8 | +28.0 → +34.7 | +0.7 → +0.8 |
+
+DOMContentLoaded moved by at most ±6.1 ms in both builds. Live insertion on the Reddit feed (50
+posts appended after scrolling) now mounts 23 badges instead of 3, the last 61 ms after insertion
+at 1x and 64.5 ms at 4x, with no long task.
+
+**The target still holds on every fixture at both speeds:** no long task and no blocking time from
+navigation to settle, none while scrolling, and the longest scroll frame gap is 16.8 ms in every
+one of the five runs per fixture (one "before" run on the comment thread at 4x had a 33 ms gap).
+7 to 24 times as many badges near the first screen cost up to 10 ms more script and 21 ms more
+layout at 4x (the most on the Reddit feed and the 1,500-comment thread), and 0.1–0.3 MB of heap;
+scrolling costs up to 7 ms more script at 1x and 7–12 ms at 4x across the whole scroll, spread over
+idle slices. The later "last badge" times at 4x are the extra badges' mounts landing over a few more
+idle slices and, on Reddit, the No read badges rescoring as their lookups settle. The X page's last
+badge at 1x moved from 541 ms to 44 ms because its Likely human badges mount with the first slice
+instead of waiting for nothing.
+
+**One regression was found and fixed on the way.** With every Reddit author waiting for its lookup,
+the first version pulsed every waiting badge's glyph, and the comment thread dropped a frame (33 ms
+gap) in three to seven of the ten scroll steps of every run at 4x, while a build with the on-sight
+lookups turned off, and one with the pulse removed, dropped none. Waiting badges on Reddit now hold
+a still, dimmed glyph and only the badge under the pointer pulses (`stillWhileLoading` in
+`src/ui/Badge.tsx`); the tables above are measured with that change.
+
 ## Measurement caveats
 
 - **Fast machine.** An M5 Pro is several times faster than a typical laptop. The 4x CDP throttle
