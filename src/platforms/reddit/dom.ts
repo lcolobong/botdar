@@ -28,12 +28,18 @@ export const FEED_ITEM_SELECTOR = `${POST_SELECTOR}, ${COMMENT_SELECTOR}, ${OLD_
  * selector only narrows the candidates and `profilePathName` decides what is a profile link.
  */
 const USER_LINK_SELECTOR = 'a[href*="/user/"], a[href*="/u/"]';
-/** Slotted nodes are direct children of the host, so `:scope >` keeps a parent comment's query out of its replies. */
-const SLOTTED_META_ROW_SELECTOR: Record<RedditPostKind, string> = {
-  post: ':scope > [slot="credit-bar"]',
-  comment: ':scope > [slot="commentMeta"]',
+/**
+ * The slotted rows that carry the author link and avatar. On the post page a comment's rows sit
+ * inside `details > summary`, not as direct children of the comment, so a `:scope >` query misses
+ * them; `metaRowsOf` instead keeps the rows whose nearest feed item is the element, which also keeps
+ * a parent comment's query out of its replies. The selectors are queried one at a time, in order:
+ * the avatar slot precedes the meta row in the markup, and the badge must anchor beside the name.
+ */
+const SLOTTED_META_ROW_SELECTORS: Record<RedditPostKind, readonly string[]> = {
+  post: ['[slot="credit-bar"]'],
+  comment: ['[slot="commentMeta"]', '[slot="commentAvatar"]'],
 };
-const OLD_REDDIT_META_ROW_SELECTOR = ":scope > .entry .tagline";
+const OLD_REDDIT_META_ROW_SELECTORS: readonly string[] = [":scope > .entry .tagline"];
 const REDDIT_ORIGIN = "https://www.reddit.com";
 const OLD_REDDIT_AUTHOR_LINK_SELECTOR = "a.author";
 /**
@@ -84,10 +90,14 @@ export function authorNameOf(element: Element): string | undefined {
 
 function metaRowsOf(element: Element, kind: RedditPostKind): ParentNode[] {
   const rows: ParentNode[] = [];
-  const slottedSelector: string = isOldRedditThing(element)
-    ? OLD_REDDIT_META_ROW_SELECTOR
-    : SLOTTED_META_ROW_SELECTOR[kind];
-  for (const row of element.querySelectorAll(slottedSelector)) rows.push(row);
+  const selectors: readonly string[] = isOldRedditThing(element)
+    ? OLD_REDDIT_META_ROW_SELECTORS
+    : SLOTTED_META_ROW_SELECTORS[kind];
+  for (const selector of selectors) {
+    for (const row of element.querySelectorAll(selector)) {
+      if (row.closest(FEED_ITEM_SELECTOR) === element) rows.push(row);
+    }
+  }
   if (element.shadowRoot !== null) rows.push(element.shadowRoot);
   return rows;
 }

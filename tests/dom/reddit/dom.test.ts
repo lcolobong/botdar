@@ -145,6 +145,64 @@ describe("live post page markup (2026-10-25)", () => {
       </shreddit-post>`);
     expect(findAuthorAnchor(mixed, "post")?.getAttribute("href")).toBe("/u/Short_Form");
   });
+
+  // Trimmed from a real post page comment: no shadow root, and the avatar and meta rows sit inside
+  // details > summary rather than as direct children of the comment. The reply repeats the shape.
+  const liveComment = (): Element =>
+    snippet(`
+      <shreddit-comment author="AutoModerator" depth="0" thingid="t1_a">
+        <details role="article">
+          <summary class="grid">
+            <div class="relative flex">
+              <div slot="commentAvatar">
+                <faceplate-tracker noun="comment_author_avatar">
+                  <a href="https://www.reddit.com/user/AutoModerator/" aria-label="AutoModerator's profile --- avatar">
+                    <img src="https://styles.redditmedia.com/t5_1yz875/styles/profileIcon_abc.png" alt="u/AutoModerator avatar" />
+                  </a>
+                </faceplate-tracker>
+              </div>
+            </div>
+            <div class="flex" slot="commentMeta">
+              <faceplate-tracker noun="comment_author">
+                <a href="https://www.reddit.com/user/AutoModerator/">AutoModerator</a>
+              </faceplate-tracker>
+            </div>
+          </summary>
+          <div slot="comment"><p>Reminder: read the rules.</p></div>
+          <shreddit-comment author="Reply_Guy_77" depth="1" slot="children" thingid="t1_b">
+            <details role="article">
+              <summary class="grid">
+                <div slot="commentAvatar">
+                  <a href="https://www.reddit.com/user/Reply_Guy_77/"><img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png" alt="" /></a>
+                </div>
+                <div slot="commentMeta"><a href="https://www.reddit.com/user/Reply_Guy_77/">Reply_Guy_77</a></div>
+              </summary>
+            </details>
+          </shreddit-comment>
+        </details>
+      </shreddit-comment>`);
+
+  it("anchors a comment on the author link in its own nested meta row, not the avatar or a reply", () => {
+    const parent: RedditPostRef = refOf(liveComment());
+    expect(parent.anchor.textContent?.trim()).toBe("AutoModerator");
+    expect(parent.anchor.closest('[slot="commentMeta"]')).not.toBeNull();
+    expect(parent.isReply).toBe(false);
+    const reply: Element | null = liveComment().querySelector(
+      'shreddit-comment[author="Reply_Guy_77"]',
+    );
+    if (reply === null) throw new Error("reply missing");
+    expect(refOf(reply).anchor.textContent?.trim()).toBe("Reply_Guy_77");
+    expect(refOf(reply).isReply).toBe(true);
+  });
+
+  it("reads the avatar from the comment's avatar slot", () => {
+    expect(extractDomSignals(refOf(liveComment())).hasDefaultAvatar).toBe(false);
+    const reply: Element | null = liveComment().querySelector(
+      'shreddit-comment[author="Reply_Guy_77"]',
+    );
+    if (reply === null) throw new Error("reply missing");
+    expect(extractDomSignals(refOf(reply)).hasDefaultAvatar).toBe(true);
+  });
 });
 
 describe("self-described automation", () => {
