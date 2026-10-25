@@ -64,6 +64,7 @@ interface Harness {
   limiter: RateLimiter;
   cache: TtlLruCache<string, PartialSignals>;
   extractDomSignals: ReturnType<typeof vi.fn>;
+  adapter: PlatformAdapter;
 }
 
 const makeHarness = (
@@ -117,6 +118,7 @@ const makeHarness = (
     limiter,
     cache,
     extractDomSignals,
+    adapter,
   };
 };
 
@@ -383,6 +385,80 @@ describe("AccountResolver", () => {
     const handle: BadgeHandle = resolver.attach(post());
     await Promise.all([handle.lookup(), handle.lookup(), resolver.requestLookup(ref())]);
     expect(resolve).toHaveBeenCalledTimes(1);
+  });
+
+  describe("lookup status", () => {
+    it("is idle before a lookup and pending while it runs, then delivered", async () => {
+      const { resolver, resolve } = makeHarness();
+      let finish: (partial: PartialSignals | null) => void = () => undefined;
+      resolve.mockImplementationOnce(
+        () => new Promise<PartialSignals | null>((resolvePartial) => (finish = resolvePartial)),
+      );
+      const handle: BadgeHandle = resolver.attach(post());
+      const seen: string[] = [];
+      handle.subscribe(() => seen.push(handle.lookupStatus()));
+      expect(handle.lookupStatus()).toBe("idle");
+
+      const lookup: Promise<void> = handle.lookup();
+      expect(handle.lookupStatus()).toBe("pending");
+      finish({ followers: 5 });
+      await lookup;
+
+      expect(handle.lookupStatus()).toBe("delivered");
+      expect(seen).toEqual(["delivered"]);
+    });
+
+    it("is empty after a lookup that returned nothing, and the listener hears it", async () => {
+      const { resolver, resolve } = makeHarness();
+      resolve.mockResolvedValueOnce(null);
+      const handle: BadgeHandle = resolver.attach(post());
+      const listener = vi.fn();
+      handle.subscribe(listener);
+      await handle.lookup();
+      expect(handle.lookupStatus()).toBe("empty");
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it("notifies on a finished lookup even when it changed nothing", async () => {
+      const { resolver, cache } = makeHarness();
+      const handle: BadgeHandle = resolver.attach(post());
+      await handle.lookup();
+      cache.clear();
+      const listener = vi.fn();
+      handle.subscribe(listener);
+      await handle.lookup();
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it("stays idle when the limiter skipped the lookup", async () => {
+      const { resolver, limiter } = makeHarness();
+      limiter.reportRateLimited();
+      const handle: BadgeHandle = resolver.attach(post());
+      await handle.lookup();
+      expect(handle.lookupStatus()).toBe("idle");
+    });
+
+    it("is off while Tier 2 is off", () => {
+      const { resolver } = makeHarness({ t1: true, t2: false });
+      expect(resolver.attach(post()).lookupStatus()).toBe("off");
+    });
+
+    it("reports a login wall from an active source unless the account already has data", async () => {
+      const { resolver, adapter } = makeHarness();
+      let loginRequired = false;
+      const active: SignalSource | undefined = adapter.sources.find(
+        (source) => source.kind === "active",
+      );
+      if (active === undefined) throw new Error("no active source");
+      active.loginRequired = () => loginRequired;
+      const handle: BadgeHandle = resolver.attach(post());
+      const other: BadgeHandle = resolver.attach(post("other"));
+      await handle.lookup();
+
+      loginRequired = true;
+      expect(handle.lookupStatus()).toBe("delivered");
+      expect(other.lookupStatus()).toBe("loginRequired");
+    });
   });
 
   it("never runs a lookup on attach; Tier 2 waits for hover", async () => {

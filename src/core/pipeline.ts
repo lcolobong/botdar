@@ -43,11 +43,20 @@ export type Scorer = (
 
 export type VerdictListener = (verdict: Verdict) => void;
 
+/**
+ * Where an account's Tier 2 lookup stands, for the badge's loading state and the No read card.
+ * `off`: the effective config has no Tier 2. `pending`: a lookup is running. `delivered`: one
+ * returned data. `loginRequired`: an active source paused itself after a logged-out answer.
+ * `empty`: a lookup ran and returned nothing. `idle`: none has run for this account yet.
+ */
+export type LookupStatus = "off" | "idle" | "pending" | "delivered" | "empty" | "loginRequired";
+
 export interface BadgeHandle {
   subscribe: (listener: VerdictListener) => () => void;
   current: () => Verdict;
   /** Schedules the Tier 2 lookup (on hover) and resolves after rescoring. */
   lookup: () => Promise<void>;
+  lookupStatus: () => LookupStatus;
 }
 
 export interface AccountResolverOptions {
@@ -71,6 +80,13 @@ interface AccountEntry extends MergeableSignals {
   sourcesAvailable: Set<SourceTier>;
   posts: Set<Element>;
   pendingLookup: Promise<void> | null;
+  /**
+   * Set while the active sources run and cleared before the closing rescore, so listeners already
+   * see the settled status; `pendingLookup` is only cleared after that rescore.
+   */
+  lookupRunning: boolean;
+  /** A source got a rate-limit token and ran for this account at least once. */
+  lookupAttempted: boolean;
   /** Value of the resolver's touch counter when the entry was last looked up; orders eviction. */
   touchedAt: number;
 }
@@ -190,6 +206,7 @@ export class AccountResolver {
       },
       current: () => entry.verdict ?? this.recompute(entry),
       lookup: () => this.requestLookup(post.ref),
+      lookupStatus: () => this.lookupStatusOf(entry),
     };
     this.attachedPosts.set(post.element, { entry, handle, listeners });
     return handle;
@@ -227,6 +244,28 @@ export class AccountResolver {
       entry.pendingLookup = null;
     });
     return entry.pendingLookup;
+  }
+
+  private lookupStatusOf(entry: AccountEntry): LookupStatus {
+    if (!this.config.tiers.t2) {
+      return "off";
+    }
+    if (entry.lookupRunning) {
+      return "pending";
+    }
+    if (entry.sourcesAvailable.has(2)) {
+      return "delivered";
+    }
+    if (this.activeSourceNeedsLogin()) {
+      return "loginRequired";
+    }
+    return entry.lookupAttempted ? "empty" : "idle";
+  }
+
+  private activeSourceNeedsLogin(): boolean {
+    return this.adapter.sources.some(
+      (source) => source.kind === "active" && source.loginRequired?.() === true,
+    );
   }
 
   /** `config.changed`: rescore every mounted badge and start or stop passive sources to match. */
@@ -298,6 +337,7 @@ export class AccountResolver {
     const collected: PartialSignals = {};
     let delivered = false;
     let outcome: "empty" | "rateLimited" | "failed" = "empty";
+    entry.lookupRunning = true;
     for (const source of this.adapter.sources) {
       if (source.kind !== "active" || source.tier !== 2 || source.resolve === undefined) {
         continue;
@@ -307,6 +347,7 @@ export class AccountResolver {
         outcome = "rateLimited";
         break;
       }
+      entry.lookupAttempted = true;
       try {
         const partial: PartialSignals | null = await source.resolve(ref, {
           signal: this.abortController.signal,
@@ -326,6 +367,7 @@ export class AccountResolver {
         }
       }
     }
+    entry.lookupRunning = false;
     if (this.disposed) {
       return;
     }
@@ -333,22 +375,29 @@ export class AccountResolver {
     if (delivered) {
       this.cache.set(ref.handle, collected);
     }
-    // Rescore even when nothing arrived so a waiting hover card leaves its loading state.
-    this.absorb(entry, delivered ? collected : null, 2);
+    // Rescore even when nothing arrived or nothing changed, so every badge of the account and a
+    // waiting hover card leave their loading state.
+    this.absorb(entry, delivered ? collected : null, 2, true);
   }
 
   /**
    * A relayed body repeats most of the accounts it carried last time, so an emission that changes
    * no field and adds no tier to an already-scored account skips the rescore and the badge renders
-   * behind it. A null partial (a Tier 2 lookup that found nothing) always rescores, because a
-   * waiting hover card leaves its loading state on that verdict.
+   * behind it. A null partial (a Tier 2 lookup that found nothing) and a finished lookup
+   * (`alwaysRescore`) always rescore, because waiting badges and the hover card leave their loading
+   * state on that notification.
    */
-  private absorb(entry: AccountEntry, partial: PartialSignals | null, tier: SourceTier): void {
+  private absorb(
+    entry: AccountEntry,
+    partial: PartialSignals | null,
+    tier: SourceTier,
+    alwaysRescore = false,
+  ): void {
     if (partial !== null) {
       const changed: boolean = mergeSignals(entry, partial, tier, this.now());
       const newTier: boolean = !entry.sourcesAvailable.has(tier);
       entry.sourcesAvailable.add(tier);
-      if (!changed && !newTier && entry.verdict !== null) {
+      if (!changed && !newTier && entry.verdict !== null && !alwaysRescore) {
         return;
       }
     }
@@ -382,6 +431,8 @@ export class AccountResolver {
         sourcesAvailable: new Set(),
         posts: new Set(),
         pendingLookup: null,
+        lookupRunning: false,
+        lookupAttempted: false,
         touchedAt: 0,
       };
       this.entries.set(ref.handle, entry);

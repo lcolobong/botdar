@@ -146,6 +146,8 @@ export interface SignalSource {
   start?: (emit: SignalEmitter) => () => void;
   /** Active: resolve on demand. Rate limiting and caching are the pipeline's job, not the source's. */
   resolve?: (ref: AccountRef, context: ResolveContext) => Promise<PartialSignals | null>;
+  /** Active: true while the source has paused itself after a logged-out answer. */
+  loginRequired?: () => boolean;
 }
 
 export type BadgeDensity = "x" | "reddit-post" | "reddit-comment" | "bluesky";
