@@ -44,9 +44,9 @@ describe("feed fixture", () => {
     expect(densityFor("post")).toBe("reddit-post");
   });
 
-  it("anchors on the slotted credit-bar author link", () => {
+  it("anchors on the slotted credit-bar author link, absolute as the live site writes it", () => {
     const anchor: Element | null = findAuthorAnchor(post(0), "post");
-    expect(anchor?.getAttribute("href")).toBe("/user/Quiet_Lantern_4821/");
+    expect(anchor?.getAttribute("href")).toBe("https://www.reddit.com/user/Quiet_Lantern_4821/");
     expect(anchor?.getRootNode()).toBe(document);
   });
 
@@ -104,6 +104,45 @@ describe("comments fixture", () => {
   it("skips a deleted author", () => {
     expect(authorNameOf(comment("[deleted]"))).toBeUndefined();
     expect(toPostRef(comment("[deleted]"))).toBeNull();
+  });
+});
+
+describe("live post page markup (2026-10-25)", () => {
+  // Trimmed from a real www.reddit.com post page: the credit bar links to the community twice and
+  // to the author once, all with absolute URLs, and nothing is relative.
+  const live = (): Element =>
+    snippet(`
+      <shreddit-post author="Den_Hviide" id="t3_1xemeku">
+        <div slot="credit-bar" id="pdp-credit-bar" class="flex justify-between">
+          <span class="avatar">
+            <faceplate-tracker source="post_credit_bar" action="click" noun="community">
+              <a href="https://www.reddit.com/r/SubSimGPT2Interactive/"><img src="https://styles.redditmedia.com/icon.png" alt="" /></a>
+            </faceplate-tracker>
+          </span>
+          <div class="flex" role="group">
+            <a href="https://www.reddit.com/r/SubSimGPT2Interactive/">r/SubSimGPT2Interactive</a>
+            <faceplate-tracker source="post_credit_bar" action="click" noun="user_profile">
+              <a href="https://www.reddit.com/user/Den_Hviide/">u/Den_Hviide</a>
+            </faceplate-tracker>
+          </div>
+        </div>
+      </shreddit-post>`);
+
+  it("anchors on the absolute author link, not the community links", () => {
+    const anchor: Element | null = findAuthorAnchor(live(), "post");
+    expect(anchor?.getAttribute("href")).toBe("https://www.reddit.com/user/Den_Hviide/");
+    expect(refOf(live()).ref.handle).toBe("den_hviide");
+  });
+
+  it("accepts the short /u/ form and ignores profile-looking links on other hosts", () => {
+    const mixed: Element = snippet(`
+      <shreddit-post author="Short_Form">
+        <div slot="credit-bar">
+          <a href="https://example.com/user/Short_Form/">elsewhere</a>
+          <a href="/u/Short_Form">u/Short_Form</a>
+        </div>
+      </shreddit-post>`);
+    expect(findAuthorAnchor(mixed, "post")?.getAttribute("href")).toBe("/u/Short_Form");
   });
 });
 

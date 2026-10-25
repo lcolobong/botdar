@@ -2,8 +2,9 @@
 <!--
   Hand-written approximation of a new Reddit (shreddit) home feed, anonymised. Attribute names on
   shreddit-post match live markup; the shadow-root internals are reduced to what the adapter reads.
-  Post 1 slots its credit bar into light DOM; post 2 renders its author row only inside the shadow
-  root, carries the registered-app tag as a bare "APP" leaf, and shows a stock avatar.
+  Post 1 slots its credit bar into light DOM with the absolute author link the live site writes
+  (seen 2026-10-25); post 2 renders its author row only inside the shadow root with a relative link,
+  carries the registered-app tag as a bare "APP" leaf, and shows a stock avatar.
 -->
 <html lang="en" data-theme="dark">
   <head>
@@ -47,7 +48,9 @@
               <faceplate-timeago ts="2026-10-20T14:03:11.000+0000">2 days ago</faceplate-timeago>
               <span class="text-neutral-content-weak">by</span>
               <faceplate-hovercard aria-label="User info">
-                <a href="/user/Quiet_Lantern_4821/" class="author-name">u/Quiet_Lantern_4821</a>
+                <a href="https://www.reddit.com/user/Quiet_Lantern_4821/" class="author-name"
+                  >u/Quiet_Lantern_4821</a
+                >
               </faceplate-hovercard>
             </div>
             <a slot="title" href="/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/">

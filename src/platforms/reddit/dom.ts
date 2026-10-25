@@ -21,13 +21,19 @@ export const COMMENT_SELECTOR = "shreddit-comment";
 export const OLD_REDDIT_THING_SELECTOR = ".thing[data-author]";
 export const FEED_ITEM_SELECTOR = `${POST_SELECTOR}, ${COMMENT_SELECTOR}, ${OLD_REDDIT_THING_SELECTOR}`;
 
-const USER_LINK_SELECTOR = 'a[href^="/user/"]';
+/**
+ * Reddit writes the author link relative (`/user/<name>/`) in some surfaces and absolute
+ * (`https://www.reddit.com/user/<name>/`) in others, including the post page since late 2026; the
+ * selector only narrows the candidates and `profilePathName` decides what is a profile link.
+ */
+const USER_LINK_SELECTOR = 'a[href*="/user/"], a[href*="/u/"]';
 /** Slotted nodes are direct children of the host, so `:scope >` keeps a parent comment's query out of its replies. */
 const SLOTTED_META_ROW_SELECTOR: Record<RedditPostKind, string> = {
   post: ':scope > [slot="credit-bar"]',
   comment: ':scope > [slot="commentMeta"]',
 };
 const OLD_REDDIT_META_ROW_SELECTOR = ":scope > .entry .tagline";
+const REDDIT_ORIGIN = "https://www.reddit.com";
 const OLD_REDDIT_AUTHOR_LINK_SELECTOR = "a.author";
 /**
  * GUESS: the markup of Reddit's registered-app tag (rendered as "APP" beside the author) was not
@@ -37,8 +43,8 @@ const OLD_REDDIT_AUTHOR_LINK_SELECTOR = "a.author";
 const APP_TAG_SELECTOR =
   '[data-testid="app-tag"], .app-tag, shreddit-tag[type="app"], faceplate-tracker[noun="app_tag"]';
 const APP_TAG_TEXT = "APP";
-/** GUESS: the author avatar is assumed to be the image inside the author's profile link. */
-const AUTHOR_AVATAR_SELECTOR = `${USER_LINK_SELECTOR} img, ${USER_LINK_SELECTOR} faceplate-img`;
+/** GUESS: the author avatar is assumed to be the image inside one of the author's profile links. */
+const AVATAR_IMAGE_SELECTOR = "img, faceplate-img";
 const MAX_DISPLAY_NAME_LENGTH = 100;
 
 // MARK: - Element classification
@@ -78,9 +84,19 @@ function metaRowsOf(element: Element, kind: RedditPostKind): ParentNode[] {
   return rows;
 }
 
+/** The lowercased username a profile link leads to, relative or absolute; undefined for any other link. */
 function profilePathName(link: Element): string | undefined {
   const href: string = link.getAttribute("href") ?? "";
-  return href.split("/")[2]?.toLowerCase();
+  let url: URL;
+  try {
+    url = new URL(href, REDDIT_ORIGIN);
+  } catch {
+    return undefined;
+  }
+  if (url.hostname !== "reddit.com" && !url.hostname.endsWith(".reddit.com")) return undefined;
+  const [, root, name] = url.pathname.split("/");
+  if ((root !== "user" && root !== "u") || name === undefined || name === "") return undefined;
+  return name.toLowerCase();
 }
 
 /**
@@ -97,7 +113,9 @@ export function findAuthorAnchor(
     ? OLD_REDDIT_AUTHOR_LINK_SELECTOR
     : USER_LINK_SELECTOR;
   for (const row of rows) {
-    const links: Element[] = [...row.querySelectorAll(linkSelector)];
+    const links: Element[] = [...row.querySelectorAll(linkSelector)].filter(
+      (link) => isOldRedditThing(element) || profilePathName(link) !== undefined,
+    );
     const toAuthor: Element | undefined = links.find((link) => profilePathName(link) === author);
     const anchor: Element | undefined = toAuthor ?? links[0];
     if (anchor !== undefined) return anchor;
@@ -125,12 +143,20 @@ function hasAppTag(rows: readonly ParentNode[]): boolean {
 }
 
 /** true for a stock avatar, false for an uploaded one, undefined when no avatar image is rendered. */
-function hasDefaultAvatar(rows: readonly ParentNode[]): boolean | undefined {
+function hasDefaultAvatar(element: Element, rows: readonly ParentNode[]): boolean | undefined {
+  const author: string | undefined = authorNameOf(element)?.toLowerCase();
   for (const row of rows) {
-    const avatar: Element | null = row.querySelector(AUTHOR_AVATAR_SELECTOR);
-    const source: string | null =
-      avatar?.getAttribute("src") ?? avatar?.getAttribute("data-src") ?? null;
-    if (source !== null) return isDefaultAvatarUrl(source);
+    // The avatar and the name are often separate links to the same profile; the community icon
+    // sits in a link to the subreddit and must not be mistaken for it.
+    const authorLinks: Element[] = [...row.querySelectorAll(USER_LINK_SELECTOR)].filter(
+      (link) => profilePathName(link) === author,
+    );
+    for (const link of authorLinks) {
+      const avatar: Element | null = link.querySelector(AVATAR_IMAGE_SELECTOR);
+      const source: string | null =
+        avatar?.getAttribute("src") ?? avatar?.getAttribute("data-src") ?? null;
+      if (source !== null) return isDefaultAvatarUrl(source);
+    }
   }
   return undefined;
 }
@@ -175,7 +201,10 @@ export function extractDomSignals(post: PostRef): PartialSignals {
   if (kind === undefined || author === undefined) return {};
   const signals: PartialSignals = { displayName: author.slice(0, MAX_DISPLAY_NAME_LENGTH) };
   if (post.nativeLabel === "automated") signals.declaredAutomated = true;
-  const avatar: boolean | undefined = hasDefaultAvatar(metaRowsOf(post.element, kind));
+  const avatar: boolean | undefined = hasDefaultAvatar(
+    post.element,
+    metaRowsOf(post.element, kind),
+  );
   if (avatar !== undefined) signals.hasDefaultAvatar = avatar;
   return signals;
 }
