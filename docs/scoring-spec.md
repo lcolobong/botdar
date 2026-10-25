@@ -114,6 +114,153 @@ A feature is simply omitted from `toFeatures()` when its gate is not met. An omi
 nothing and is not listed as evidence. Gates exist so that a ratio over tiny counts, or a rate over a
 one-day-old account, cannot dominate.
 
+## Why each feature is a signal
+
+The tables above say what each feature measures and how much it weighs. This section says why it
+measures anything at all, so that a reader can judge a bin or propose a feature without rereading the
+research. Each entry gives the mechanism (what running accounts at scale does that a person does not),
+the evidence (from [research/heuristics.md](research/heuristics.md) and
+[research/reddit-bot-prevalence.md](research/reddit-bot-prevalence.md)), and the honest counter-case,
+which is also what the hover-card caveat tells the user. The recurring theme: every feature is a trace
+of **effort that was not spent per account**. Operators optimise for volume across many accounts, so
+anything that costs per-account time, money or patience is skipped, and the skip is visible.
+
+### Activity rate (`x.postsPerDay`, `bsky.postsPerDay`, `reddit.karmaPerDay`)
+
+- **Mechanism.** Software does not sleep, work or tire, and an operator's return scales with output
+  per account, so automated accounts post at rates a person cannot sustain. Dividing by account age
+  matters: a day-old account with 300 posts and a five-year account with 300 posts are opposite cases,
+  and the rate separates them where the raw count cannot.
+- **Evidence.** Posting frequency over account age (`tweet_freq`) is the strongest single derived
+  feature in BotometerLite and the top-ranked metadata signal in the literature review. On Reddit the
+  documented farming pattern is fast karma on a young account (reposts to clear subreddit karma
+  minimums, then resale), hence the `ageDays < 180` gate: on an old account years of ordinary use
+  dilute the rate until it says nothing.
+- **Counter-case.** Newsrooms, brands, live-tweeters and a few compulsive humans post at these rates,
+  which is why the cap is 2.0 and not enough on its own to reach `many`.
+
+### Account age (`x.accountAgeDays`, `reddit.accountAgeDays`, `bsky.accountAgeDays`)
+
+- **Mechanism.** Automated accounts get banned and are replaced, so a fleet skews young at any moment.
+  Aged accounts exist but cost money on the resale market, so the cheap end of automation is new. The
+  negative bins are the mirror image: surviving years of platform enforcement is evidence of a person,
+  and an old account also makes the rate features above trustworthy.
+- **Evidence.** 70% of the 944 IRA accounts Reddit banned had zero karma, which is the profile of
+  accounts created and barely used; join-date clustering is a standard coordinated-campaign tell;
+  account age is in every metadata feature set reviewed.
+- **Counter-case.** Every account was new once. A recent join date therefore never carries enough
+  weight to cross a threshold without a second group.
+
+### Following ratio (`x.followingRatio`, `bsky.followsRatio`)
+
+- **Mechanism.** Following is the one social action an account can take unilaterally; being followed
+  needs someone else's choice. Mass-following is the cheapest growth tactic there is (follow thousands,
+  hope for follow-backs), so following far above followers reads as a lot of outreach that nobody
+  reciprocated. The `following ≥ 100` gate stops the ratio being decided by a handful of follows, and
+  the negative bin rewards the reverse: more followers than follows means other people opted in.
+- **Evidence.** BotometerLite's SHAP analysis: high friends (following) count and friends growth push
+  toward bot; a high followers/friends ratio pushes toward human. Akyon & Kalfaoglu's Instagram fakes
+  (one at 3,949 following, 15 followers) show the same shape on another platform.
+- **Counter-case.** New users who follow widely before anyone follows back, and lurkers who never post.
+
+### Handle shape (`x.handleNameDigits`, `x.handleTrailingDigits`, `x.handleBigramLL`, `bsky.handleDigitsOnBskySocial`, `reddit.generatedName`)
+
+- **Mechanism.** Creating accounts in bulk means naming them in bulk. Either the platform's suggested
+  handle is accepted as-is (name plus digits on X and `bsky.social`, `Adjective_Noun_1234` on Reddit)
+  or a script generates strings, and generated strings pair letters in ways no language does, which is
+  what a low character-bigram likelihood detects. A person choosing their own handle spends a small
+  amount of identity on it; a script spends none.
+- **Evidence.** Digits in the screen name and `screen_name_likelihood` (bigram geometric mean over 2M
+  handles) are BotometerLite features, and long screen names push toward bot in its SHAP analysis. The
+  busiest TikTok accounts in a 2025 study all carried the default `user` plus nine digits.
+- **Counter-case.** Many people accept the suggested handle and never change it, so these features
+  share one group cap of 1.2 (they all measure the same decision) and `reddit.generatedName` alone is
+  worth 0.4. A Bluesky custom-domain handle never fires because setting one is itself an investment.
+
+### Profile completeness (`x.defaultAvatarEmptyBio`, `bsky.noAvatarEmptyBio`, `reddit.noAvatar`, `reddit.noVerifiedEmail`)
+
+- **Mechanism.** A photo and a bio cost per-account effort, so a fleet skips them unless it is building
+  a persona. Both missing weighs far more than one missing because the pair is the fleet default,
+  whereas one blank field is ordinary for humans. An unverified email is the same story: verifying
+  every account in a fleet needs a mailbox per account.
+- **Evidence.** `default_profile`, `description_length`, `has_profile_image` and `has_profile_url`
+  appear in BotometerLite and BotArtist; "no profile picture" is a top Instagram fake-account feature.
+- **Counter-case.** Privacy-minded people leave profiles blank on purpose. The group cap (1.2) and the
+  low Reddit weights keep this from deciding anything alone.
+
+### Verification timing (`x.newAndBlue`)
+
+- **Mechanism.** Paid verification ranks replies higher. An operator buys it on fresh accounts so that
+  reply spam is seen, so the signal is not the badge but the timing: an account that paid for reach
+  before it had anything to say. (Legacy verification pointed the other way, toward human, which is why
+  the plain `verified` flag is not a feature.)
+- **Evidence.** Platform statements and reporting on reply spam and engagement farming after paid
+  verification; weak and recent, hence 0.8 and a 90-day window.
+- **Counter-case.** Anyone can pay on day one, and some people do.
+
+### Reply share (`x.replyShare`)
+
+- **Mechanism.** Reply bots exist to insert themselves into other people's threads (promotion,
+  engagement farming, LLM reply bots), so their timeline is almost entirely replies; original posts
+  need something to say. The `n ≥ 20` gate stops a handful of visible posts from firing it.
+- **Evidence.** Practitioner lists and platform statements on reply spam; no peer-reviewed metadata
+  study, hence a modest 0.8.
+- **Counter-case.** Some people only ever reply. That is a style, and the caveat says so.
+
+### Username changes (`x.usernameChanges`)
+
+- **Mechanism.** Aged accounts that are bought or repurposed are renamed for each new campaign, and X's
+  "About this account" exposes the count. Three or more renames means the identity has been swapped,
+  not corrected.
+- **Evidence.** A single unverified report; weighted 0.6 until the calibration pass says more.
+- **Counter-case.** People rebrand, marry, or fix a typo. Once or twice is free.
+
+### Country mismatch (`x.countryLocaleMismatch`, weight 0)
+
+- **Mechanism.** Influence operations run personas in another country's politics, and the platform's
+  IP-inferred country can contradict the persona's language. The signal is real but the current code
+  compares against the viewer's browser region, not the account's own language, so it stays at zero
+  until v1.1 (see [adversarial-evasion.md](adversarial-evasion.md)).
+- **Counter-case.** Travellers, expatriates and VPN users; the platform's inference is often wrong.
+
+### Reddit karma shape (`reddit.postToCommentKarma`)
+
+- **Mechanism.** Karma farming reposts content that already did well; a repost earns post karma without
+  any conversation, while comment karma needs reading and replying. Post karma far above comment karma,
+  on an account with real post karma (`linkKarma ≥ 500`), is the farming footprint.
+- **Evidence.** Community wikis on karma farming and aged-account resale; Repost Sleuth's volume
+  (claimed 1M+ searches a day) shows how common reposting is.
+- **Counter-case.** Photographers, artists and anyone who posts original content and rarely comments.
+
+### Declared automation (platform label, flair, username, bio)
+
+- **Mechanism.** Reddit's bot etiquette and X's automation rules ask bots to disclose, and the ones that
+  comply are the benign end of automation. A disclosure is the account telling us directly, so it
+  overrides scoring instead of feeding it: no inference is needed and none should be drawn. Reading
+  flair, a username whose last word is "bot", and an "I am a bot" bio exists because the first live
+  test found a subreddit of long-lived GPT-2 bots whose metadata looked typical while their flair said
+  what they were.
+- **Evidence.** Reddit's APP tag and X's Automated label are platform-attested. "Bottiquette"
+  compliance was a top feature in the Polish-Reddit detection paper.
+- **Counter-case.** A person can put "bot" in a name or flair as a joke; the badge copy for this tier is
+  neutral for that reason, and the bio match requires a first-person declaration, not the word alone.
+
+### Why the pieces combine the way they do
+
+- **The prior** (`-2.5` on X, `-2.8` on Reddit) encodes the base rate: most accounts are people, so an
+  account starts well below the thresholds and has to earn its way up.
+- **Independence groups** exist because features inside a group measure one decision (how the account
+  was named, whether the profile was filled in), so two of them are one piece of evidence, not two.
+  Cheap automation trips several groups at once; a person usually trips one. That is why `many` needs
+  evidence from two distinct groups, and why group caps bound the handle and profile features.
+- **Negative bins** (old account, more followers than follows) are deliberate: the engine is asked to
+  explain a Likely human read with reasons, so it needs features that pull the score down, not only a
+  low prior.
+- **Confidence** drops when a tier that would normally deliver data did not, because the features that
+  were never computed might have pulled either way. The badge goes hollow when confidence is low, and
+  an account with nothing to read at all gets a No read badge ("Checking" while its lookup runs)
+  rather than no badge, so the reader can tell it was analysed and the result was unclear, not skipped.
+
 ## Engine algorithm
 
 Input: `Feature[]` from the platform adapter, the effective platform config, and the signals' provenance.
