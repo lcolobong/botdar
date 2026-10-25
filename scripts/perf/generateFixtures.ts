@@ -9,6 +9,12 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import {
+  FAKE_ADJECTIVES,
+  FAKE_FIRST_NAMES,
+  FAKE_NOUNS,
+  FAKE_TOPICS,
+} from "../../src/core/snapshot/fakeNames.ts";
 
 export const perfFixtureDir: URL = new URL("../../tests/fixtures/perf/", import.meta.url);
 /** The X page fetches this; the interceptor accepts any query id of the right shape. */
@@ -23,10 +29,10 @@ const REDDIT_APP_TAG = `<span class="text-12 font-semibold uppercase">APP</span>
 const X_STOCK_AVATAR =
   "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png";
 
-const adjectives: readonly string[] = ["Quiet", "Brisk", "Mossy", "Amber", "Lucky", "Rapid"];
-const nouns: readonly string[] = ["Lantern", "Falcon", "Teapot", "Badger", "Willow", "Comet"];
-const firstNames: readonly string[] = ["alice", "maria", "jonas", "priya", "tomas", "lena", "omar"];
-const topics: readonly string[] = ["reads", "builds", "codes", "bakes", "runs", "draws", "sails"];
+const adjectives: readonly string[] = FAKE_ADJECTIVES;
+const nouns: readonly string[] = FAKE_NOUNS;
+const firstNames: readonly string[] = FAKE_FIRST_NAMES;
+const topics: readonly string[] = FAKE_TOPICS;
 const subreddits: readonly string[] = ["woodworking", "dailydeals", "askscience", "cooking"];
 const sentences: readonly string[] = [
   "The grain on that top is lovely. What finish did you use?",
