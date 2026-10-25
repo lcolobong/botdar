@@ -72,7 +72,8 @@ interface Harness {
 
 function makeHarness(): Harness {
   loadTimeline();
-  const settings: Settings = { ...defaultSettings };
+  // Likely human off, so typical authors draw nothing unless a test turns it on.
+  const settings: Settings = { ...defaultSettings, showLikelyHuman: false };
   const config: EffectivePlatformConfig = {
     platform: "x",
     enabled: true,

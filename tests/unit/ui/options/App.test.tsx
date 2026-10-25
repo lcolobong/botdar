@@ -91,7 +91,7 @@ describe("options App", () => {
     );
   });
 
-  it("persists label style, Reddit comment labels and Show Likely human", async () => {
+  it("persists label style, Reddit comment labels and turning Show Likely human off", async () => {
     const container: HTMLDivElement = await mount();
     buttonNamed(container, "Sus scale").click();
     await vi.waitFor(() =>
@@ -108,13 +108,14 @@ describe("options App", () => {
     const showLikelyHuman: HTMLButtonElement | null = container.querySelector(
       '[role=switch][aria-label="Show Likely human"]',
     );
+    expect(showLikelyHuman?.getAttribute("aria-checked")).toBe("true");
     showLikelyHuman?.click();
-    await vi.waitFor(async () => expect((await storedSettings()).showLikelyHuman).toBe(true));
+    await vi.waitFor(async () => expect((await storedSettings()).showLikelyHuman).toBe(false));
     expect(await storedSettings()).toEqual({
       ...defaultSettings,
       labelStyle: "sus",
       redditCommentLabels: "label",
-      showLikelyHuman: true,
+      showLikelyHuman: false,
     });
   });
 

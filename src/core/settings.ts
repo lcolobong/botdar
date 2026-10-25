@@ -16,6 +16,7 @@ export interface Settings {
   /** Drops Tier 2 (active lookups) everywhere. */
   conservativeMode: boolean;
   labelStyle: LabelStyle;
+  /** On by default (ADR-0020); off brings back the quiet feed of ADR-0017. */
   showLikelyHuman: boolean;
   redditCommentLabels: RedditCommentLabels;
   /** Shows the popup's diagnostics section: per-page counts and the page snapshot export. */
@@ -31,7 +32,7 @@ export const defaultSettings: Settings = deepFreeze({
   platforms: { x: true, reddit: true, bluesky: true },
   conservativeMode: false,
   labelStyle: "plain",
-  showLikelyHuman: false,
+  showLikelyHuman: true,
   redditCommentLabels: "glyph",
   developerMode: false,
 });

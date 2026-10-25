@@ -11,7 +11,7 @@ missing page or badge is logged and skipped rather than failing the run.
 | `pages`   | `popup`, `options`, `onboarding` | the extension's own pages (each only if in the build) | | 340×470, 720×1010, 640×540 |
 | `x`       | `feed`     | `https://x.com/home` ← `timeline.html`   | Declared bot (kai) and Likely bot (mila) badges       | 600×820           |
 | `reddit`  | `feed`     | `https://www.reddit.com/` ← `feed.html`  | Declared bot badge on the APP-tagged post             | 600×820           |
-| `reddit`  | `comments` | thread URL ← `comments.html`             | quiet feed: every author scores typical, no badge     | 600×820           |
+| `reddit`  | `comments` | thread URL ← `comments.html`             | no badge: no author earns Likely human before a lookup | 600×820          |
 | `bluesky` | `feed`     | `https://bsky.app/` ← `feed.html`        | Declared bot (kai) and Likely bot (mila) badges       | 600×820           |
 
 Every feed scene also has a hover capture (`hover` for the `feed` scene, `<scene>-hover` for the

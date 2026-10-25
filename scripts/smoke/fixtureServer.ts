@@ -47,7 +47,7 @@ export const smokeFeedScenes: readonly SmokeFeedScene[] = [
     scene: "comments",
     path: "/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/",
     fixtureFile: "comments.html",
-    note: "quiet feed: every author in the recorded thread scores typical, so no badge is expected",
+    note: "no badge expected: before a profile lookup no author earns Likely human, and an unknown read draws nothing",
   },
   { platform: "bluesky", scene: "feed", path: "/" },
 ];
@@ -66,8 +66,8 @@ const repoRoot: URL = new URL("../../", import.meta.url);
 const certificateDir: URL = new URL("./cert/", import.meta.url);
 
 /**
- * Recorded pages in order of preference: a feed over a thread, because a thread's authors all
- * score typical and draw nothing; X calls its feed a timeline. Anything else serves alphabetically.
+ * Recorded pages in order of preference: a feed over a thread, because the feed carries more
+ * badge tiers; X calls its feed a timeline. Anything else serves alphabetically.
  */
 const preferredRecordedPages: readonly string[] = ["feed.html", "timeline.html"];
 
