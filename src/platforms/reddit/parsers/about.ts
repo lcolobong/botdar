@@ -4,6 +4,7 @@
  * an HTML login page instead of JSON, and a suspended user gets a stub with `is_suspended`; both are
  * distinguished from a usable profile so the source can cache the outcome rather than retry.
  */
+import { bioDeclaresAutomation } from "../../../core/handle/selfDescription";
 import type { PartialSignals } from "../../../core/types";
 import { isDefaultAvatarUrl, isPlausibleUsername } from "../conventions";
 
@@ -94,6 +95,10 @@ function toSignals(data: UnknownRecord): PartialSignals {
   const bio: string | undefined = readString(profile, "public_description");
   if (bio !== undefined) {
     signals.bio = bio.slice(0, MAX_BIO_LENGTH);
+    if (bioDeclaresAutomation(bio)) {
+      signals.declaredAutomated = true;
+      signals.declaredBy = "bio";
+    }
   }
   const hasDefaultAvatar: boolean | undefined = hasDefaultAvatarOf(data);
   if (hasDefaultAvatar !== undefined) {

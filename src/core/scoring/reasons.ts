@@ -11,6 +11,7 @@ import type {
   IndependenceGroup,
   SourceTier,
   VerdictTier,
+  DeclaredBy,
 } from "../types";
 
 export interface ReasonContext {
@@ -33,6 +34,17 @@ const MIN_REASONS = 2;
 const MAX_REASONS = 4;
 
 export const DECLARED_REASON = "Carries the platform's own automated-account label";
+/** One reason per way an account can declare itself (src/core/handle/selfDescription.ts). */
+export const DECLARED_REASONS_BY_SOURCE: Readonly<Record<DeclaredBy, string>> = {
+  label: DECLARED_REASON,
+  flair: "Its flair describes the account as automated",
+  name: "Its username describes the account as automated",
+  bio: "Its bio describes the account as automated",
+};
+
+export function declaredReasonFor(signals: Pick<AccountSignals, "declaredBy">): string {
+  return DECLARED_REASONS_BY_SOURCE[signals.declaredBy ?? "label"];
+}
 
 const countFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const monthYearFormat = new Intl.DateTimeFormat("en-US", {
@@ -267,7 +279,7 @@ export function confidenceNoteFor(
 /** Every fixed string that can reach the hover card, for the wording-rule test. */
 export function allFixedStrings(): string[] {
   return [
-    DECLARED_REASON,
+    ...Object.values(DECLARED_REASONS_BY_SOURCE),
     ...Object.values(GROUP_CAVEATS),
     DEFAULT_CLOSING,
     SOURCES_MISSING_CLOSING,

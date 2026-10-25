@@ -118,8 +118,17 @@ one-day-old account, cannot dominate.
 
 Input: `Feature[]` from the platform adapter, the effective platform config, and the signals' provenance.
 
-1. **Declared override.** If `signals.declaredAutomated` is true, return tier `declared` with reasons
-   `["Carries the platform's own automated-account label"]`, confidence 1, no scoring.
+1. **Declared override.** If `signals.declaredAutomated` is true, return tier `declared`, confidence 1,
+   no scoring. The one reason names what declared it (`signals.declaredBy`): the platform's own label
+   ("Carries the platform's own automated-account label"), or a self-description the account cannot
+   have made by accident, read by `src/core/handle/selfDescription.ts`: a username whose last word is
+   "bot" or the AutoModerator account ("Its username describes the account as automated"), an author
+   flair whose last word is "bot" such as "Verified GPT-2 Bot" ("Its flair describes the account as
+   automated"), or a bio that says "I am a bot" / "this account is a bot" in so many words ("Its bio
+   describes the account as automated"). The matches are deliberately strict: Talbot, BotHunter,
+   "Bot Developer" flair and "bot hunter" bios never count, because a false declaration is the worst
+   label the extension can print. Added 2026-10-25 after a manual test on a subreddit of flaired GPT-2
+   bots that metadata alone scored as typical.
 2. **Empty.** If there are no features, return tier `unknown`, confidence 0.
 3. **Contributions.** For each feature, `raw = lookup(spec, value)` (bin value or bool weight), then
    `contribution = clamp(raw, -cap, +cap)`.

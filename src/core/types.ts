@@ -42,8 +42,13 @@ export interface AccountSignals {
   /** true = default or missing avatar; undefined = not observed. */
   hasDefaultAvatar?: boolean;
   verified?: VerifiedKind;
-  /** The platform's own automated label (X "Automated", Reddit [App], Bluesky bot self-label). */
+  /**
+   * The platform's own automated label (X "Automated", Reddit [App], Bluesky bot self-label), or a
+   * self-description the account cannot have made by accident (see `declaredBy`).
+   */
   declaredAutomated?: boolean;
+  /** What declared the automation; a platform label when absent. */
+  declaredBy?: DeclaredBy;
   hasVerifiedEmail?: boolean;
   country?: string;
   usernameChanges?: number;
@@ -171,3 +176,6 @@ export interface PlatformAdapter {
   toFeatures: (signals: AccountSignals) => Feature[];
   badgeDensity: BadgeDensity;
 }
+
+/** Where a declared-automation signal came from: the platform, or the account's own words. */
+export type DeclaredBy = "label" | "flair" | "name" | "bio";

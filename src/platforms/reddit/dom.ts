@@ -7,6 +7,7 @@
  * Every selector that was not confirmed against live markup is marked GUESS and kept here so a
  * day-one correction is a one-file change.
  */
+import { flairDeclaresAutomation, isSelfDescribedBotName } from "../../core/handle/selfDescription";
 import type { BadgeDensity, PartialSignals, PostRef } from "../../core/types";
 import { isDefaultAvatarUrl, isPlausibleUsername } from "./conventions";
 
@@ -45,6 +46,13 @@ const APP_TAG_SELECTOR =
 const APP_TAG_TEXT = "APP";
 /** GUESS: the author avatar is assumed to be the image inside one of the author's profile links. */
 const AVATAR_IMAGE_SELECTOR = "img, faceplate-img";
+/**
+ * GUESS: author flair markup was not captured before this shipped; the selectors cover the element
+ * names and class fragments Reddit uses for it. A subreddit that flairs its bots ("Verified GPT-2
+ * Bot") is the account's community describing it, which the engine treats as a declaration.
+ */
+const AUTHOR_FLAIR_SELECTOR =
+  'shreddit-comment-author-flair, shreddit-author-flair, [slot="authorFlair"], [class*="flair" i], [data-testid*="flair" i]';
 const MAX_DISPLAY_NAME_LENGTH = 100;
 
 // MARK: - Element classification
@@ -195,16 +203,32 @@ export function toPostRef(element: Element): RedditPostRef | null {
  * casing, which the generated-name feature needs and the lowercased handle has lost. The APP tag is
  * read once, by `toPostRef`, and arrives here as `nativeLabel` rather than being searched for again.
  */
+function authorFlairText(rows: readonly ParentNode[]): string | undefined {
+  for (const row of rows) {
+    const text: string | undefined = row.querySelector(AUTHOR_FLAIR_SELECTOR)?.textContent?.trim();
+    if (text !== undefined && text.length > 0) return text;
+  }
+  return undefined;
+}
+
 export function extractDomSignals(post: PostRef): PartialSignals {
   const kind: RedditPostKind | undefined = kindOf(post.element);
   const author: string | undefined = authorNameOf(post.element);
   if (kind === undefined || author === undefined) return {};
   const signals: PartialSignals = { displayName: author.slice(0, MAX_DISPLAY_NAME_LENGTH) };
-  if (post.nativeLabel === "automated") signals.declaredAutomated = true;
-  const avatar: boolean | undefined = hasDefaultAvatar(
-    post.element,
-    metaRowsOf(post.element, kind),
-  );
+  const rows: ParentNode[] = metaRowsOf(post.element, kind);
+  const flair: string | undefined = authorFlairText(rows);
+  if (post.nativeLabel === "automated") {
+    signals.declaredAutomated = true;
+    signals.declaredBy = "label";
+  } else if (isSelfDescribedBotName(author)) {
+    signals.declaredAutomated = true;
+    signals.declaredBy = "name";
+  } else if (flair !== undefined && flairDeclaresAutomation(flair)) {
+    signals.declaredAutomated = true;
+    signals.declaredBy = "flair";
+  }
+  const avatar: boolean | undefined = hasDefaultAvatar(post.element, rows);
   if (avatar !== undefined) signals.hasDefaultAvatar = avatar;
   return signals;
 }
