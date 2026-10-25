@@ -2,6 +2,8 @@
  * Neutral, factual wording for the hover card: one template per feature id, a caveat per dominant
  * group and a note for missing sources. Every string here is governed by the wording rules in
  * docs/scoring-spec.md and ADR-0003: observations with numbers, never a description of the person.
+ * Templates also word evidence that points towards an ordinary account, since a Likely human card
+ * lists it too; a template returns NO_REASON when its value has nothing true to say.
  */
 
 import type {
@@ -24,6 +26,12 @@ export interface ReasonContext {
 }
 
 type ReasonTemplate = (context: ReasonContext) => string;
+
+/**
+ * A pattern that is absent ("handle has no digits", "not verified early") is not an observation
+ * worth a line, and the old fixed strings would have stated the opposite of the value.
+ */
+export const NO_REASON = "";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Join dates this recent read as "3 weeks ago"; older ones as "March 2019". */
@@ -111,11 +119,17 @@ function postsPerDayReason({ value }: ReasonContext): string {
   return `~${formatCount(Number(value))} posts/day since joining`;
 }
 
-function followRatioReason({ signals }: ReasonContext): string {
-  if (signals.following === undefined || signals.followers === undefined) {
+function followRatioReason({ contribution, signals }: ReasonContext): string {
+  const { following, followers } = signals;
+  if (contribution < 0) {
+    return following === undefined || followers === undefined
+      ? "Followed by more accounts than it follows"
+      : `Followed by ${formatCount(followers)}, following ${formatCount(following)}`;
+  }
+  if (following === undefined || followers === undefined) {
     return "Follows many more accounts than follow it back";
   }
-  return `Following ${formatCount(signals.following)}, followed by ${formatCount(signals.followers)}`;
+  return `Following ${formatCount(following)}, followed by ${formatCount(followers)}`;
 }
 
 function trailingDigitCount(handle: string): number {
@@ -123,7 +137,10 @@ function trailingDigitCount(handle: string): number {
   return /\d+$/.exec(localPart)?.[0].length ?? 0;
 }
 
-function handleDigitsReason({ value, signals }: ReasonContext): string {
+function handleDigitsReason({ value, contribution, signals }: ReasonContext): string {
+  if (value === false || contribution <= 0) {
+    return NO_REASON;
+  }
   const digits: number = typeof value === "number" ? value : trailingDigitCount(signals.ref.handle);
   return `Handle is a name followed by ${pluralize(digits, "digit")}`;
 }
@@ -138,7 +155,10 @@ function avatarAndBioReason({ value, signals }: ReasonContext): string {
   return "Has a profile photo and a bio";
 }
 
-function newAndBlueReason({ signals, now }: ReasonContext): string {
+function newAndBlueReason({ value, signals, now }: ReasonContext): string {
+  if (value === false) {
+    return NO_REASON;
+  }
   const days: number | undefined = accountAgeDays(signals, now);
   return days === undefined
     ? "Verified soon after joining"
@@ -170,21 +190,28 @@ const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "x.handleNameDigits": handleDigitsReason,
   "x.handleTrailingDigits": handleDigitsReason,
   "bsky.handleDigitsOnBskySocial": handleDigitsReason,
-  "x.handleBigramLL": () => "Handle looks randomly generated",
+  "x.handleBigramLL": ({ contribution }) =>
+    contribution > 0 ? "Handle looks randomly generated" : NO_REASON,
   "x.defaultAvatarEmptyBio": avatarAndBioReason,
   "bsky.noAvatarEmptyBio": avatarAndBioReason,
   "x.newAndBlue": newAndBlueReason,
   "x.replyShare": ({ value }) => `${formatCount(Number(value) * 100)}% of recent posts are replies`,
   "x.usernameChanges": ({ value }) => `Username changed ${pluralize(Number(value), "time")}`,
-  "x.countryLocaleMismatch": ({ signals }) =>
-    signals.country === undefined
+  "x.countryLocaleMismatch": ({ value, signals }) => {
+    if (value === false) {
+      return NO_REASON;
+    }
+    return signals.country === undefined
       ? "Listed country differs from the bio's language"
-      : `Account based in ${signals.country}`,
+      : `Account based in ${signals.country}`;
+  },
   "reddit.karmaPerDay": karmaPerDayReason,
   "reddit.postToCommentKarma": karmaSplitReason,
-  "reddit.generatedName": () => "Username matches Reddit's auto-generated pattern",
-  "reddit.noAvatar": () => "Default avatar",
-  "reddit.noVerifiedEmail": () => "No verified email",
+  "reddit.generatedName": ({ value }) =>
+    value === false ? NO_REASON : "Username matches Reddit's auto-generated pattern",
+  "reddit.noAvatar": ({ value }) => (value === false ? "Custom avatar" : "Default avatar"),
+  "reddit.noVerifiedEmail": ({ value }) =>
+    value === false ? "Verified email" : "No verified email",
 };
 
 export function templatedFeatureIds(): FeatureId[] {
@@ -197,13 +224,17 @@ export function renderReason(featureId: FeatureId, context: ReasonContext): stri
   return template === undefined ? featureId : template(context);
 }
 
-/** Top reasons by magnitude; weak evidence fills in only when fewer than two clear the bar. */
+/**
+ * Top reasons by magnitude; weak evidence fills in only when fewer than two clear the bar. Evidence
+ * whose template had nothing to say is never shown, so the fill-in takes the next worded item.
+ */
 export function selectReasons(evidenceByMagnitude: Evidence[]): string[] {
-  const material: Evidence[] = evidenceByMagnitude.filter(
+  const worded: Evidence[] = evidenceByMagnitude.filter((item) => item.reason !== NO_REASON);
+  const material: Evidence[] = worded.filter(
     (item) => Math.abs(item.contribution) >= REASON_MIN_ABSOLUTE_CONTRIBUTION,
   );
   const selected: Evidence[] =
-    material.length >= MIN_REASONS ? material : evidenceByMagnitude.slice(0, MIN_REASONS);
+    material.length >= MIN_REASONS ? material : worded.slice(0, MIN_REASONS);
   return selected.slice(0, MAX_REASONS).map((item) => item.reason);
 }
 
@@ -224,6 +255,8 @@ const SOURCES_MISSING_CLOSING = "Some signals could not be loaded, so this read 
 const LONG_LIVED_CLOSING = "Long-lived accounts are rarely automated; weigh this lightly.";
 const DECLARED_CLOSING =
   "The account operator chose to label it as automated. That is the platform's recommended, transparent practice.";
+/** Replaces the suspicion caveat on a Likely human card: there is no flagged signal to excuse. */
+const TYPICAL_CLOSING = "These signals look like an ordinary account; nothing here is proof.";
 
 export interface CaveatContext {
   tier: VerdictTier;
@@ -236,6 +269,11 @@ export interface CaveatContext {
 export function caveatFor(context: CaveatContext): string {
   if (context.tier === "declared") {
     return DECLARED_CLOSING;
+  }
+  if (context.tier === "typical") {
+    return context.sourcesMissing.length > 0
+      ? `${TYPICAL_CLOSING} ${SOURCES_MISSING_CLOSING}`
+      : TYPICAL_CLOSING;
   }
   const dominant: Evidence | undefined =
     context.evidenceByMagnitude.find((item) => item.contribution > 0) ??
@@ -285,6 +323,7 @@ export function allFixedStrings(): string[] {
     SOURCES_MISSING_CLOSING,
     LONG_LIVED_CLOSING,
     DECLARED_CLOSING,
+    TYPICAL_CLOSING,
     ...([0, 1, 2] as const).flatMap((tier) => [
       missingTierNote(tier, true),
       missingTierNote(tier, false),
