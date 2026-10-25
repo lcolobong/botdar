@@ -5,7 +5,8 @@ import { POLICY_LAST_ATTEMPT_KEY, POLICY_LKG_KEY } from "@/src/core/policy/loade
 import type { Policy } from "@/src/core/policy/schema";
 import { SETTINGS_STORAGE_KEY, defaultSettings } from "@/src/core/settings";
 import type { Settings } from "@/src/core/settings";
-import { App, NOTICE_SEEN_IDS_KEY, PRIVACY_SENTENCE } from "@/src/ui/popup/App";
+import { App, EXPORT_FAILED_NOTE, NOTICE_SEEN_IDS_KEY, PRIVACY_SENTENCE } from "@/src/ui/popup/App";
+import { DIAGNOSTICS_UNAVAILABLE } from "@/src/ui/popup/DiagnosticsPanel";
 
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 9, 22);
@@ -152,5 +153,91 @@ describe("popup App", () => {
     await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1));
     expect(openOptionsPage).toHaveBeenCalledTimes(1);
     close.mockRestore();
+  });
+
+  describe("diagnostics section", () => {
+    const STATS = {
+      startedAt: NOW - 120_000,
+      kinds: {
+        post: { seen: 3, badged: 3, anchorMisses: 0 },
+        comment: { seen: 11, badged: 0, anchorMisses: 11 },
+        reply: { seen: 0, badged: 0, anchorMisses: 0 },
+      },
+      lookups: { started: 1, cached: 0, delivered: 1, empty: 0, rateLimited: 0, failed: 0 },
+    };
+
+    async function enableDeveloperMode(): Promise<void> {
+      await fakeBrowser.storage.local.set({
+        [SETTINGS_STORAGE_KEY]: { ...defaultSettings, developerMode: true },
+      });
+      const created = await fakeBrowser.windows.create({ focused: true });
+      await fakeBrowser.tabs.create({
+        url: "https://www.reddit.com/",
+        active: true,
+        windowId: created?.id,
+      });
+    }
+
+    function answerTabMessages(): void {
+      fakeBrowser.tabs.sendMessage = vi.fn(async (_tabId: number, message: unknown) => {
+        const request = message as { type: string; anonymize?: boolean };
+        if (request.type === "diagnostics.get") return { platform: "reddit", stats: STATS };
+        return {
+          html: "<!doctype html>\n<html></html>",
+          fileName: request.anonymize
+            ? "botdar-reddit-2026-10-22.html"
+            : "botdar-reddit-2026-10-22-raw.html",
+          identifiers: request.anonymize ? 7 : 0,
+        };
+      });
+    }
+
+    it("stays hidden until the setting is on", async () => {
+      const container: HTMLDivElement = await mount();
+      expect(container.querySelector(".bd-diagnostics")).toBeNull();
+    });
+
+    it("shows the active page's counts and saves an anonymised snapshot", async () => {
+      await enableDeveloperMode();
+      answerTabMessages();
+      const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      vi.stubGlobal("URL", { ...URL, createObjectURL: () => "blob:x", revokeObjectURL: () => {} });
+      const container: HTMLDivElement = await mount();
+      await vi.waitFor(() => expect(container.querySelector(".bd-table")).not.toBeNull());
+      expect(container.querySelector(".bd-diagnostics .bd-caption")?.textContent).toBe(
+        "Reddit · Counting since the page loaded, 2 min ago",
+      );
+      expect(container.querySelector(".bd-table__warn")?.textContent).toBe("11");
+
+      const exportButton: HTMLButtonElement | null =
+        container.querySelector(".bd-diagnostics .bd-btn");
+      exportButton?.click();
+      await vi.waitFor(() =>
+        expect(container.textContent).toContain(
+          "Saved botdar-reddit-2026-10-22.html (7 identifiers replaced)",
+        ),
+      );
+      expect(click).toHaveBeenCalledTimes(1);
+      vi.unstubAllGlobals();
+      click.mockRestore();
+    });
+
+    it("explains when the active tab has no Botdar page and when an export fails", async () => {
+      await enableDeveloperMode();
+      fakeBrowser.tabs.sendMessage = vi.fn().mockRejectedValue(new Error("no receiver"));
+      const container: HTMLDivElement = await mount();
+      await vi.waitFor(() => expect(container.textContent).toContain(DIAGNOSTICS_UNAVAILABLE));
+      const buttons: HTMLButtonElement[] = Array.from(
+        container.querySelectorAll(".bd-diagnostics button"),
+      );
+      expect(buttons.every((button) => button.disabled)).toBe(true);
+
+      answerTabMessages();
+      const remounted: HTMLDivElement = await mount();
+      await vi.waitFor(() => expect(remounted.querySelector(".bd-table")).not.toBeNull());
+      fakeBrowser.tabs.sendMessage = vi.fn().mockRejectedValue(new Error("gone"));
+      remounted.querySelector<HTMLButtonElement>(".bd-diagnostics .bd-btn")?.click();
+      await vi.waitFor(() => expect(remounted.textContent).toContain(EXPORT_FAILED_NOTE));
+    });
   });
 });
