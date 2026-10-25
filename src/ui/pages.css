@@ -267,3 +267,41 @@ body {
   color: var(--danger);
   border-color: var(--danger);
 }
+.bd-diagnostics__body {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+}
+.bd-diagnostics__foot {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--hairline);
+}
+.bd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.bd-table th,
+.bd-table td {
+  padding: var(--space-1) 0;
+  text-align: right;
+  border-bottom: 1px solid var(--hairline);
+}
+.bd-table th[scope="row"],
+.bd-table th:first-child {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink);
+}
+.bd-table thead th {
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+.bd-table__warn {
+  color: var(--tier-many-fg);
+  font-weight: 600;
+}
