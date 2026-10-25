@@ -8,6 +8,8 @@
 
 import type { Browser } from "wxt/browser";
 import { browser } from "wxt/browser";
+import type { DiagnosticsStats } from "./diagnostics.ts";
+import { DIAGNOSTICS_KINDS, LOOKUP_OUTCOMES } from "./diagnostics.ts";
 import type { EffectivePlatformConfig, PlatformId } from "./types";
 
 export type EffectiveConfigByPlatform = Record<PlatformId, EffectivePlatformConfig>;
@@ -36,7 +38,35 @@ export interface ConfigChangedBroadcast {
   configs: EffectiveConfigByPlatform;
 }
 
-export type RuntimeMessage = ConfigGetRequest | PolicyRefreshRequest | ConfigChangedBroadcast;
+/** Popup to the active tab's content script: what it has seen on this page. */
+export interface DiagnosticsGetRequest {
+  type: "diagnostics.get";
+}
+
+export interface DiagnosticsGetResponse {
+  platform: PlatformId;
+  stats: DiagnosticsStats;
+}
+
+/** Popup to the active tab's content script: the page's markup as a fixture, for a bug report. */
+export interface SnapshotExportRequest {
+  type: "snapshot.export";
+  anonymize: boolean;
+}
+
+export interface SnapshotExportResponse {
+  html: string;
+  fileName: string;
+  /** Distinct identifiers the anonymizer replaced; 0 for a raw export. */
+  identifiers: number;
+}
+
+export type RuntimeMessage =
+  | ConfigGetRequest
+  | PolicyRefreshRequest
+  | ConfigChangedBroadcast
+  | DiagnosticsGetRequest
+  | SnapshotExportRequest;
 export type RuntimeMessageType = RuntimeMessage["type"];
 export type MessageOf<T extends RuntimeMessageType> = Extract<RuntimeMessage, { type: T }>;
 
@@ -44,6 +74,8 @@ export interface ResponseByType {
   "config.get": ConfigGetResponse;
   "policy.refresh": PolicyRefreshResponse;
   "config.changed": undefined;
+  "diagnostics.get": DiagnosticsGetResponse;
+  "snapshot.export": SnapshotExportResponse;
 }
 
 export type RequestHandler<T extends RuntimeMessageType> = (
@@ -83,6 +115,21 @@ export function isEffectiveConfigByPlatform(value: unknown): value is EffectiveC
   );
 }
 
+const isCountRecord = (value: unknown, keys: readonly string[]): boolean =>
+  isRecord(value) && keys.every((key) => typeof value[key] === "number");
+
+export function isDiagnosticsStats(value: unknown): value is DiagnosticsStats {
+  if (!isRecord(value) || typeof value.startedAt !== "number" || !isRecord(value.kinds)) {
+    return false;
+  }
+  const kinds: Record<string, unknown> = value.kinds;
+  return (
+    DIAGNOSTICS_KINDS.every((kind) =>
+      isCountRecord(kinds[kind], ["seen", "badged", "anchorMisses"]),
+    ) && isCountRecord(value.lookups, LOOKUP_OUTCOMES)
+  );
+}
+
 export function isRuntimeMessage(value: unknown): value is RuntimeMessage {
   if (!isRecord(value)) {
     return false;
@@ -91,9 +138,12 @@ export function isRuntimeMessage(value: unknown): value is RuntimeMessage {
     case "config.get":
       return isPlatformId(value.platform);
     case "policy.refresh":
+    case "diagnostics.get":
       return true;
     case "config.changed":
       return isEffectiveConfigByPlatform(value.configs);
+    case "snapshot.export":
+      return typeof value.anonymize === "boolean";
     default:
       return false;
   }
@@ -111,6 +161,15 @@ export function isResponseFor<T extends RuntimeMessageType>(
         isRecord(value) &&
         typeof value.ok === "boolean" &&
         (value.error === undefined || typeof value.error === "string")
+      );
+    case "diagnostics.get":
+      return isRecord(value) && isPlatformId(value.platform) && isDiagnosticsStats(value.stats);
+    case "snapshot.export":
+      return (
+        isRecord(value) &&
+        typeof value.html === "string" &&
+        typeof value.fileName === "string" &&
+        typeof value.identifiers === "number"
       );
     default:
       return value === undefined;
@@ -165,6 +224,25 @@ export function onRequest<T extends RuntimeMessageType>(
   };
   browser.runtime.onMessage.addListener(listener);
   return () => browser.runtime.onMessage.removeListener(listener);
+}
+
+/**
+ * Sends a request from the popup to the content script in the active tab and resolves with its
+ * validated response. Rejects when there is no active tab or no Botdar receiver in it, which the
+ * popup turns into "open a supported site".
+ */
+export async function sendToActiveTab<T extends RuntimeMessageType>(
+  message: MessageOf<T>,
+): Promise<ResponseByType[T]> {
+  const [tab]: Browser.tabs.Tab[] = await browser.tabs.query({ active: true, currentWindow: true });
+  if (tab?.id === undefined) {
+    throw new Error("No active tab");
+  }
+  const response: unknown = await browser.tabs.sendMessage(tab.id, message);
+  if (!isResponseFor(message.type, response)) {
+    throw new Error(`Malformed response to ${message.type}`);
+  }
+  return response;
 }
 
 /** Delivers a broadcast to every open tab; tabs without a Botdar content script are skipped. */
