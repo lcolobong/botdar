@@ -43,6 +43,11 @@ returns 404 for every other API path:
 | `https://x.com/i/api/graphql/SMOKEQUERYID00000001/HomeTimeline` | `tests/fixtures/x/graphql/home-timeline-core.json` |
 | `https://bsky.app/xrpc/app.bsky.feed.getTimeline`              | `tests/fixtures/bluesky/get-timeline.json`      |
 | `https://bsky.app/xrpc/app.bsky.actor.getProfiles`             | `tests/fixtures/bluesky/get-profiles.json`      |
+| `https://www.reddit.com/user/quiet_lantern_4821/about.json`    | `tests/fixtures/reddit/about/normal.json`       |
+
+The Reddit route answers the extension's own Tier 2 lookup for the recorded thread's OP, matched
+on the path alone (the `?raw_json=1` query is ignored); every other author's lookup gets the 404,
+so the comments scene shows a profile that was read next to ones that returned nothing.
 
 The recorded X and Bluesky pages end with a short script that fetches exactly these URLs on
 load (repeated a few times, since the content script subscribes after `document_idle`), so the

@@ -152,6 +152,13 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
     path: "/xrpc/app.bsky.actor.getProfiles",
     file: "tests/fixtures/bluesky/get-profiles.json",
   },
+  // The recorded thread's OP. The other authors answer 404, so a capture shows both a profile
+  // that was read and one that returned nothing.
+  {
+    platform: "reddit",
+    path: "/user/quiet_lantern_4821/about.json",
+    file: "tests/fixtures/reddit/about/normal.json",
+  },
 ];
 
 /**
