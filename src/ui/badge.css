@@ -52,6 +52,12 @@
   color: var(--tier-human-fg);
   border-color: var(--tier-human-line);
 }
+/* No read is always hollow and neutral: it claims nothing about the account. */
+.bd-badge--unknown {
+  background: transparent;
+  color: var(--tier-unknown-fg);
+  border-color: var(--tier-unknown-line);
+}
 .bd-badge--hollow {
   background: transparent;
 }

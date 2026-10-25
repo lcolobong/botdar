@@ -76,6 +76,14 @@
   align-items: center;
   gap: var(--space-1);
 }
+.bd-card__explain {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 18px;
+}
 .bd-card__note {
   margin: var(--space-2) 0 0;
   font-size: 13px;

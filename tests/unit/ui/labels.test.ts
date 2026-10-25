@@ -10,6 +10,18 @@ describe("badge labels", () => {
     expect(visibleLabel("declared", "sus")).toBe("Honest self-report bot");
     expect(visibleLabel("typical", "plain")).toBe("Likely human");
     expect(visibleLabel("typical", "sus")).toBe("Real af");
+    expect(visibleLabel("unknown", "plain")).toBe("No read");
+    expect(visibleLabel("unknown", "sus")).toBe("Who dis");
+  });
+
+  it("reads Checking for an unknown verdict whose lookup is running, and only for that tier", () => {
+    expect(visibleLabel("unknown", "plain", true)).toBe("Checking");
+    expect(visibleLabel("unknown", "sus", true)).toBe("Checking");
+    expect(visibleLabel("unknown", "icon", true)).toBeNull();
+    expect(accessibleLabel("unknown", true)).toBe("Checking");
+    expect(accessibleLabel("unknown")).toBe("No read");
+    expect(visibleLabel("typical", "plain", true)).toBe("Likely human");
+    expect(accessibleLabel("many", true)).toBe("Likely bot");
   });
 
   it("shows no text in the icon style but keeps the plain accessible name", () => {
@@ -22,6 +34,7 @@ describe("badge labels", () => {
     expect(glyphFor("some")).toBe("unsure");
     expect(glyphFor("declared")).toBe("tag");
     expect(glyphFor("typical")).toBe("person");
+    expect(glyphFor("unknown")).toBe("question");
   });
 
   it("never draws unknown, and draws typical only when Likely human is on", () => {

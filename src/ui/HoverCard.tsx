@@ -15,6 +15,8 @@ export interface HoverCardProps {
   /** Display form with the platform prefix, e.g. "@handle" or "u/handle". */
   handle: string;
   reasons: CardReason[];
+  /** Why there is no read; a No read card shows it in place of reasons, note, caveat and feedback. */
+  explanation?: string;
   confidenceNote?: string;
   caveat?: string;
   loading: boolean;
@@ -33,6 +35,7 @@ const SOURCE_LEGEND: Record<SourceTier, string> = {
 };
 
 export function HoverCard(props: HoverCardProps) {
+  const noRead: boolean = props.tier === "unknown";
   const title: string = props.loading
     ? "Checking"
     : (visibleLabel(props.tier, props.labelStyle) ?? accessibleLabel(props.tier));
@@ -41,7 +44,7 @@ export function HoverCard(props: HoverCardProps) {
       id={props.id}
       class="bd-card"
       role="dialog"
-      aria-label={`${accessibleLabel(props.tier)}: ${props.handle}`}
+      aria-label={`${accessibleLabel(props.tier, props.loading)}: ${props.handle}`}
       aria-busy={props.loading}
     >
       <div class="bd-card__head">
@@ -53,9 +56,38 @@ export function HoverCard(props: HoverCardProps) {
           class={`bd-badge bd-badge--${badgeClass(props.tier)} ${props.lowConfidence ? "bd-badge--hollow" : ""} ${props.loading ? "bd-badge--loading" : ""}`}
         >
           <Glyph name={glyphFor(props.tier)} />
-          {visibleLabel(props.tier, props.labelStyle)}
+          {visibleLabel(props.tier, props.labelStyle, props.loading)}
         </span>
       </div>
+      {noRead ? <NoReadBody explanation={props.explanation} /> : <ReadBody {...props} />}
+      <div class="bd-card__foot">
+        {noRead ? (
+          <span />
+        ) : (
+          <FeedbackButton
+            sent={props.feedbackSent}
+            disabled={props.loading}
+            onToggle={props.onFeedback}
+          />
+        )}
+        <button type="button" class="bd-btn bd-btn--link" onClick={props.onSettings}>
+          Settings
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// MARK: - Bodies
+
+/** Nothing was read, so there is no observation to dispute and no caveat to attach. */
+function NoReadBody({ explanation }: { explanation: string | undefined }) {
+  return explanation === undefined ? null : <p class="bd-card__explain">{explanation}</p>;
+}
+
+function ReadBody(props: HoverCardProps) {
+  return (
+    <>
       <ul class="bd-card__reasons">
         {props.reasons.map((reason: CardReason) => (
           <li class="bd-card__reason" key={reason.text}>
@@ -76,17 +108,7 @@ export function HoverCard(props: HoverCardProps) {
       ) : null}
       {props.confidenceNote ? <p class="bd-card__note">{props.confidenceNote}</p> : null}
       {props.caveat ? <p class="bd-card__caveat">{props.caveat}</p> : null}
-      <div class="bd-card__foot">
-        <FeedbackButton
-          sent={props.feedbackSent}
-          disabled={props.loading}
-          onToggle={props.onFeedback}
-        />
-        <button type="button" class="bd-btn bd-btn--link" onClick={props.onSettings}>
-          Settings
-        </button>
-      </div>
-    </section>
+    </>
   );
 }
 

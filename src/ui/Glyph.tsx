@@ -51,6 +51,23 @@ export function Glyph({ name }: GlyphProps) {
           <circle cx="4" cy="4" r="1" fill="#ffffff" fill-opacity="0.8" />
         </svg>
       );
+    case "question":
+      return (
+        <svg viewBox="0 0 12 12" aria-hidden="true" class="bd-glyph">
+          <circle cx="6" cy="6" r="4.9" fill="none" stroke="currentColor" stroke-width="1.2" />
+          <text
+            x="6"
+            y="8.4"
+            text-anchor="middle"
+            font-size="7"
+            font-weight="700"
+            font-family="sans-serif"
+            fill="currentColor"
+          >
+            ?
+          </text>
+        </svg>
+      );
     case "person":
       return (
         <svg viewBox="0 0 12 12" aria-hidden="true" class="bd-glyph">
