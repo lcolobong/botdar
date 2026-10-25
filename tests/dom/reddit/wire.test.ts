@@ -81,7 +81,8 @@ async function wire(
   overrides: { settings?: Partial<Settings>; t2?: boolean } = {},
 ): Promise<Harness> {
   loadRedditFixture(fixture);
-  const settings: Settings = { ...defaultSettings, ...overrides.settings };
+  // Likely human off unless a test asks, so the typical author draws nothing by default here.
+  const settings: Settings = { ...defaultSettings, showLikelyHuman: false, ...overrides.settings };
   await fakeBrowser.storage.local.set({ [SETTINGS_STORAGE_KEY]: settings });
   const resolve = vi.fn(async (): Promise<PartialSignals | null> => ({ linkKarma: 5 }));
   const source: SignalSource = {
@@ -186,8 +187,8 @@ describe("wireReddit", () => {
     harness.dispose();
   });
 
-  it("draws Likely human only when the setting asks for it, and unmounts when it is turned off", async () => {
-    const harness: Harness = await wire("feed.html", { settings: { showLikelyHuman: true } });
+  it("draws Likely human with the default settings, and unmounts it when it is turned off", async () => {
+    const harness: Harness = await wire("feed.html", { settings: defaultSettings });
     expect(badges()).toHaveLength(2);
     expect(buttonOf(badgeFor("quiet_lantern_4821")).textContent).toContain("Likely human");
 

@@ -89,9 +89,12 @@ interface Harness {
   configNow: EffectivePlatformConfig;
 }
 
+/** Likely human off, so the fixture's typical authors draw nothing unless a test turns it on. */
+const QUIET_SETTINGS: Settings = { ...defaultSettings, showLikelyHuman: false };
+
 const makeHarness = (
   initial: EffectivePlatformConfig = config(),
-  settings: Settings = defaultSettings,
+  settings: Settings = QUIET_SETTINGS,
 ): Harness => {
   const resolve = vi.fn(async (): Promise<PartialSignals | null> => ({ followers: 42 }));
   const active: SignalSource = {
@@ -230,7 +233,7 @@ describe("wireBluesky", () => {
 
   it("draws the paused state when Tier 2 is off and respects the label style", async () => {
     const harness: Harness = makeHarness(config({ tiers: { t1: true, t2: false } }), {
-      ...defaultSettings,
+      ...QUIET_SETTINGS,
       labelStyle: "sus",
     });
     stop = await wireBluesky(new ContentScriptContext("bluesky"), SHADOW_CSS, harness.deps);
@@ -297,19 +300,19 @@ describe("wireBluesky", () => {
     expect(harness.resolve).not.toHaveBeenCalled();
   });
 
-  it("mounts and unmounts the Likely human badge as the setting flips", async () => {
-    const harness: Harness = makeHarness();
+  it("draws the Likely human badge by default and unmounts it when the setting is turned off", async () => {
+    const harness: Harness = makeHarness(config(), defaultSettings);
     stop = await wireBluesky(new ContentScriptContext("bluesky"), SHADOW_CSS, harness.deps);
-    await flush();
-    expect(badgeAfter("newsroom.example.org")).toBeNull();
-
-    harness.emitSettings({ ...defaultSettings, showLikelyHuman: true });
     await flush();
     expect(badgeButton("newsroom.example.org").getAttribute("aria-label")).toBe("Likely human");
 
-    harness.emitSettings(defaultSettings);
+    harness.emitSettings(QUIET_SETTINGS);
     await flush();
     expect(badgeAfter("newsroom.example.org")).toBeNull();
+
+    harness.emitSettings(defaultSettings);
+    await flush();
+    expect(badgeButton("newsroom.example.org").getAttribute("aria-label")).toBe("Likely human");
   });
 
   it("removes every badge when the platform is switched off and resumes when it is back", async () => {

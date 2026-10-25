@@ -41,7 +41,7 @@ beforeEach(() => {
 describe("onboarding App", () => {
   it("opens on the badge panel with the real badges and the no-badge note", () => {
     const container: HTMLDivElement = mount();
-    expect(headline(container)).toBe("A badge when something stands out");
+    expect(headline(container)).toBe("A badge on every author");
     const badges: string[] = Array.from(container.querySelectorAll("button.bd-badge")).map(
       (badge) => badge.getAttribute("aria-label") ?? "",
     );
@@ -50,9 +50,9 @@ describe("onboarding App", () => {
       (tier) => tier.textContent ?? "",
     );
     expect(tiers[0]).toContain("Several independent patterns common in automated accounts");
-    expect(tiers[3]).toContain("No badge");
-    expect(tiers[3]).toContain("Looks fine, or not enough data yet");
-    expect(tiers[4]).toContain("Optional. Turn it on in settings");
+    expect(tiers[3]).toContain("Nothing stands out. Turn it off in settings");
+    expect(tiers[4]).toContain("No badge");
+    expect(tiers[4]).toContain("Not enough data yet");
     expect(primaryButton(container).textContent).toBe("Next");
     expect(activeDot(container)).toBe(0);
     expect(container.querySelector("section")?.getAttribute("aria-label")).toBe("Step 1 of 3");

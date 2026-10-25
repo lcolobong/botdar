@@ -20,10 +20,11 @@ const TIER_NOTES: readonly TierNote[] = [
   { tier: "many", note: "Several independent patterns common in automated accounts" },
   { tier: "some", note: "One or two things worth a look" },
   { tier: "declared", note: "The account carries the platform's own automated label" },
+  {
+    tier: "typical",
+    note: "Nothing stands out. Turn it off in settings for a quieter feed",
+  },
 ];
-
-const LIKELY_HUMAN_NOTE =
-  "Optional. Turn it on in settings, along with the Sus scale and icon-only label styles";
 
 const noop = (): void => undefined;
 
@@ -46,10 +47,10 @@ function IllustrativeBadge({ tier }: { tier: BadgeTier }) {
 function BadgePanel() {
   return (
     <>
-      <h1 class="bd-display">A badge when something stands out</h1>
+      <h1 class="bd-display">A badge on every author</h1>
       <p>
-        Most authors get nothing. When one does, hover the badge to see the two to four observations
-        behind it and why they might be wrong.
+        Every author gets a read. Hover the badge to see the two to four observations behind it and
+        why they might be wrong.
       </p>
       <div class="bd-panel__body">
         {TIER_NOTES.map(({ tier, note }) => (
@@ -60,11 +61,7 @@ function BadgePanel() {
         ))}
         <div class="bd-tier">
           <span class="bd-badge bd-badge--paused bd-badge--none">No badge</span>
-          Looks fine, or not enough data yet
-        </div>
-        <div class="bd-tier">
-          <IllustrativeBadge tier="typical" />
-          {LIKELY_HUMAN_NOTE}
+          Not enough data yet
         </div>
       </div>
     </>

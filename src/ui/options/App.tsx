@@ -154,7 +154,8 @@ export function App({ now = Date.now }: AppProps) {
         <div class="bd-row__text">
           <p>Show Likely human</p>
           <span class="bd-caption">
-            Adds a green badge on accounts that look fine. Off keeps the feed quiet.
+            A green badge on accounts that look ordinary. Turn it off for a quieter feed that only
+            marks accounts worth a look.
           </span>
         </div>
         <Toggle

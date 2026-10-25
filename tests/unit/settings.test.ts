@@ -28,7 +28,7 @@ function customSettings(): Settings {
     platforms: { x: false, reddit: true, bluesky: true },
     conservativeMode: true,
     labelStyle: "sus",
-    showLikelyHuman: true,
+    showLikelyHuman: false,
     redditCommentLabels: "label",
     developerMode: true,
   };
@@ -39,12 +39,12 @@ beforeEach(() => {
 });
 
 describe("defaultSettings", () => {
-  it("has every platform on, conservative mode off, plain labels and glyph comments", () => {
+  it("has every platform on, conservative mode off, plain labels, Likely human shown and glyph comments", () => {
     expect(defaultSettings).toEqual({
       platforms: { x: true, reddit: true, bluesky: true },
       conservativeMode: false,
       labelStyle: "plain",
-      showLikelyHuman: false,
+      showLikelyHuman: true,
       redditCommentLabels: "glyph",
       developerMode: false,
     });
