@@ -59,7 +59,12 @@ export interface WireRedditOptions {
 
 export const CARD_ID = "botdar-card";
 const CACHE_CAPACITY = 500;
-const LOOKUP_BURST = 3;
+/**
+ * Authors are looked up as their posts come near the viewport (ADR-0020), and a first screen of a
+ * thread holds ten or so distinct authors, so a burst of ten serves it at once; the rest follow at
+ * the config's sustained rate (30 a minute by default), queued in the resolver.
+ */
+const LOOKUP_BURST = 10;
 
 /** Build defaults narrowed by the cached policy and the settings; the background's answer wins for the config. */
 export async function loadRedditRuntime(): Promise<RedditRuntime> {
@@ -132,7 +137,6 @@ export async function wireReddit(
   const slotByHost = new WeakMap<Element, BadgeSlot>();
   const feedbackByHandle = new Map<string, Promise<FeedbackEntry>>();
   let openSlot: BadgeSlot | null = null;
-  let lookupPending = false;
   let legendShown = false;
   let cardContainer: HTMLElement | null = null;
   let stopObserving: (() => void) | null = null;
@@ -182,7 +186,7 @@ export async function wireReddit(
         ...(verdict.confidenceNote === undefined ? {} : { confidenceNote: verdict.confidenceNote }),
         caveat: verdict.caveat,
         ...noReadCardProps(verdict, slot.handle),
-        loading: lookupPending,
+        loading: isLookingUp(slot),
         lowConfidence: verdict.lowConfidence,
         showLegend: !legendShown,
         feedbackSent: feedbackByHandle.has(slot.post.ref.handle),
@@ -202,20 +206,21 @@ export async function wireReddit(
       legendShown = true;
       card.setTheme(theme());
       card.setVisible(true);
-      if (runtime.config.tiers.t2 && !lookupPending) {
-        lookupPending = true;
+      if (runtime.config.tiers.t2) {
+        // Usually a cache hit: the author was looked up on sight. An author still waiting in the
+        // on-sight queue moves to its front (the resolver promotes it), and one already running
+        // shares that lookup. The closing rescore redraws the badge and the card.
+        void slot.handle.lookup();
         renderBadge(slot);
-        void slot.handle.lookup().finally(() => {
-          lookupPending = false;
-          renderBadge(slot);
-          renderCard();
-        });
+        renderCard();
       }
       return cardContainer?.getBoundingClientRect().height ?? 0;
     },
     hide: () => {
+      const closedSlot: BadgeSlot | null = openSlot;
       openSlot = null;
       card.setVisible(false);
+      if (closedSlot !== null) renderBadge(closedSlot);
     },
     place: ({ top, left }) => {
       card.setPlacement({ top, left });
@@ -225,6 +230,8 @@ export async function wireReddit(
   ctx.addEventListener(card.shadowHost, "mouseleave", () => controller.requestClose());
 
   // MARK: - Badges
+
+  const isLookingUp = (slot: BadgeSlot): boolean => slot.handle.lookupStatus() === "pending";
 
   const renderBadge = (slot: BadgeSlot): void => {
     const container: HTMLElement | null = slot.container;
@@ -241,7 +248,8 @@ export async function wireReddit(
         density: slot.post.density ?? adapter.badgeDensity,
         lowConfidence: slot.verdict.lowConfidence,
         paused: !runtime.config.tiers.t2,
-        loading: openSlot === slot && lookupPending,
+        loading: isLookingUp(slot),
+        stillWhileLoading: openSlot !== slot,
         glyphOnlyAtCommentDensity: runtime.settings.redditCommentLabels !== "label",
         onOpen: () => {
           if (slot.mounted !== null) controller.requestOpen(slot.mounted.shadowHost);
@@ -317,6 +325,10 @@ export async function wireReddit(
       if (openSlot === slot) renderCard();
     });
     syncBadge(slot);
+    // Observers attach a post only near the viewport (ADR-0019), so this is a lookup on sight. It
+    // comes after the subscription: a cache hit rescores synchronously, and a badge subscribed
+    // later would keep drawing the Tier 0 verdict it read first.
+    void handle.lookupOnSight();
   };
 
   const detachElement = (element: Element): void => {
@@ -345,6 +357,13 @@ export async function wireReddit(
     runtime = next;
     resolver.updateConfig(next.config);
     observeIfEnabled();
+    // Tier 2 coming back on (conservative mode off, a policy pause lifted) must not leave the posts
+    // already on screen at "not looked up yet" until they scroll away and back; turning it off
+    // dropped their queued lookups. lookupOnSight skips every account already read or tried, and
+    // runs before the redraw so the badges come back as Checking.
+    if (next.config.tiers.t2) {
+      for (const slot of slots.values()) void slot.handle.lookupOnSight();
+    }
     for (const slot of slots.values()) syncBadge(slot);
     renderCard();
   };

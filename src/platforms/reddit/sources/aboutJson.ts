@@ -1,9 +1,9 @@
 /**
  * Tier 2 for Reddit: a same-origin `GET /user/<name>/about.json?raw_json=1` with the user's own
- * cookies, made on demand (hover, or first view with eager lookups) through the pipeline's cache and
- * rate limiter. Logged-out sessions get 403 or an HTML login page; after one of those the source
- * pauses itself, since every further lookup would get the same answer and add nothing but traffic
- * to the user's session.
+ * cookies, made once per author when a post by them comes near the viewport (ADR-0020), and again
+ * on hover, through the pipeline's cache, queue and rate limiter. Logged-out sessions get 403 or an
+ * HTML login page; after one of those the source pauses itself, since every further lookup would
+ * get the same answer and add nothing but traffic to the user's session.
  */
 import { RateLimitedError } from "../../../core/ratelimit";
 import type { AccountRef, PartialSignals, ResolveContext, SignalSource } from "../../../core/types";

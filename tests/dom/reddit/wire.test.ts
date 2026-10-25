@@ -241,9 +241,10 @@ describe("wireReddit", () => {
     harness.dispose();
   });
 
-  it("opens the card on hover, runs the lookup and records feedback", async () => {
+  it("opens the card on hover, serves the on-sight lookup and records feedback", async () => {
     const harness: Harness = await wire("comments.html");
     const button: HTMLButtonElement = buttonOf(badgeFor("deal_scout_90210"));
+    const lookupsOnSight: number = harness.resolve.mock.calls.length;
 
     button.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
     await vi.advanceTimersByTimeAsync(150);
@@ -251,7 +252,7 @@ describe("wireReddit", () => {
     expect(card().style.getPropertyValue("--botdar-display")).toBe("block");
     expect(card().shadowRoot?.textContent).toContain("u/deal_scout_90210");
     expect(card().shadowRoot?.textContent).toContain("Name");
-    expect(harness.resolve).toHaveBeenCalledTimes(1);
+    expect(harness.resolve).toHaveBeenCalledTimes(lookupsOnSight);
     await vi.waitFor(() =>
       expect(card().shadowRoot?.querySelector('[aria-busy="true"]')).toBeNull(),
     );
