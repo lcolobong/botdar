@@ -1,4 +1,5 @@
 import { TtlLruCache } from "@/src/core/cache";
+import { diagnosticsSnapshot, resetDiagnostics } from "@/src/core/diagnostics";
 import type { BadgeHandle, MergeableSignals, Scorer } from "@/src/core/pipeline";
 import {
   AccountResolver,
@@ -350,6 +351,31 @@ describe("AccountResolver", () => {
     await expect(handle.lookup()).resolves.toBeUndefined();
     expect(cache.has("someone")).toBe(false);
     expect(limiter.isOpen()).toBe(false);
+  });
+
+  it("records every lookup outcome for the diagnostics panel", async () => {
+    resetDiagnostics();
+    const cache = new TtlLruCache<string, PartialSignals>(10, TIER2_CACHE_TTL_MS);
+    const { resolver, resolve, limiter } = makeHarness({ t1: true, t2: true }, { cache });
+    await resolver.attach(post()).lookup();
+    cache.delete("someone");
+    resolve.mockRejectedValueOnce(new Error("network"));
+    await resolver.attach(post()).lookup();
+    resolve.mockRejectedValueOnce(new RateLimitedError("429", 30_000));
+    await resolver.attach(post()).lookup();
+    await resolver.attach(post()).lookup();
+    limiter.reportSuccess();
+    vi.advanceTimersByTime(60_000);
+    cache.set("someone", { followers: 99 });
+    await resolver.attach(post()).lookup();
+    expect(diagnosticsSnapshot().lookups).toEqual({
+      started: 4,
+      cached: 1,
+      delivered: 1,
+      empty: 0,
+      rateLimited: 2,
+      failed: 1,
+    });
   });
 
   it("shares one in-flight lookup between concurrent requests", async () => {

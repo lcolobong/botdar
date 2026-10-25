@@ -14,7 +14,8 @@ import { IDLE_TIMEOUT_MS, createSliceScheduler, drainQueue } from "../../core/id
 import type { NearViewportGate } from "../../core/nearViewport";
 import { createNearViewportGate } from "../../core/nearViewport";
 import type { RedditPostRef } from "./dom";
-import { FEED_ITEM_SELECTOR, toPostRef } from "./dom";
+import { recordAnchorMiss, recordSeen } from "../../core/diagnostics.ts";
+import { FEED_ITEM_SELECTOR, authorNameOf, kindOf, toPostRef } from "./dom";
 
 export interface RedditFeedObserverOptions {
   onPost: (post: RedditPostRef) => void;
@@ -49,7 +50,12 @@ export function observeRedditFeed(options: RedditFeedObserverOptions): () => voi
     // A post without a usable author or anchor is left unmarked so the next full scan retries it
     // once its slotted content has rendered.
     const post: RedditPostRef | null = toPostRef(element);
-    if (post === null) return;
+    if (post === null) {
+      // A deleted or removed author is not a missing anchor: there is nothing to badge.
+      if (authorNameOf(element) !== undefined) recordAnchorMiss(kindOf(element) ?? "post", element);
+      return;
+    }
+    recordSeen(post.kind, element);
     reported.add(element);
     options.onPost(post);
   };

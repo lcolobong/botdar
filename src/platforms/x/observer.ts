@@ -11,6 +11,7 @@ import { IDLE_TIMEOUT_MS, createSliceScheduler, drainQueue } from "@/src/core/id
 import type { NearViewportGate } from "@/src/core/nearViewport";
 import { createNearViewportGate } from "@/src/core/nearViewport";
 import type { PostRef } from "@/src/core/types";
+import { kindOfPost, recordAnchorMiss, recordSeen } from "../../core/diagnostics.ts";
 import { POST_SELECTOR, findUnbadgedPosts, toPostRef } from "./dom";
 
 export interface FeedObserverOptions {
@@ -52,10 +53,13 @@ export function observeFeed(options: FeedObserverOptions): () => void {
       return;
     }
     const post: PostRef | undefined = toPostRef(article);
-    if (post !== undefined) {
-      tracked.set(article, post);
-      options.onPost(post);
+    if (post === undefined) {
+      recordAnchorMiss("post", article);
+      return;
     }
+    recordSeen(kindOfPost(post), article);
+    tracked.set(article, post);
+    options.onPost(post);
   };
 
   const discover = (): void => {
@@ -69,7 +73,6 @@ export function observeFeed(options: FeedObserverOptions): () => void {
       }
     }
   };
-
   const runSlice = (shouldYield: ShouldYield): boolean => {
     if (stopped) {
       return false;

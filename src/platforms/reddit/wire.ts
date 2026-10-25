@@ -5,6 +5,7 @@
  * effect is injectable so the wiring is testable against fixture pages with a fake scorer.
  */
 import { h, render } from "preact";
+import { kindOfPost, recordBadged } from "../../core/diagnostics.ts";
 import { browser } from "wxt/browser";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import { TtlLruCache } from "../../core/cache";
@@ -289,6 +290,7 @@ export async function wireReddit(
         slot.container ??= mounted.shadowHost.shadowRoot?.querySelector("body") ?? null;
         slotByHost.set(mounted.shadowHost, slot);
         slot.post.element.setAttribute("data-botdar", "1");
+        recordBadged(kindOfPost(slot.post), slot.post.element);
         syncBadge(slot);
       })
       .finally(() => {
