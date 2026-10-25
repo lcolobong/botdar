@@ -128,10 +128,12 @@ function badges(): HTMLElement[] {
   return hosts;
 }
 
+/** The fixture writes author links relative or absolute, as the live site does; match on the path. */
 function badgeFor(handle: string): HTMLElement | undefined {
-  return badges().find(
-    (host) =>
-      host.previousElementSibling?.getAttribute("href")?.toLowerCase() === `/user/${handle}/`,
+  return badges().find((host) =>
+    (host.previousElementSibling?.getAttribute("href") ?? "")
+      .toLowerCase()
+      .endsWith(`/user/${handle}/`),
   );
 }
 
