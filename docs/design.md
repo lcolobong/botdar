@@ -1,14 +1,19 @@
 # Design
 
-Date: 2026-10-22 · Status: approved after one review round · Design system:
+Date: 2026-10-22, badge states amended 2026-10-25 (ADR-0020) · Status: approved after one review round · Design system:
 https://claude.ai/artifact/2jacALGXFe96ubLp62qRAe · Mockups: https://claude.ai/artifact/VVUVZk5BnEqBJPE4VA6sDc
 
 ## Principles
 
-1. A badge means something. Accounts that look fine, and accounts with too little data, get no badge. A
-   feed should mostly show nothing.
+1. Every account is visibly analysed. Each author near the viewport carries a badge: a read when there
+   is one, "No read" when there is too little to go on, "Checking" while the profile is loading. A
+   Likely human badge is earned by the data, not given by default (amended by
+   [ADR-0020](decisions/ADR-0020-badge-on-every-account.md); the quiet feed of ADR-0017 is one setting
+   away for Likely human).
 2. Plain words on the badge, facts on the card. The badge says "Likely bot" or "Unsure"; the hover card
    lists two to four observations with numbers and dates, and always ends with a "This can be wrong:" line.
+   A Likely human card lists what looks ordinary ("Account is 9 years old", "Custom avatar") and ends
+   with "nothing here is proof"; a No read card says why there is nothing to read and claims nothing.
 3. Never hide a post.
 4. Honest about uncertainty: a hollow badge when fewer than half the data sources delivered, a dashed
    badge when lookups are paused.
@@ -22,8 +27,15 @@ https://claude.ai/artifact/2jacALGXFe96ubLp62qRAe · Mockups: https://claude.ai/
 | many | Likely bot | Sus | red-eyed bot head | yes |
 | some | Unsure | Kinda sus | outlined bot head with a question mark | yes |
 | declared | Declared bot | Honest self-report bot | tag | yes |
-| typical | Likely human | Real af | person | no, setting "Show Likely human" |
-| unknown | (none) | (none) | (none) | never |
+| typical | Likely human | Real af | person | yes; setting "Show Likely human" turns it off |
+| unknown | No read | Who dis | question mark, hollow and neutral | yes, always |
+
+While an account's lookup is queued or running, an unknown badge reads "Checking" in every label style
+that shows words, and the badge's glyph pulses; the other tiers keep their label, since a lookup only
+refines a read that exists. On Reddit, where every author on screen can be waiting at once, the glyph is held still and dimmed
+instead, and only the badge under the pointer pulses: dozens of pulsing badges dropped a frame per
+scroll step on the 1,500-comment fixture at 4x CPU throttling (docs/performance.md). Likely human needs confidence 0.5 or more and two worded observations
+beyond the handle's shape that do not point towards automation (docs/scoring-spec.md, step 7); below that the badge is No read.
 
 Label style is a setting with three values: Plain, Sus scale, Icon only. It changes the words only.
 Colors, glyphs, thresholds and hover-card content are the same in every style. The accessible name of a
@@ -37,13 +49,18 @@ tradeoffs are in [decisions/ADR-0017](decisions/ADR-0017-badge-wording-and-label
 ## Surfaces
 
 - **Badge.** 16px pill on X and Bluesky, 14px in a Reddit post credit bar, 12px in a Reddit comment meta
-  row (glyph only by default at that density). States: filled, hollow (low confidence), dashed (paused),
-  loading (only while a card is open).
+  row (glyph only by default at that density). States: filled, hollow (low confidence, and always for
+  No read), dashed (paused), loading (while the account's Tier 2 lookup is queued or running: on Reddit
+  from mount, since authors are looked up on sight, with a still, dimmed glyph except under the
+  pointer; on X and Bluesky a pulsing glyph while a hover lookup runs).
 - **Hover card.** 320px, anchored below the badge, flipped above when there is no room. Title repeats the
   badge label, handle in mono, reasons in a sunken list with a source dot per tier (on the page, page
   data, profile lookup), a confidence line when sources are missing, the caveat, and a footer with
   "This looks wrong" and "Settings". Opens after 150ms, closes 200ms after the pointer leaves badge and
-  card, also opens on keyboard focus and closes on Escape.
+  card, also opens on keyboard focus and closes on Escape. A No read card replaces the reasons with one
+  sentence on why there is nothing to read (lookups off, a login wall, nothing returned, not looked up
+  yet, or "Loading this account's public profile." while it runs) and drops the confidence line, the
+  caveat and "This looks wrong".
 - **Popup.** Status line with policy age, a notice when the policy carries one, per-platform toggles,
   conservative mode, privacy sentence, link to settings.
 - **Options.** Platforms, lookups (conservative mode), badges (label style, show Likely human, labels in
@@ -54,6 +71,8 @@ tradeoffs are in [decisions/ADR-0017](decisions/ADR-0017-badge-wording-and-label
 ## Copy rules
 
 - Observations are sentence case, carry a number or a date, no trailing period, at most 60 characters.
+- A Likely human observation may be a plain fact with no number ("Custom avatar", "Verified email"); a
+  pattern that is absent gets no line, never a negated one.
 - The caveat names the innocent explanation for the dominant signal.
 - Second person for settings, first person plural for the product's own promises. No exclamation marks,
   no emoji.

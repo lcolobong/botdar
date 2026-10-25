@@ -10,29 +10,30 @@ store icon is `icon-512.png` beside this file; screenshots are described in
 ### Short description (132 characters max)
 
 ```
-In-feed badges on X, Reddit and Bluesky when an author shows patterns common in automated accounts. Nothing leaves your browser.
+A badge on every author on X, Reddit and Bluesky for patterns common in automated accounts. Nothing leaves your browser.
 ```
 
 ### Full description
 
 ```
-Botdar adds a small badge next to the author of a post when that account shows patterns common in
-automated accounts, and a hover card that explains why. It works on X, Reddit and Bluesky.
+Botdar adds a small badge next to the author of every post, saying whether that account shows patterns
+common in automated accounts, and a hover card that explains why. It works on X, Reddit and Bluesky.
 
 Botdar describes patterns, not people. The badge says that an account's public details look the way
 automated accounts often look, for example a very young account posting at a high rate, or a handle
 made of a name plus a string of digits. Every hover card lists the two to four observations behind the
-badge, each with a number or a date in it, and ends with a line that names the innocent explanation,
-because a newsroom or a brand account can show the same patterns. There is a "This looks wrong" button
-on every card. Botdar never hides, collapses or filters a post.
+badge, and ends with a line that names the innocent explanation, because a newsroom or a brand account
+can show the same patterns. There is a "This looks wrong" button on every card that gives a read. Botdar never hides, collapses or filters a post.
 
-The feed stays quiet by default. Accounts that look fine, and accounts with too little data, get no
-badge at all. A badge appears only when the signals line up: "Likely bot" when several independent
-signals agree, "Unsure" when only one or two do, and "Declared bot" when the platform's own automated
-label is set. An optional "Likely human" badge can be turned on in the settings.
+Every author gets a badge, so you can see that each account was looked at: "Likely bot" when several
+independent signals agree, "Unsure" when only one or two do, "Declared bot" when the platform's own
+automated label is set, "Likely human" when enough is visible and nothing stands out, and "No read"
+when there is too little to go on, with the reason on the card. A badge reads "Checking" while the
+account's public profile is loading. "Likely human" can be turned off in the settings for a quieter
+feed.
 
 Label styles are a setting. Plain (the default) uses the labels above. The Sus scale uses "Sus",
-"Kinda sus", "Honest self-report bot" and "Real af". Icon only shows the glyph alone and keeps the words
+"Kinda sus", "Honest self-report bot", "Real af" and "Who dis". Icon only shows the glyph alone and keeps the words
 in the tooltip and the hover card. The style changes the words only; colors, glyphs and the reasons on
 the card are the same in every style.
 

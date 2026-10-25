@@ -398,6 +398,12 @@ labels are now "Likely bot" (many), "Unsure" (some), "Declared bot" (declared) a
 Internal tier names below are unchanged. The rules that follow still govern reason lines, caveats and
 every sentence on the hover card: "bot" appears only in the fixed labels and card titles.
 
+Amendment 2026-10-25 ([ADR-0020](decisions/ADR-0020-badge-on-every-account.md)): every tier draws a
+badge. "Likely human" is on by default and has to be earned (step 7); `unknown` renders as "No read"
+("Who dis" on the Sus scale), reading "Checking" while the account's lookup is queued or running.
+Likely human reasons are factual observations of what looks ordinary, and a No read card carries only
+the reason there is nothing to read.
+
 These apply to every user-visible string in the badge, hover card, popup, options, onboarding and store
 listing.
 
@@ -408,6 +414,7 @@ listing.
   ("Joined 3 weeks ago"), never as accusations ("fake join date").
 - The declared state copy is neutral and slightly positive: "This account is labelled as automated by its
   operator, which is the transparent way to run one."
-- Every hover card shows at least one caveat line. No surface shows a percentage.
+- Every hover card that gives a read shows at least one caveat line; the No read card claims nothing
+  and shows only why there is nothing to read. No surface shows a percentage.
 - Negative evidence is shown with the same weight as positive evidence.
 - Copy about the product says what it does ("highlights patterns") not what accounts are.

@@ -8,13 +8,13 @@ Working title. Status: pre-alpha, under construction.
 
 ## What it does
 
-On X, Reddit and Bluesky, Botdar draws a small badge next to the author of a post when that account
-shows patterns common in automated accounts: "Likely bot" when several independent signals agree,
-"Unsure" when only one or two do, and "Declared bot" when the platform's own automated label is set.
-Accounts that look fine, and accounts with too little data, get no badge, so most of the feed stays
-quiet. Hovering a badge lists the two to four observations behind it, such as account age, posting
-rate, follower ratio and handle shape, each with a number or a date, and every card ends with a line
-that names the innocent explanation. Botdar describes patterns, not people; it never hides a post, and
+On X, Reddit and Bluesky, Botdar draws a small badge next to the author of every post: "Likely bot"
+when several independent signals common in automated accounts agree, "Unsure" when only one or two
+do, "Declared bot" when the platform's own automated label is set, "Likely human" when enough is
+visible and nothing stands out, and "No read" when there is too little to go on ("Checking" while
+the profile is still loading). Hovering a badge lists the two to four observations behind it, such as
+account age, posting rate, follower ratio and karma, each with a number or a date, and every card
+that gives a read ends with a line that says how far to trust it. Botdar describes patterns, not people; it never hides a post, and
 it makes no claim about how often its badges are right.
 
 ## Install from source

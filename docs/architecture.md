@@ -57,7 +57,7 @@ flowchart LR
   MAIN -- "window.postMessage" --> RELAY
   RELAY --> T1
   DOM --> OBS --> T0
-  OBS -. hover .-> T2
+  OBS -.->|"on sight (Reddit), hover"| T2
   T0 --> RES
   T1 --> RES
   T2 --> RES
@@ -276,7 +276,7 @@ on posts.
 | Shadow roots | The badge is a shadow-root UI with its own styles, so mounting inside a foreign shadow root is fine. A `MutationObserver` on `document` does not see mutations inside shadow roots, but new posts and comments arrive in light DOM (`shreddit-feed`, `shreddit-comment-tree`, `faceplate-partial`), which is enough for discovery |
 | Tier 0 self-descriptions | Beyond the APP tag: a username whose last word is "bot" (or AutoModerator) and an author flair whose last word is "bot" both set `declaredAutomated` with `declaredBy` of `name` or `flair`; the flair selectors are a guess until live flair markup is recorded (`AUTHOR_FLAIR_SELECTOR` in `reddit/dom.ts`). Tier 2 adds the bio ("I am a bot") |
 | Tier 1 | Probably empty: new Reddit loads HTML partials, not JSON user objects. The switch exists; no interceptor ships unless day one shows otherwise |
-| Tier 2 | Same-origin `/user/<name>/about.json?raw_json=1` with the user's cookies: `created_utc`, `link_karma`, `comment_karma`, `icon_img`, maybe `has_verified_email`. Cached 24 h; limiter 20/min |
+| Tier 2 | Same-origin `/user/<name>/about.json?raw_json=1` with the user's cookies: `created_utc`, `link_karma`, `comment_karma`, `icon_img`, maybe `has_verified_email`. Fired on sight (ADR-0020): once per author per page when a post is attached, which ADR-0019 limits to posts within a screen of the viewport; a hover retries and jumps the queue. Cached 24 h; limiter 30/min from the config, burst 10, with refused lookups waiting in a first-in, first-out queue (`src/core/lookupQueue.ts`); never while Tier 2 is off or after a logged-out answer |
 | Native label | Reddit's `[App]` tag → `declaredAutomated`. Selector unknown; day-one item |
 | old.reddit | `.thing[data-author]` + `a.author`; trivial adapter variant, may slip from v1 |
 
@@ -299,7 +299,13 @@ adopts (`src/ui/sharedStyles.ts`); only the host layout rules go through WXT's `
 `:host` reset. Where adoption is unavailable or refused, a root gets a `<style>` copy. The hover card
 is one singleton `botdar-card` on `document.body`, positioned from `getBoundingClientRect` and flipped at
 viewport edges; opens after 150 ms hover or on focus (`<button aria-describedby>`), closes 200 ms after
-leaving both badge and card. Tier 2 fires on open; the card shows a loading state and re-renders. All
+leaving both badge and card. On X and Bluesky Tier 2 fires on open; on Reddit it has normally run on
+sight already and the open is a cache hit. Every tier draws a badge (ADR-0020); only Likely human can be
+hidden, by the "Show Likely human" setting. While the account's lookup is queued or running
+(`BadgeHandle.lookupStatus()` is `pending`) an unknown badge reads "Checking" and the glyph pulses,
+except on Reddit, where every waiting badge but the hovered one holds a still, dimmed glyph
+(`stillWhileLoading`); the card shows the same loading state and re-renders when the lookup settles. A No read
+card takes its explanation from the lookup status (`src/ui/noRead.ts`), shared by the three wirings. All
 timers and observers register on `ctx` so an extension update invalidates cleanly. WXT registers one
 invalidation listener per UI and drops its unsubscribe; `mount.ts` keeps it and releases it when the
 badge is removed, so a removed post is not kept alive by the context.
@@ -314,7 +320,16 @@ badge is removed, so a removed post is not kept alive by the context.
 2. Tier 1 emissions arrive asynchronously and trigger a rescore for every mounted badge of that handle,
    unless the emission changed no value or tier of an account that already has a verdict (a relayed
    body often repeats the previous one).
-3. Tier 2 is scheduled on hover only, goes through the cache and rate limiter, then rescoring.
+3. Tier 2 goes through the cache and rate limiter, then rescoring. `lookup()` runs it now (hover, on
+   every platform); `lookupOnSight()` (Reddit's wiring calls it on attach) runs it at most once per
+   account per page, waiting in `LookupQueue` for a limiter token instead of being refused, and skips
+   an account already looked up, cached or behind a login wall. A queued run the limiter still turns
+   away stays pending and is retried after a pause of at least a second (`RETRY_AFTER_REFUSAL_MS`);
+   an adapter with no active Tier 2 source never queues anything. Turning Tier 2 off drops the queue;
+   turning it back on re-queues the posts already on screen. Each account reports where its lookup
+   stands (`off`, `idle`, `pending`, `delivered`, `empty`, `loginRequired`) for the badge's loading
+   state and the No read card; a finished lookup always rescores so every badge of the account hears
+   that it settled.
 4. **Tier-merge rule:** a higher tier overwrites a lower tier's value for the same field; within the same
    tier, newer wins. `provenance` records the tier for each field so confidence can be computed.
 5. `config.changed` from the background recomputes every verdict with the new effective config.
