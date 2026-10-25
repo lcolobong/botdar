@@ -49,7 +49,10 @@ PR test plan records the check as done or skipped with the reason.
    panel. Badges appear on every author; hover shows reasons; Tier 2 lookups fire only on hover and stop
    after the limiter trips.
 2. Reddit: browse a subreddit feed and a comment thread on new Reddit; repeat on old.reddit if the
-   variant shipped. A user with the [App] tag shows the declared state.
+   variant shipped. A user with the [App] tag shows the declared state. Every author's badge reads
+   "Checking" (or, for other tiers, dims its glyph) until its profile lookup settles, then Likely human, Unsure or No read; the
+   network panel shows at most one `about.json` per author, and none while logged out after the first
+   answer.
 3. Bluesky: scroll the Discover feed and a thread. A self-labeled bot shows the declared state alongside
    Bluesky's own robot badge.
 4. Conservative mode: turn it on; confirm no active lookups happen (network panel) and confidence drops.

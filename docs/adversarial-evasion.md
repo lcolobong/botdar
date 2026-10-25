@@ -114,6 +114,11 @@ marketing pages unless marked otherwise, so read them as order-of-magnitude figu
   history, a failing `about.json`, Tier 2 off), gets the same silence as a long-standing human.
   Mitigations: onboarding says "no badge means nothing stood out, not human"; hovering an unbadged author
   opens a card that distinguishes "nothing stood out" from "not enough data"; "Likely human" stays opt-in.
+  Amended by ADR-0020: there is no silence any more. A starved account reads "No read" with the reason,
+  and "Likely human" is on by default but needs confidence ≥ 0.5 and two worded reasons that do not point towards automation. The cost
+  moves: an operator tuned just under the `some` threshold with a filled-in, aged profile now earns a green
+  "Likely human" badge, a stronger false assurance than silence was. The card's "nothing here is proof"
+  closing and the feedback button are the mitigations; the setting turns it off.
 
 ## 4. Countermeasures
 

@@ -27,8 +27,8 @@ Badge labels (plain style, the default; see [design.md](design.md) for the Sus s
 | many | Likely bot | Several independent signals, confidence at or above 0.5 | yes |
 | some | Unsure | One or two signals | yes |
 | declared | Declared bot | The platform's own automated label is set | yes |
-| typical | Likely human | Nothing stands out | only with the "Show Likely human" setting |
-| unknown | (no badge) | Not enough data | never |
+| typical | Likely human | Enough is visible and nothing stands out | yes; the "Show Likely human" setting turns it off |
+| unknown | No read ("Checking" while a lookup runs) | Not enough data | yes |
 
 The badge label is a plain claim; everything on the hover card is an observation with a number or a date in it, and every card says how it could be wrong. "Fake", "troll" and similar words never appear.
 
