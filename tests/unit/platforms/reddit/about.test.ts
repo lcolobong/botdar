@@ -28,6 +28,19 @@ describe("parseAbout on a normal account", () => {
     });
   });
 
+  it("declares an account whose bio says it is a bot, and only then", () => {
+    const declared = parseAbout(
+      normalWith({ subreddit: { title: "Haiku", public_description: "I am a bot. Beep boop." } }),
+    );
+    expect(declared).toMatchObject({ declaredAutomated: true, declaredBy: "bio" });
+    const hunter = parseAbout(
+      normalWith({
+        subreddit: { title: "Hunter", public_description: "bot hunter, coffee drinker" },
+      }),
+    );
+    expect(hunter).not.toHaveProperty("declaredAutomated");
+  });
+
   it("lowercases the handle and reports the ok status", () => {
     expect(parseAboutResponse(loadFixture("normal.json"))).toMatchObject({
       status: "ok",

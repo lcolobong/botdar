@@ -6,7 +6,7 @@
 import type { AccountSignals, Evidence, Feature, SourceTier, Verdict, VerdictTier } from "../types";
 import { applyGroupCaps, featureContribution } from "./contributions";
 import {
-  DECLARED_REASON,
+  declaredReasonFor,
   caveatFor,
   confidenceNoteFor,
   renderReason,
@@ -138,7 +138,7 @@ export function scoreAccount(
     return {
       ...unscored,
       tier: "declared",
-      reasons: [DECLARED_REASON],
+      reasons: [declaredReasonFor(signals)],
       confidence: 1,
       caveat: caveatFor({
         tier: "declared",

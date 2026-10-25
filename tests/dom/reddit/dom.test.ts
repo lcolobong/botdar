@@ -71,6 +71,7 @@ describe("feed fixture", () => {
     expect(extractDomSignals(refOf(post(1)))).toEqual({
       displayName: "Brisk_Falcon_2210",
       declaredAutomated: true,
+      declaredBy: "label",
       hasDefaultAvatar: true,
     });
   });
@@ -146,6 +147,33 @@ describe("live post page markup (2026-10-25)", () => {
   });
 });
 
+describe("self-described automation", () => {
+  it("declares an author whose username ends in bot", () => {
+    const named: Element = snippet(`
+      <shreddit-post author="RemindMeBot">
+        <div slot="credit-bar"><a href="https://www.reddit.com/user/RemindMeBot/">u/RemindMeBot</a></div>
+      </shreddit-post>`);
+    const signals = extractDomSignals(refOf(named));
+    expect(signals.declaredAutomated).toBe(true);
+    expect(signals.declaredBy).toBe("name");
+  });
+
+  it("declares an author whose flair ends in bot, and leaves other flair alone", () => {
+    const flaired = (flair: string): Element =>
+      snippet(`
+        <shreddit-comment author="Den_Hviide" depth="0">
+          <div slot="commentMeta">
+            <a href="https://www.reddit.com/user/Den_Hviide/">Den_Hviide</a>
+            <shreddit-comment-author-flair>${flair}</shreddit-comment-author-flair>
+          </div>
+        </shreddit-comment>`);
+    expect(extractDomSignals(refOf(flaired("Verified GPT-2 Bot"))).declaredBy).toBe("flair");
+    expect(extractDomSignals(refOf(flaired("Bot Developer")))).not.toHaveProperty(
+      "declaredAutomated",
+    );
+  });
+});
+
 describe("app tag", () => {
   it("accepts the guessed selectors", () => {
     const tagged: Element = snippet(`
@@ -184,9 +212,9 @@ describe("app tag", () => {
 
   it("searches for the tag once per item and trusts the PostRef afterwards", () => {
     const tagged: Element = snippet(`
-      <shreddit-post author="Leaf_Bot_3">
+      <shreddit-post author="Leaf_Poster_3">
         <div slot="credit-bar">
-          <a href="/user/Leaf_Bot_3/">u/Leaf_Bot_3</a>
+          <a href="/user/Leaf_Poster_3/">u/Leaf_Poster_3</a>
           <span>APP</span>
         </div>
       </shreddit-post>`);
