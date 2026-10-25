@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "preact/hooks";
 import { browser } from "wxt/browser";
+import { sendToActiveTab } from "@/src/core/messaging";
 import { platformIds } from "@/src/core/policy/defaults";
 import { getEffectiveConfig } from "@/src/core/policy/loader";
 import type { EffectiveConfig } from "@/src/core/policy/merge";
@@ -9,6 +10,9 @@ import { loadSettings, onSettingsChanged } from "@/src/core/settings";
 import type { Settings } from "@/src/core/settings";
 import type { EffectivePlatformConfig, PlatformId } from "@/src/core/types";
 import { Toggle } from "../controls/Toggle";
+import { downloadText } from "../download";
+import { DiagnosticsPanel } from "./DiagnosticsPanel";
+import type { DiagnosticsState } from "./DiagnosticsPanel";
 import { Mark } from "../Mark";
 import { patchSettings } from "../patchSettings";
 import { PLATFORM_NAMES } from "../platforms";
@@ -58,16 +62,48 @@ export function platformCaption(config: EffectivePlatformConfig, settings: Setti
   return `Badges on · lookups ${lookups}`;
 }
 
+/** What the popup says under the export buttons after a save or a failed ask. */
+export function exportNoteFor(fileName: string, identifiers: number, anonymized: boolean): string {
+  return anonymized
+    ? `Saved ${fileName} (${identifiers} identifiers replaced)`
+    : `Saved ${fileName}; it keeps real usernames`;
+}
+export const EXPORT_FAILED_NOTE = "The page did not answer; reload it and try again.";
+
 export function App({ now = Date.now }: AppProps) {
   const [data, setData] = useState<PopupData | null>(null);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsState>({ status: "loading" });
+  const [exportNote, setExportNote] = useState<string | undefined>(undefined);
   const reload = useCallback((): void => {
     void loadPopupData().then(setData);
   }, []);
+  const developerMode: boolean = data?.settings.developerMode ?? false;
 
   useEffect(() => {
     reload();
     return onSettingsChanged(reload);
   }, [reload]);
+
+  // The counters are read once per opening; the popup is too short-lived to poll.
+  useEffect(() => {
+    if (!developerMode) return;
+    sendToActiveTab({ type: "diagnostics.get" }).then(
+      (response) =>
+        setDiagnostics({ status: "ready", platform: response.platform, stats: response.stats }),
+      () => setDiagnostics({ status: "unavailable" }),
+    );
+  }, [developerMode]);
+
+  const exportSnapshot = (anonymize: boolean): void => {
+    sendToActiveTab({ type: "snapshot.export", anonymize }).then(
+      (response) => {
+        // The note first: Chrome may close the popup the moment the download starts.
+        setExportNote(exportNoteFor(response.fileName, response.identifiers, anonymize));
+        downloadText(response.fileName, response.html, "text/html");
+      },
+      () => setExportNote(EXPORT_FAILED_NOTE),
+    );
+  };
 
   if (data === null) return <div class="bd-page bd-popup" />;
   const { settings, effective, status, seenNoticeIds } = data;
@@ -142,6 +178,14 @@ export function App({ now = Date.now }: AppProps) {
           onChange={(conservativeMode) => update({ conservativeMode })}
         />
       </div>
+      {settings.developerMode && (
+        <DiagnosticsPanel
+          state={diagnostics}
+          exportNote={exportNote}
+          now={now()}
+          onExport={exportSnapshot}
+        />
+      )}
       <div class="bd-row bd-popup__foot">
         <span class="bd-caption">{PRIVACY_SENTENCE}</span>
         <button type="button" class="bd-btn bd-btn--link" onClick={openSettings}>
