@@ -73,7 +73,8 @@ function PrivacyPanel() {
       <div class="bd-panel__body">
         <div class="bd-block">
           <strong>What it reads:</strong> the handle, join date, follower counts and bio that the
-          page already shows or already loaded, and, when you hover a badge, the public profile.
+          page already shows or already loaded, and the public profile: on Reddit when a post comes
+          into view, elsewhere when you hover a badge.
         </div>
         <div class="bd-block">
           <strong>What leaves your browser:</strong> nothing about the accounts you see. Once a day

@@ -12,6 +12,12 @@ export interface BadgeProps {
   paused: boolean;
   /** A Tier 2 lookup for this account is running: the glyph pulses, and No read reads "Checking". */
   loading: boolean;
+  /**
+   * Holds the glyph still and dimmed while loading instead of pulsing. Reddit looks every author up
+   * on sight, and dozens of pulsing badges at once dropped frames while scrolling on a 4x-throttled
+   * CPU; only the badge under the pointer pulses there.
+   */
+  stillWhileLoading?: boolean;
   /** Reddit comment rows show the glyph alone unless the user asked for labels. */
   glyphOnlyAtCommentDensity: boolean;
   describedBy?: string;
@@ -46,6 +52,7 @@ export function Badge(props: BadgeProps) {
     props.lowConfidence ? "bd-badge--hollow" : "",
     props.paused ? "bd-badge--paused" : "",
     props.loading ? "bd-badge--loading" : "",
+    props.loading && props.stillWhileLoading === true ? "bd-badge--loading-still" : "",
     text === null ? "bd-badge--glyph-only" : "",
   ]
     .filter(Boolean)

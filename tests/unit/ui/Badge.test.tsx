@@ -70,6 +70,18 @@ describe("Badge", () => {
     expect(button.className).toContain("bd-badge--loading");
   });
 
+  it("holds the glyph still while loading when asked", () => {
+    const still: HTMLButtonElement = mount({
+      tier: "unknown",
+      loading: true,
+      stillWhileLoading: true,
+    });
+    expect(still.className).toContain("bd-badge--loading-still");
+    expect(still.getAttribute("aria-label")).toBe("Checking");
+    const settled: HTMLButtonElement = mount({ loading: false, stillWhileLoading: true });
+    expect(settled.className).not.toContain("bd-badge--loading-still");
+  });
+
   it("adds the hollow, paused and loading state classes", () => {
     const button: HTMLButtonElement = mount({ lowConfidence: true, paused: true, loading: true });
     expect(button.className).toContain("bd-badge--hollow");
