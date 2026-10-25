@@ -2,7 +2,8 @@
  * Why a No read card has nothing to read, from where the account's Tier 2 lookup stands. Every
  * platform's wiring shows the same lines, so they live here rather than in each wire.ts.
  */
-import type { LookupStatus } from "@/src/core/pipeline";
+import type { BadgeHandle, LookupStatus } from "@/src/core/pipeline";
+import type { Verdict } from "@/src/core/types";
 
 const PAGE_TOO_THIN = "the page alone shows too little about this account";
 
@@ -17,6 +18,13 @@ const EXPLANATION_BY_STATUS: Readonly<Record<LookupStatus, string>> = {
 
 export function noReadExplanation(status: LookupStatus): string {
   return EXPLANATION_BY_STATUS[status];
+}
+
+/** The hover card's `explanation` prop for this verdict: present only on a No read card. */
+export function noReadCardProps(verdict: Verdict, handle: BadgeHandle): { explanation?: string } {
+  return verdict.tier === "unknown"
+    ? { explanation: noReadExplanation(handle.lookupStatus()) }
+    : {};
 }
 
 /** Every line above, for the wording-rule test. */

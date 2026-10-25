@@ -124,7 +124,7 @@ export function App({ now = Date.now }: AppProps) {
         <div class="bd-row__text">
           <p>Conservative mode</p>
           <span class="bd-caption">
-            Use only what the page already shows. Badges will say "not enough data" more often.
+            Use only what the page already shows. More badges will read "No read".
           </span>
         </div>
         <Toggle

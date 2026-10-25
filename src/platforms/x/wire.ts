@@ -17,6 +17,7 @@ import { createHoverController, type HoverController } from "@/src/ui/hoverContr
 import { shouldDrawBadge, type BadgeTier } from "@/src/ui/labels";
 import { kindOfPost, recordBadged } from "@/src/core/diagnostics";
 import { detectHostTheme, mountBadge, mountCard, type MountedUi } from "@/src/ui/mount";
+import { noReadCardProps } from "@/src/ui/noRead";
 
 export interface WireOptions {
   ctx: ContentScriptContext;
@@ -179,6 +180,7 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
       ? {}
       : { confidenceNote: state.verdict.confidenceNote }),
     caveat: state.verdict.caveat,
+    ...noReadCardProps(state.verdict, state.handle),
     loading: state.loading,
     lowConfidence: state.verdict.lowConfidence,
     showLegend: legendPending,
@@ -219,8 +221,8 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
     if (!options.config().tiers.t2 || state.loading) {
       return;
     }
+    // The hover's render pass draws the badge and card right after this, already loading.
     state.loading = true;
-    renderBadge(state);
     void state.handle.lookup().finally(() => {
       state.loading = false;
       renderBadge(state);
@@ -239,9 +241,10 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
       openState = state;
       card.setTheme(theme());
       card.setVisible(true);
+      // The lookup starts first so the card's first render already shows its checking state.
+      lookupWhileOpen(state);
       renderCard(state);
       renderBadge(state);
-      lookupWhileOpen(state);
       return cardContainer?.getBoundingClientRect().height ?? 0;
     },
     place: (placement) => {

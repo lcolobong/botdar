@@ -15,6 +15,7 @@ import { createHoverController } from "../../ui/hoverController";
 import type { HoverCardPlacement, HoverController } from "../../ui/hoverController";
 import { shouldDrawBadge } from "../../ui/labels";
 import { mountCard } from "../../ui/mount";
+import { noReadCardProps } from "../../ui/noRead";
 import type { HostTheme, MountedUi } from "../../ui/mount";
 
 export const CARD_ID = "botdar-card";
@@ -117,6 +118,7 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
       reasons: cardReasons(verdict),
       ...(verdict.confidenceNote === undefined ? {} : { confidenceNote: verdict.confidenceNote }),
       caveat: verdict.caveat,
+      ...noReadCardProps(verdict, target.handle),
       loading: lookupPending,
       lowConfidence: verdict.lowConfidence,
       showLegend: !legendShown,

@@ -201,6 +201,21 @@ describe("wireReddit", () => {
     harness.dispose();
   });
 
+  it("closes an open Likely human card when Likely human is turned off", async () => {
+    const harness: Harness = await wire("feed.html", { settings: defaultSettings });
+    buttonOf(badgeFor("quiet_lantern_4821")).dispatchEvent(
+      new MouseEvent("mouseenter", { bubbles: true }),
+    );
+    await vi.advanceTimersByTimeAsync(150);
+    expect(card().style.getPropertyValue("--botdar-display")).toBe("block");
+
+    await fakeBrowser.storage.local.set({
+      [SETTINGS_STORAGE_KEY]: { ...defaultSettings, showLikelyHuman: false },
+    });
+    await vi.waitFor(() => expect(card().style.getPropertyValue("--botdar-display")).toBe("none"));
+    harness.dispose();
+  });
+
   it("renders comments glyph-only by default and with labels when asked", async () => {
     const harness: Harness = await wire("comments.html");
     const some: HTMLButtonElement = buttonOf(badgeFor("mossy_teapot"));
