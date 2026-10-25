@@ -8,3 +8,5 @@ DerivedData/
 .env.*
 coverage/
 .claude/
+
+# Raw page captures hold real usernames; pnpm capture keeps them under .output/capture/ (ignored above).
