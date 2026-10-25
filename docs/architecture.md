@@ -272,7 +272,7 @@ on posts.
 
 | Concern | Approach |
 |---|---|
-| Badge anchor | Slotted light DOM: `[slot="credit-bar"] a[href^="/user/"]` for posts, `shreddit-comment [slot="commentMeta"] a[href^="/user/"]` for comments; fallback `el.shadowRoot?.querySelector(...)` |
+| Badge anchor | Slotted light DOM: the profile link inside `[slot="credit-bar"]` for posts and `[slot="commentMeta"]` for comments, matched by parsing the href (`/user/<name>/`, `/u/<name>`, or the absolute `https://www.reddit.com/user/<name>/` the post page writes since late 2026) and preferring the link to the post's own author over community and mention links; fallback `el.shadowRoot?.querySelector(...)` |
 | Shadow roots | The badge is a shadow-root UI with its own styles, so mounting inside a foreign shadow root is fine. A `MutationObserver` on `document` does not see mutations inside shadow roots, but new posts and comments arrive in light DOM (`shreddit-feed`, `shreddit-comment-tree`, `faceplate-partial`), which is enough for discovery |
 | Tier 1 | Probably empty: new Reddit loads HTML partials, not JSON user objects. The switch exists; no interceptor ships unless day one shows otherwise |
 | Tier 2 | Same-origin `/user/<name>/about.json?raw_json=1` with the user's cookies: `created_utc`, `link_karma`, `comment_karma`, `icon_img`, maybe `has_verified_email`. Cached 24 h; limiter 20/min |

@@ -5,8 +5,12 @@ Date: 2026-10-22. Architecture context in [architecture.md](architecture.md); sc
 
 ## Principles
 
-- Every parser is tested against recorded, anonymized fixtures and against a deliberately mangled
-  fixture. A parser returns partial signals; it never throws into the page.
+- Every parser is tested against fixtures and against a deliberately mangled fixture. A parser returns
+  partial signals; it never throws into the page. The X GraphQL, Reddit about.json and Bluesky AppView
+  fixtures are anonymised recordings; the Reddit HTML fixtures are hand-written approximations of
+  shreddit markup, which is how the absolute author links on the live post page went unnoticed until
+  the first manual test (2026-10-25). Any selector change must be checked against the live page, and
+  a snippet of the live markup goes into the DOM tests with the date it was captured.
 - Scoring is tested with a golden table of synthetic accounts and expected tiers so weight changes are
   reviewed as diffs.
 - The policy system has a full "cannot enable" matrix: no policy input may turn on a source, raise a
