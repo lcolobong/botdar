@@ -15,6 +15,7 @@ import { Badge, type BadgeProps } from "@/src/ui/Badge";
 import { HoverCard, type CardReason, type HoverCardProps } from "@/src/ui/HoverCard";
 import { createHoverController, type HoverController } from "@/src/ui/hoverController";
 import { shouldDrawBadge, type BadgeTier } from "@/src/ui/labels";
+import { kindOfPost, recordBadged } from "@/src/core/diagnostics";
 import { detectHostTheme, mountBadge, mountCard, type MountedUi } from "@/src/ui/mount";
 
 export interface WireOptions {
@@ -143,6 +144,7 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
         state.badge = mounted;
         stateByBadgeHost.set(mounted.shadowHost, state);
         options.markBadged(state.post.element);
+        recordBadged(kindOfPost(state.post), state.post.element);
         renderBadge(state);
       },
       () => {

@@ -8,6 +8,7 @@
 
 import type { TtlLruCache } from "./cache";
 import type { RateLimiter } from "./ratelimit";
+import { recordLookup } from "./diagnostics.ts";
 import { RateLimitedError } from "./ratelimit";
 import type {
   AccountRef,
@@ -217,9 +218,11 @@ export class AccountResolver {
     }
     const cached: PartialSignals | undefined = this.cache.get(ref.handle);
     if (cached !== undefined) {
+      recordLookup("cached");
       this.absorb(entry, cached, 2);
       return;
     }
+    recordLookup("started");
     entry.pendingLookup = this.runActiveSources(entry).finally(() => {
       entry.pendingLookup = null;
     });
@@ -294,12 +297,14 @@ export class AccountResolver {
     const ref: AccountRef = entry.signals.ref;
     const collected: PartialSignals = {};
     let delivered = false;
+    let outcome: "empty" | "rateLimited" | "failed" = "empty";
     for (const source of this.adapter.sources) {
       if (source.kind !== "active" || source.tier !== 2 || source.resolve === undefined) {
         continue;
       }
       // One token per platform call; an open circuit or an empty bucket skips the rest of the lookup.
       if (this.disposed || !this.limiter.tryAcquire()) {
+        outcome = "rateLimited";
         break;
       }
       try {
@@ -315,12 +320,16 @@ export class AccountResolver {
       } catch (error) {
         if (error instanceof RateLimitedError) {
           this.limiter.reportRateLimited(error.retryAfterMs);
+          outcome = "rateLimited";
+        } else {
+          outcome = "failed";
         }
       }
     }
     if (this.disposed) {
       return;
     }
+    recordLookup(delivered ? "delivered" : outcome);
     if (delivered) {
       this.cache.set(ref.handle, collected);
     }

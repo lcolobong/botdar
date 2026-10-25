@@ -9,6 +9,7 @@ import { h, render } from "preact";
 import { browser } from "wxt/browser";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import { TtlLruCache } from "../../core/cache";
+import { kindOfPost, recordBadged } from "../../core/diagnostics.ts";
 import { recordFeedback, removeFeedback } from "../../core/feedback";
 import { onRequest, sendRequest } from "../../core/messaging";
 import { AccountResolver, TIER2_CACHE_TTL_MS } from "../../core/pipeline";
@@ -206,6 +207,7 @@ export async function wireBluesky(
       entry.mounting = undefined;
       entry.mounted = mounted;
       if (entries.get(entry.post.element) === entry) {
+        recordBadged(kindOfPost(entry.post), entry.post.element);
         renderBadge(entry);
       } else {
         unmountBadge(entry);

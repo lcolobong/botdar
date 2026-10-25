@@ -157,6 +157,8 @@ export interface PostRef {
   /** The element the badge mounts after, normally the handle link. */
   anchor: Element;
   isReply?: boolean;
+  /** Reddit tells posts from comments; the diagnostics panel counts them apart. */
+  kind?: "post" | "comment";
   nativeLabel?: "automated";
   /** Overrides the adapter's badgeDensity for platforms that mix densities in one feed (Reddit posts and comments). */
   density?: BadgeDensity;

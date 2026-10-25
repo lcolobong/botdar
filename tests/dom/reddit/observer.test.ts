@@ -7,6 +7,7 @@ import {
   UNDISCOVERED_SELECTOR,
   observeRedditFeed,
 } from "@/src/platforms/reddit/observer";
+import { diagnosticsSnapshot, resetDiagnostics } from "@/src/core/diagnostics";
 import {
   controlledObserver,
   installControlledIntersectionObserver,
@@ -43,6 +44,7 @@ describe("observeRedditFeed", () => {
     vi.useFakeTimers();
     document.body.innerHTML = "";
     window.history.replaceState(null, "", "/");
+    resetDiagnostics();
   });
 
   afterEach(() => {
@@ -53,6 +55,41 @@ describe("observeRedditFeed", () => {
     expect(UNDISCOVERED_SELECTOR).toBe(
       "shreddit-post:not([data-botdar]), shreddit-comment:not([data-botdar]), .thing[data-author]:not([data-botdar])",
     );
+  });
+
+  it("counts a comment without an author row as one anchor miss until the row renders", async () => {
+    const comment: Element = snippet(
+      `<shreddit-comment author="Late_Row" depth="0"></shreddit-comment>`,
+    );
+    document.body.append(comment);
+    const harness: Harness = observe();
+    await settle();
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await settle();
+    expect(harness.posts).toHaveLength(0);
+    expect(diagnosticsSnapshot().kinds.comment).toEqual({ seen: 1, badged: 0, anchorMisses: 1 });
+
+    comment.insertAdjacentHTML(
+      "beforeend",
+      '<div slot="commentMeta"><a href="https://www.reddit.com/user/Late_Row/">Late_Row</a></div>',
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await settle();
+    expect(handles(harness.posts)).toEqual(["late_row"]);
+    expect(diagnosticsSnapshot().kinds.comment).toEqual({ seen: 1, badged: 0, anchorMisses: 0 });
+    harness.stop();
+  });
+
+  it("does not count a deleted author as an anchor miss", async () => {
+    document.body.append(
+      snippet(
+        `<shreddit-comment author="[deleted]" depth="0"><div slot="commentMeta"><span>[deleted]</span></div></shreddit-comment>`,
+      ),
+    );
+    const harness: Harness = observe();
+    await settle();
+    expect(diagnosticsSnapshot().kinds.comment).toEqual({ seen: 0, badged: 0, anchorMisses: 0 });
+    harness.stop();
   });
 
   it("reports the posts already on the page in one initial pass", async () => {

@@ -11,6 +11,7 @@ import { IDLE_TIMEOUT_MS, createSliceScheduler, drainQueue } from "../../core/id
 import type { NearViewportGate } from "../../core/nearViewport";
 import { createNearViewportGate } from "../../core/nearViewport";
 import type { PostRef } from "../../core/types";
+import { kindOfPost, recordAnchorMiss, recordSeen } from "../../core/diagnostics.ts";
 import { UNMARKED_POST_SELECTOR, toPostRef } from "./dom";
 
 export interface ObserveFeedOptions {
@@ -56,10 +57,13 @@ export function observeBlueskyFeed(options: ObserveFeedOptions): () => void {
       return;
     }
     const post: PostRef | undefined = toPostRef(element);
-    if (post !== undefined) {
-      tracked.add(element);
-      options.onPost(post);
+    if (post === undefined) {
+      recordAnchorMiss("post", element);
+      return;
     }
+    recordSeen(kindOfPost(post), element);
+    tracked.add(element);
+    options.onPost(post);
   };
 
   const discover = (): void => {
@@ -80,7 +84,6 @@ export function observeBlueskyFeed(options: ObserveFeedOptions): () => void {
       }
     }
   };
-
   const runSlice = (shouldYield: ShouldYield): boolean => {
     if (discoveryPending) {
       discoveryPending = false;
