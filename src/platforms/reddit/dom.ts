@@ -43,22 +43,25 @@ const OLD_REDDIT_META_ROW_SELECTORS: readonly string[] = [":scope > .entry .tagl
 const REDDIT_ORIGIN = "https://www.reddit.com";
 const OLD_REDDIT_AUTHOR_LINK_SELECTOR = "a.author";
 /**
- * GUESS: the markup of Reddit's registered-app tag (rendered as "APP" beside the author) was not
- * captured before this shipped. The selectors cover the shapes Reddit uses for similar tags; the text
- * check catches a bare "APP" leaf in the author row whatever its wrapper is called.
+ * Reddit's registered-app tag, recorded from a live feed on 2026-10-25: a pill whose classes are
+ * `bg-tags-app-background text-tags-app-content`, holding a shield icon and the word "App". The
+ * earlier guesses stay as fallbacks, and the text check catches the leaf whatever its wrapper is
+ * called; it compares case-insensitively because the live text is "App", not "APP".
  */
 const APP_TAG_SELECTOR =
-  '[data-testid="app-tag"], .app-tag, shreddit-tag[type="app"], faceplate-tracker[noun="app_tag"]';
-const APP_TAG_TEXT = "APP";
+  '[class*="tags-app"], [data-testid="app-tag"], .app-tag, shreddit-tag[type="app"], faceplate-tracker[noun="app_tag"]';
+const APP_TAG_TEXT = "app";
 /** GUESS: the author avatar is assumed to be the image inside one of the author's profile links. */
 const AVATAR_IMAGE_SELECTOR = "img, faceplate-img";
 /**
- * GUESS: author flair markup was not captured before this shipped; the selectors cover the element
- * names and class fragments Reddit uses for it. A subreddit that flairs its bots ("Verified GPT-2
- * Bot") is the account's community describing it, which the engine treats as a declaration.
+ * Author flair. On a live feed (recorded 2026-10-25) a post's credit bar carries the flair in a
+ * `.credit-bar-user-flair` button whose text sits in `[data-credit-bar-flair-content]`; those two
+ * come first. The rest are GUESSes for comment rows, which no recording has shown with flair yet.
+ * A subreddit that flairs its bots ("Verified GPT-2 Bot") is the account's community describing
+ * it, which the engine treats as a declaration.
  */
 const AUTHOR_FLAIR_SELECTOR =
-  'shreddit-comment-author-flair, shreddit-author-flair, [slot="authorFlair"], [class*="flair" i], [data-testid*="flair" i]';
+  '[data-credit-bar-flair-content], .credit-bar-user-flair, shreddit-comment-author-flair, shreddit-author-flair, [slot="authorFlair"], [class*="flair" i], [data-testid*="flair" i]';
 const MAX_DISPLAY_NAME_LENGTH = 100;
 
 // MARK: - Element classification
@@ -143,7 +146,9 @@ export function findAuthorAnchor(
 
 function hasAppTagLeaf(row: ParentNode): boolean {
   for (const leaf of row.querySelectorAll("*")) {
-    if (leaf.childElementCount === 0 && leaf.textContent?.trim() === APP_TAG_TEXT) return true;
+    if (leaf.childElementCount === 0 && leaf.textContent?.trim().toLowerCase() === APP_TAG_TEXT) {
+      return true;
+    }
   }
   return false;
 }
@@ -155,7 +160,7 @@ function hasAppTagLeaf(row: ParentNode): boolean {
 function hasAppTag(rows: readonly ParentNode[]): boolean {
   return rows.some((row) => {
     if (row.querySelector(APP_TAG_SELECTOR) !== null) return true;
-    if (!(row.textContent ?? "").includes(APP_TAG_TEXT)) return false;
+    if (!(row.textContent ?? "").toLowerCase().includes(APP_TAG_TEXT)) return false;
     return hasAppTagLeaf(row);
   });
 }

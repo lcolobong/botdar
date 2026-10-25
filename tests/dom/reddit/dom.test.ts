@@ -195,6 +195,45 @@ describe("live post page markup (2026-10-25)", () => {
     expect(refOf(reply).isReply).toBe(true);
   });
 
+  // Trimmed from a live r/SubSimGPT2Interactive feed (2026-10-25): the App pill and the user flair
+  // button sit in the credit bar beside the absolute author link.
+  const liveTaggedPost = (author = "Toast2-GPT2Bot"): Element =>
+    snippet(`
+      <shreddit-post author="${author}" id="t3_live1">
+        <div slot="credit-bar" class="flex">
+          <faceplate-tracker noun="user_profile">
+            <a href="https://www.reddit.com/user/${author}/">${author}</a>
+          </faceplate-tracker>
+          <rpl-tooltip>
+            <span class="inline-flex items-center gap-[var(--spacer-4xs)] whitespace-nowrap rounded-full min-h-[16px] px-2xs text-caption-1 bg-tags-app-background text-tags-app-content">
+              <span class="shrink-0 text-tags-app-content"><svg viewBox="0 0 12 12"><path d="M2 3"></path></svg></span>
+              <span class="truncate">App</span>
+            </span>
+          </rpl-tooltip>
+          <span class="credit-bar-metadata credit-bar-metadata-user-flair">
+            <span class="credit-bar-user-flair button button-non-interactive" title="Verified GPT-2 Bot ✓">
+              <span class="min-w-0 truncate"><span data-credit-bar-flair-content="">Verified GPT-2 Bot ✓</span></span>
+            </span>
+          </span>
+        </div>
+      </shreddit-post>`);
+
+  it("reads the live App pill as the platform's automated label", () => {
+    const post: RedditPostRef = refOf(liveTaggedPost());
+    expect(post.nativeLabel).toBe("automated");
+    const signals = extractDomSignals(post);
+    expect(signals.declaredAutomated).toBe(true);
+    expect(signals.declaredBy).toBe("label");
+  });
+
+  it("reads the live flair button and declares a flair that ends in bot", () => {
+    // A username that does not itself end in "bot", so the flair is the only declaration left.
+    const flaired: Element = liveTaggedPost("ColonySim-SSI");
+    flaired.querySelector("rpl-tooltip")?.remove();
+    const signals = extractDomSignals(refOf(flaired));
+    expect(signals.declaredBy).toBe("flair");
+  });
+
   it("reads the avatar from the comment's avatar slot", () => {
     expect(extractDomSignals(refOf(liveComment())).hasDefaultAvatar).toBe(false);
     const reply: Element | null = liveComment().querySelector(
