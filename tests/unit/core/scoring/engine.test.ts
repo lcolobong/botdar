@@ -1,7 +1,8 @@
 import { scoreAccount } from "@/src/core/scoring/engine";
 import type { PlatformWeights } from "@/src/core/scoring/types";
 import { defaultWeights } from "@/src/core/scoring/weights";
-import type { Feature, Verdict } from "@/src/core/types";
+import type { AccountSignals, Feature, Verdict } from "@/src/core/types";
+import { reasonTexts } from "../../../fakeReasons";
 import { ALL_TIERS, DAY_MS, NOW, feature, signalsWith, testWeights } from "./testWeights";
 
 const options = { policyVersion: 7, now: NOW, sourcesAvailable: ALL_TIERS };
@@ -27,8 +28,31 @@ describe("scoreAccount short-circuits", () => {
     expect(verdict.confidence).toBe(1);
     expect(verdict.lowConfidence).toBe(false);
     expect(verdict.evidence).toEqual([]);
-    expect(verdict.reasons).toEqual(["Carries the platform's own automated-account label"]);
+    expect(verdict.reasons).toEqual([
+      {
+        text: "Carries the platform's own automated-account label",
+        why: "self-declared",
+        direction: "automated",
+        tier: 0,
+      },
+    ]);
     expect(verdict.logOdds).toBe(testWeights.prior);
+  });
+
+  it("gives the declared reason the tier that saw the declaration", () => {
+    const signals: AccountSignals = signalsWith({
+      tiersDelivered: [0, 1],
+      values: { declaredAutomated: true },
+    });
+    const fromPageData: Verdict = scoreAccount(
+      [],
+      { ...signals, provenance: { ...signals.provenance, declaredAutomated: 1 } },
+      testWeights,
+      options,
+    );
+    expect(fromPageData.reasons[0]?.tier).toBe(1);
+    const unattributed: Verdict = scoreAccount([], signals, testWeights, options);
+    expect(unattributed.reasons[0]?.tier).toBe(1);
   });
 
   it("returns unknown with confidence 0 when there are no features", () => {
@@ -117,7 +141,40 @@ describe("scoreAccount earning Likely human", () => {
       { ...options, sourcesAvailable: [0, 2] },
     );
     expect(longStanding.tier).toBe("typical");
-    expect(longStanding.reasons).toEqual(["Account is 7 years old", "Custom avatar"]);
+    expect(reasonTexts(longStanding)).toEqual(["Account is 7 years old", "Custom avatar"]);
+    expect(longStanding.reasons.map((reason) => reason.direction)).toEqual([
+      "ordinary",
+      "ordinary",
+    ]);
+  });
+
+  it("does not let zero-weight evidence that points towards automated vouch for an account", () => {
+    const signals: AccountSignals = signalsWith({
+      tiersDelivered: [0, 1],
+      values: { createdAt: NOW - 2555 * DAY_MS, country: "Brazil" },
+    });
+    const withMismatch: Verdict = scoreAccount(
+      [
+        feature("x.accountAgeDays", 2555, "age", 1),
+        feature("x.countryLocaleMismatch", true, "geo", 1),
+      ],
+      signals,
+      defaultWeights.x,
+      options,
+    );
+    expect(withMismatch.tier).toBe("unknown");
+
+    const withProfile: Verdict = scoreAccount(
+      [
+        feature("x.accountAgeDays", 2555, "age", 1),
+        feature("x.defaultAvatarEmptyBio", 0, "profile", 1),
+      ],
+      signals,
+      defaultWeights.x,
+      options,
+    );
+    expect(withProfile.tier).toBe("typical");
+    expect(withProfile.reasons.map((reason) => reason.direction)).toEqual(["ordinary", "ordinary"]);
   });
 
   it("returns unknown below confidence 0.5, as on Reddit before a lookup delivers", () => {
@@ -312,10 +369,39 @@ describe("scoreAccount wording", () => {
       options,
     );
     expect(verdict.reasons.slice(0, 2)).toEqual([
-      "~200 posts/day since joining",
-      "Account is 6 years old",
+      {
+        text: "~200 posts/day since joining",
+        why: "prolonged hyperactivity",
+        direction: "automated",
+        contribution: 2,
+        tier: 0,
+      },
+      {
+        text: "Account is 6 years old",
+        why: "outlasted platform enforcement",
+        direction: "ordinary",
+        contribution: -0.5,
+        tier: 1,
+      },
     ]);
     expect(verdict.evidence[0]?.reason).toBe("~200 posts/day since joining");
+  });
+
+  it("lists an observation two features word the same way only once", () => {
+    const verdict: Verdict = scoreAccount(
+      [
+        strongActivity,
+        feature("x.handleNameDigits", true, "handle"),
+        feature("x.handleTrailingDigits", 5, "handle"),
+      ],
+      signalsWith({ handle: "john12345", tiersDelivered: ALL_TIERS }),
+      testWeights,
+      options,
+    );
+    expect(reasonTexts(verdict)).toEqual([
+      "~200 posts/day since joining",
+      "Handle is a name followed by 5 digits",
+    ]);
   });
 
   it("keys the caveat on the dominant group and the account age", () => {
@@ -360,7 +446,7 @@ describe("scoreAccount wording", () => {
       { ...options, sourcesAvailable: [0, 2] },
     );
     expect(verdict.tier).toBe("typical");
-    expect(verdict.reasons).toEqual(["Account is 9 years old", "Custom avatar"]);
+    expect(reasonTexts(verdict)).toEqual(["Account is 9 years old", "Custom avatar"]);
     expect(verdict.caveat).toBe(
       "These signals look like an ordinary account; nothing here is proof.",
     );

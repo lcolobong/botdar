@@ -11,10 +11,13 @@ import type {
   Evidence,
   FeatureId,
   IndependenceGroup,
+  ReasonDirection,
   SourceTier,
+  VerdictReason,
   VerdictTier,
   DeclaredBy,
 } from "../types";
+import { allWhyClauses, directionFor, whyFor } from "./whyClauses";
 
 export interface ReasonContext {
   value: number | boolean;
@@ -225,17 +228,47 @@ export function renderReason(featureId: FeatureId, context: ReasonContext): stri
 }
 
 /**
- * Top reasons by magnitude; weak evidence fills in only when fewer than two clear the bar. Evidence
- * whose template had nothing to say is never shown, so the fill-in takes the next worded item.
+ * Worded evidence that the card shows pointing towards an ordinary account. The Likely human rule,
+ * the card's arrow and the Likely human counter-case all use this one test, so a reason can never
+ * vouch for an account while its row points towards automated.
  */
-export function selectReasons(evidenceByMagnitude: Evidence[]): string[] {
-  const worded: Evidence[] = evidenceByMagnitude.filter((item) => item.reason !== NO_REASON);
+export function isOrdinaryEvidence(item: Evidence): boolean {
+  return item.reason !== NO_REASON && directionFor(item.feature, item.contribution) === "ordinary";
+}
+
+function verdictReasonFor(item: Evidence): VerdictReason {
+  const direction: ReasonDirection = isOrdinaryEvidence(item) ? "ordinary" : "automated";
+  return {
+    text: item.reason,
+    why: whyFor(item.feature, direction),
+    direction,
+    contribution: item.contribution,
+    tier: item.tier,
+  };
+}
+
+/**
+ * Top reasons by magnitude; weak evidence fills in only when fewer than two clear the bar. Evidence
+ * whose template had nothing to say is never shown, so the fill-in takes the next worded item. Two
+ * features can word the same observation (both handle-digit features read "Handle is a name followed
+ * by 5 digits"), so a repeated line keeps only its stronger item: the card lists each line once and
+ * keys its rows on the text.
+ */
+export function selectReasons(evidenceByMagnitude: Evidence[]): VerdictReason[] {
+  const seenTexts = new Set<string>();
+  const worded: Evidence[] = evidenceByMagnitude.filter((item) => {
+    if (item.reason === NO_REASON || seenTexts.has(item.reason)) {
+      return false;
+    }
+    seenTexts.add(item.reason);
+    return true;
+  });
   const material: Evidence[] = worded.filter(
     (item) => Math.abs(item.contribution) >= REASON_MIN_ABSOLUTE_CONTRIBUTION,
   );
   const selected: Evidence[] =
     material.length >= MIN_REASONS ? material : worded.slice(0, MIN_REASONS);
-  return selected.slice(0, MAX_REASONS).map((item) => item.reason);
+  return selected.slice(0, MAX_REASONS).map(verdictReasonFor);
 }
 
 const GROUP_CAVEATS: Readonly<Record<IndependenceGroup, string>> = {
@@ -322,6 +355,7 @@ export function confidenceNoteFor(
 export function allFixedStrings(): string[] {
   return [
     ...Object.values(DECLARED_REASONS_BY_SOURCE),
+    ...allWhyClauses(),
     ...Object.values(GROUP_CAVEATS),
     DEFAULT_CLOSING,
     SOURCES_MISSING_CLOSING,

@@ -32,7 +32,6 @@ import type {
   Verdict,
 } from "../../core/types";
 import { Badge } from "../../ui/Badge";
-import type { CardReason } from "../../ui/HoverCard";
 import { HoverCard } from "../../ui/HoverCard";
 import type { HoverController } from "../../ui/hoverController";
 import { createHoverController } from "../../ui/hoverController";
@@ -96,13 +95,6 @@ const realScorer: ScorerFactory = (runtime) => (features, signals) =>
     sourcesAvailable: allowedTiers(runtime().config),
   });
 
-function reasonsOf(verdict: Verdict): CardReason[] {
-  return verdict.reasons.map((text) => ({
-    text,
-    tier: verdict.evidence.find((item) => item.reason === text)?.tier ?? 0,
-  }));
-}
-
 interface BadgeSlot {
   post: PostRef;
   handle: BadgeHandle;
@@ -164,7 +156,13 @@ export async function wireReddit(
       const { tier, reasons, computedAt } = slot.verdict;
       feedbackByHandle.set(
         handle,
-        recordFeedback({ platform: "reddit", handle, tier, reasons, computedAt }),
+        recordFeedback({
+          platform: "reddit",
+          handle,
+          tier,
+          reasons: reasons.map((reason) => reason.text),
+          computedAt,
+        }),
       );
     }
     renderCard();
@@ -182,7 +180,7 @@ export async function wireReddit(
         tier: verdict.tier,
         labelStyle: runtime.settings.labelStyle,
         handle: `u/${slot.post.ref.handle}`,
-        reasons: reasonsOf(verdict),
+        reasons: verdict.reasons,
         ...(verdict.confidenceNote === undefined ? {} : { confidenceNote: verdict.confidenceNote }),
         caveat: verdict.caveat,
         ...noReadCardProps(verdict, slot.handle),

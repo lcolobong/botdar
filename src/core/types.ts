@@ -82,6 +82,24 @@ export interface Evidence {
   reason: string;
 }
 
+/** Which way a reason points: towards an automated account or towards an ordinary one. */
+export type ReasonDirection = "automated" | "ordinary";
+
+/** One line of the hover card's "Why it leans this way" block. */
+export interface VerdictReason {
+  /** The observation, e.g. "Joined 3 weeks ago". */
+  text: string;
+  /** Why the observation points the way it does; empty when the feature has no clause. */
+  why: string;
+  direction: ReasonDirection;
+  /**
+   * Signed log-odds contribution after caps, so a strength scale can sit on top of the direction.
+   * Absent on the declared reason, which is a disclosure rather than weighed evidence.
+   */
+  contribution?: number;
+  tier: SourceTier;
+}
+
 /**
  * Internal tier names are stable; rendered labels map onto them per label style (ADR-0017):
  * many = Likely bot, some = Unsure, declared = Declared bot, typical = Likely human,
@@ -95,8 +113,8 @@ export interface Verdict {
   logOdds: number;
   /** Sorted by absolute contribution, descending. */
   evidence: Evidence[];
-  /** Two to four strings for the hover card. */
-  reasons: string[];
+  /** Two to four lines for the hover card. */
+  reasons: VerdictReason[];
   /** 0..1, share of data sources that delivered. */
   confidence: number;
   confidenceNote?: string;

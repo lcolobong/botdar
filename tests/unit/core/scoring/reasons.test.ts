@@ -8,7 +8,7 @@ import {
   templatedFeatureIds,
 } from "@/src/core/scoring/reasons";
 import type { ReasonContext } from "@/src/core/scoring/reasons";
-import type { AccountSignals, Evidence } from "@/src/core/types";
+import type { AccountSignals, Evidence, VerdictReason } from "@/src/core/types";
 import { DAY_MS, NOW, signalsWith } from "./testWeights";
 
 const THREE_WEEKS_AGO: number = NOW - 21 * DAY_MS;
@@ -207,6 +207,10 @@ describe("wording rules", () => {
   });
 });
 
+function selectedTexts(evidenceByMagnitude: Evidence[]): string[] {
+  return selectReasons(evidenceByMagnitude).map((reason: VerdictReason) => reason.text);
+}
+
 describe("selectReasons", () => {
   const sorted: Evidence[] = [
     evidence("a", 2.0, "activity"),
@@ -218,16 +222,16 @@ describe("selectReasons", () => {
   ];
 
   it("keeps at most four reasons with a contribution of at least 0.3 in magnitude", () => {
-    expect(selectReasons(sorted)).toEqual(["reason:a", "reason:b", "reason:c", "reason:d"]);
+    expect(selectedTexts(sorted)).toEqual(["reason:a", "reason:b", "reason:c", "reason:d"]);
   });
 
   it("includes negative evidence", () => {
-    expect(selectReasons(sorted.slice(0, 2))).toEqual(["reason:a", "reason:b"]);
+    expect(selectedTexts(sorted.slice(0, 2))).toEqual(["reason:a", "reason:b"]);
   });
 
   it("fills to two reasons from weaker evidence when fewer than two clear the bar", () => {
-    expect(selectReasons([sorted[0]!, sorted[5]!])).toEqual(["reason:a", "reason:f"]);
-    expect(selectReasons([evidence("x", 0.1, "geo"), evidence("y", 0, "geo")])).toEqual([
+    expect(selectedTexts([sorted[0]!, sorted[5]!])).toEqual(["reason:a", "reason:f"]);
+    expect(selectedTexts([evidence("x", 0.1, "geo"), evidence("y", 0, "geo")])).toEqual([
       "reason:x",
       "reason:y",
     ]);
@@ -235,13 +239,61 @@ describe("selectReasons", () => {
 
   it("skips evidence with nothing to say, also when filling in", () => {
     const silent: Evidence = { ...evidence("g", 0, "handle"), reason: NO_REASON };
-    expect(selectReasons([sorted[0]!, silent, sorted[5]!])).toEqual(["reason:a", "reason:f"]);
-    expect(selectReasons([silent])).toEqual([]);
+    expect(selectedTexts([sorted[0]!, silent, sorted[5]!])).toEqual(["reason:a", "reason:f"]);
+    expect(selectedTexts([silent])).toEqual([]);
+  });
+
+  it("carries each reason's why clause, direction, contribution and source tier", () => {
+    const age: Evidence = {
+      feature: "x.accountAgeDays",
+      contribution: -0.5,
+      group: "age",
+      tier: 1,
+      reason: "Account is 6 years old",
+    };
+    const rate: Evidence = {
+      feature: "x.postsPerDay",
+      contribution: 1.5,
+      group: "activity",
+      tier: 0,
+      reason: "~140 posts/day since joining",
+    };
+    expect(selectReasons([rate, age])).toEqual([
+      {
+        text: "~140 posts/day since joining",
+        why: "prolonged hyperactivity",
+        direction: "automated",
+        contribution: 1.5,
+        tier: 0,
+      },
+      {
+        text: "Account is 6 years old",
+        why: "outlasted platform enforcement",
+        direction: "ordinary",
+        contribution: -0.5,
+        tier: 1,
+      },
+    ]);
+  });
+
+  it("keeps the stronger of two items with the same wording", () => {
+    const nameDigits: Evidence = {
+      ...evidence("x.handleNameDigits", 0.7, "handle"),
+      reason: "Same",
+    };
+    const trailing: Evidence = {
+      ...evidence("x.handleTrailingDigits", 0.5, "handle"),
+      reason: "Same",
+    };
+    expect(selectReasons([sorted[0]!, nameDigits, trailing])).toEqual([
+      expect.objectContaining({ text: "reason:a" }),
+      expect.objectContaining({ text: "Same", contribution: 0.7 }),
+    ]);
   });
 
   it("returns what is available when there is less than two", () => {
-    expect(selectReasons([sorted[0]!])).toEqual(["reason:a"]);
-    expect(selectReasons([])).toEqual([]);
+    expect(selectedTexts([sorted[0]!])).toEqual(["reason:a"]);
+    expect(selectedTexts([])).toEqual([]);
   });
 });
 

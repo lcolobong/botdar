@@ -17,6 +17,7 @@ import type {
 } from "@/src/core/types";
 import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME } from "@/src/ui/mount";
 import { adoptedCssOf } from "../../adoptedCss";
+import { fakeReason } from "../../../fakeReasons";
 import { createXAdapter } from "@/src/platforms/x/adapter";
 import { BADGED_ATTRIBUTE, markBadged, toPostRef, unmarkBadged } from "@/src/platforms/x/dom";
 import { QueryIdRegistry } from "@/src/platforms/x/queryIds";
@@ -47,7 +48,7 @@ const fakeScorer: Scorer = (features, signals, sourcesAvailable) => ({
       reason: "Ends in 5 digits",
     },
   ],
-  reasons: ["Ends in 5 digits", "Joined 3 weeks ago"],
+  reasons: [fakeReason("Ends in 5 digits"), fakeReason("Joined 3 weeks ago")],
   confidence: sourcesAvailable.length / ALL_TIERS.length,
   caveat: "This can be wrong: new accounts look like this too.",
   sourcesUsed: sourcesAvailable,

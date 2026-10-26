@@ -12,7 +12,7 @@ import type { AccountResolver, BadgeHandle } from "@/src/core/pipeline";
 import type { Settings } from "@/src/core/settings";
 import type { EffectivePlatformConfig, PlatformAdapter, PostRef, Verdict } from "@/src/core/types";
 import { Badge, type BadgeProps } from "@/src/ui/Badge";
-import { HoverCard, type CardReason, type HoverCardProps } from "@/src/ui/HoverCard";
+import { HoverCard, type HoverCardProps } from "@/src/ui/HoverCard";
 import { createHoverController, type HoverController } from "@/src/ui/hoverController";
 import { shouldDrawBadge, type BadgeTier } from "@/src/ui/labels";
 import { kindOfPost, recordBadged } from "@/src/core/diagnostics";
@@ -59,14 +59,6 @@ interface PostState {
 }
 
 export const CARD_ID = "botdar-card";
-
-/** Reasons keep the tier of the evidence that produced them; the declared reason has none. */
-function cardReasons(verdict: Verdict): CardReason[] {
-  return verdict.reasons.map((text) => ({
-    text,
-    tier: verdict.evidence.find((item) => item.reason === text)?.tier ?? 0,
-  }));
-}
 
 export function wirePlatform(options: WireOptions): PlatformWiring {
   const states = new Map<Element, PostState>();
@@ -175,7 +167,7 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
     tier,
     labelStyle: options.settings().labelStyle,
     handle: `${options.handlePrefix}${state.post.ref.handle}`,
-    reasons: cardReasons(state.verdict),
+    reasons: state.verdict.reasons,
     ...(state.verdict.confidenceNote === undefined
       ? {}
       : { confidenceNote: state.verdict.confidenceNote }),
@@ -208,7 +200,7 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
         platform,
         handle,
         tier,
-        reasons,
+        reasons: reasons.map((reason) => reason.text),
         computedAt,
       });
     }
