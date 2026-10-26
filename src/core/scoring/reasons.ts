@@ -282,14 +282,22 @@ const GROUP_CAVEATS: Readonly<Record<IndependenceGroup, string>> = {
   geo: "Location is inferred by the platform and is often wrong for travellers and VPN users.",
 };
 
-const DEFAULT_CLOSING =
-  "This is a pattern read, not a verdict. Humans trip these signals every day.";
+/**
+ * The case against a Likely human read, keyed on the group of its strongest ordinary evidence: what
+ * would make that evidence look the same on an automated account.
+ */
+const TYPICAL_COUNTER_CASES: Readonly<Partial<Record<IndependenceGroup, string>>> = {
+  age: "An aged account can be bought and repurposed.",
+  graph: "Followers can be bought.",
+  profile: "A persona account fills its profile in too.",
+};
+
 const SOURCES_MISSING_CLOSING = "Some signals could not be loaded, so this read is less certain.";
 const LONG_LIVED_CLOSING = "Long-lived accounts are rarely automated; weigh this lightly.";
 const DECLARED_CLOSING =
   "The account operator chose to label it as automated. That is the platform's recommended, transparent practice.";
-/** Replaces the suspicion caveat on a Likely human card: there is no flagged signal to excuse. */
-const TYPICAL_CLOSING = "These signals look like an ordinary account; nothing here is proof.";
+/** A Likely human card's caveat when its ordinary evidence has no counter-case of its own. */
+const TYPICAL_CLOSING = "These signals look like an ordinary account.";
 const UNKNOWN_CLOSING = "Too little is visible about this account to read it either way.";
 
 export interface CaveatContext {
@@ -300,6 +308,13 @@ export interface CaveatContext {
   sourcesMissing: SourceTier[];
 }
 
+function typicalCounterCase(evidenceByMagnitude: Evidence[]): string {
+  const dominant: Evidence | undefined = evidenceByMagnitude.find(isOrdinaryEvidence);
+  return (
+    (dominant === undefined ? undefined : TYPICAL_COUNTER_CASES[dominant.group]) ?? TYPICAL_CLOSING
+  );
+}
+
 export function caveatFor(context: CaveatContext): string {
   if (context.tier === "declared") {
     return DECLARED_CLOSING;
@@ -308,9 +323,10 @@ export function caveatFor(context: CaveatContext): string {
     return UNKNOWN_CLOSING;
   }
   if (context.tier === "typical") {
+    const counterCase: string = typicalCounterCase(context.evidenceByMagnitude);
     return context.sourcesMissing.length > 0
-      ? `${TYPICAL_CLOSING} ${SOURCES_MISSING_CLOSING}`
-      : TYPICAL_CLOSING;
+      ? `${counterCase} ${SOURCES_MISSING_CLOSING}`
+      : counterCase;
   }
   const dominant: Evidence | undefined =
     context.evidenceByMagnitude.find((item) => item.contribution > 0) ??
@@ -318,14 +334,16 @@ export function caveatFor(context: CaveatContext): string {
   const groupCaveat: string | undefined =
     dominant === undefined ? undefined : GROUP_CAVEATS[dominant.group];
 
+  // The "Why this could be wrong" label and the group sentence carry the disclaimer, so a closer is
+  // added only when it states something factual about this read.
   const ageDays: number | undefined = accountAgeDays(context.signals, context.now);
-  let closing: string = DEFAULT_CLOSING;
+  let closing: string | undefined;
   if (ageDays !== undefined && ageDays >= LONG_LIVED_ACCOUNT_DAYS) {
     closing = LONG_LIVED_CLOSING;
   } else if (context.sourcesMissing.length > 0) {
     closing = SOURCES_MISSING_CLOSING;
   }
-  return groupCaveat === undefined ? closing : `${groupCaveat} ${closing}`;
+  return [groupCaveat, closing].filter((part) => part !== undefined).join(" ");
 }
 
 function missingTierNote(tier: SourceTier, available: boolean): string {
@@ -357,7 +375,7 @@ export function allFixedStrings(): string[] {
     ...Object.values(DECLARED_REASONS_BY_SOURCE),
     ...allWhyClauses(),
     ...Object.values(GROUP_CAVEATS),
-    DEFAULT_CLOSING,
+    ...Object.values(TYPICAL_COUNTER_CASES),
     SOURCES_MISSING_CLOSING,
     LONG_LIVED_CLOSING,
     DECLARED_CLOSING,

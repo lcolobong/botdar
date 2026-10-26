@@ -407,7 +407,7 @@ describe("scoreAccount wording", () => {
   it("keys the caveat on the dominant group and the account age", () => {
     const recent: Verdict = score([strongActivity, strongAge]);
     expect(recent.caveat).toBe(
-      "High-volume human posters, news desks and brand accounts show the same pattern. This is a pattern read, not a verdict. Humans trip these signals every day.",
+      "High-volume human posters, news desks and brand accounts show the same pattern.",
     );
   });
 
@@ -433,7 +433,7 @@ describe("scoreAccount wording", () => {
     expect(verdict.confidenceNote).toBe("Profile details are off. Extra lookups are off");
   });
 
-  it("words a Likely human card with what looks ordinary and no suspicion caveat", () => {
+  it("words a Likely human card with what looks ordinary and its counter-case", () => {
     const verdict: Verdict = scoreAccount(
       [
         feature("reddit.accountAgeDays", 3300, "age", 2),
@@ -447,9 +447,7 @@ describe("scoreAccount wording", () => {
     );
     expect(verdict.tier).toBe("typical");
     expect(reasonTexts(verdict)).toEqual(["Account is 9 years old", "Custom avatar"]);
-    expect(verdict.caveat).toBe(
-      "These signals look like an ordinary account; nothing here is proof.",
-    );
+    expect(verdict.caveat).toBe("An aged account can be bought and repurposed.");
   });
 
   it("gives declared accounts the declared caveat and no confidence note", () => {

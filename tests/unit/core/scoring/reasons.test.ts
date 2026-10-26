@@ -200,6 +200,17 @@ describe("wording rules", () => {
     }
   });
 
+  it("covers the Likely human counter-cases", () => {
+    expect(allFixedStrings()).toEqual(
+      expect.arrayContaining([
+        "An aged account can be bought and repurposed.",
+        "Followers can be bought.",
+        "A persona account fills its profile in too.",
+        "These signals look like an ordinary account.",
+      ]),
+    );
+  });
+
   it("never shows a percentage outside the reply share observation", () => {
     for (const text of allFixedStrings()) {
       expect(text).not.toContain("%");
@@ -305,9 +316,7 @@ describe("caveatFor", () => {
       ...base,
       evidenceByMagnitude: [evidence("age", -1.5, "age"), evidence("graph", 1.0, "graph")],
     });
-    expect(caveat).toBe(
-      "People who follow widely before anyone follows back look the same. This is a pattern read, not a verdict. Humans trip these signals every day.",
-    );
+    expect(caveat).toBe("People who follow widely before anyone follows back look the same.");
   });
 
   it("falls back to the strongest evidence when nothing is positive", () => {
@@ -318,18 +327,43 @@ describe("caveatFor", () => {
     expect(caveat).toMatch(/^Every account was new once/);
   });
 
-  it("closes a Likely human card with the ordinary-account line instead of a suspicion caveat", () => {
-    const caveat: string = caveatFor({
-      ...base,
-      tier: "typical",
-      evidenceByMagnitude: [evidence("handle", 0.4, "handle"), evidence("age", -0.6, "age")],
-    });
-    expect(caveat).toBe("These signals look like an ordinary account; nothing here is proof.");
+  it("gives a Likely human card the counter-case of its strongest ordinary evidence", () => {
+    const typical = { ...base, tier: "typical" as const };
     expect(
-      caveatFor({ ...base, tier: "typical", sourcesMissing: [2], evidenceByMagnitude: [] }),
-    ).toBe(
-      "These signals look like an ordinary account; nothing here is proof. Some signals could not be loaded, so this read is less certain.",
+      caveatFor({
+        ...typical,
+        evidenceByMagnitude: [evidence("handle", 0.4, "handle"), evidence("age", -0.6, "age")],
+      }),
+    ).toBe("An aged account can be bought and repurposed.");
+    expect(caveatFor({ ...typical, evidenceByMagnitude: [evidence("graph", -0.3, "graph")] })).toBe(
+      "Followers can be bought.",
     );
+    expect(
+      caveatFor({ ...typical, evidenceByMagnitude: [evidence("reddit.noAvatar", 0, "profile")] }),
+    ).toBe("A persona account fills its profile in too.");
+  });
+
+  it("falls back to the ordinary-account line when no counter-case fits", () => {
+    const typical = { ...base, tier: "typical" as const };
+    expect(
+      caveatFor({ ...typical, evidenceByMagnitude: [evidence("content", -0.2, "content")] }),
+    ).toBe("These signals look like an ordinary account.");
+    expect(caveatFor({ ...typical, sourcesMissing: [2], evidenceByMagnitude: [] })).toBe(
+      "These signals look like an ordinary account. Some signals could not be loaded, so this read is less certain.",
+    );
+  });
+
+  it("skips evidence that points towards automated when picking the counter-case", () => {
+    expect(
+      caveatFor({
+        ...base,
+        tier: "typical",
+        evidenceByMagnitude: [
+          evidence("x.countryLocaleMismatch", 0, "geo"),
+          evidence("graph", -0.3, "graph"),
+        ],
+      }),
+    ).toBe("Followers can be bought.");
   });
 
   it("closes with the missing-sources line when a source did not deliver", () => {
@@ -360,10 +394,17 @@ describe("caveatFor", () => {
     );
   });
 
-  it("uses only the closing line when there is no evidence", () => {
-    expect(caveatFor({ ...base, evidenceByMagnitude: [] })).toBe(
-      "This is a pattern read, not a verdict. Humans trip these signals every day.",
+  it("uses only a factual closer when there is no evidence", () => {
+    expect(caveatFor({ ...base, sourcesMissing: [2], evidenceByMagnitude: [] })).toBe(
+      "Some signals could not be loaded, so this read is less certain.",
     );
+    expect(caveatFor({ ...base, evidenceByMagnitude: [] })).toBe("");
+  });
+
+  it("no longer closes with a generic disclaimer", () => {
+    for (const text of allFixedStrings()) {
+      expect(text).not.toContain("pattern read");
+    }
   });
 
   it("says there is too little to read for an unknown verdict", () => {
