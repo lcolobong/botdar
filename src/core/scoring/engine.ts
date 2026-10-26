@@ -55,7 +55,7 @@ function logistic(logOdds: number): number {
 }
 
 function deliveredTiers(signals: AccountSignals): SourceTier[] {
-  const delivered = new Set<SourceTier>(Object.values(signals.provenance));
+  const delivered = new Set<SourceTier>(signals.tiersDelivered);
   return ALL_TIERS.filter((tier) => delivered.has(tier));
 }
 

@@ -284,6 +284,19 @@ describe("scoreAccount confidence", () => {
     expect(score([strongActivity], [0, 1]).confidence).toBeCloseTo(0.8, 10);
   });
 
+  it("counts a tier that delivered even when a higher tier now owns every field", () => {
+    const signals: AccountSignals = signalsWith({ tiersDelivered: [0, 1, 2] });
+    const overwritten: AccountSignals = {
+      ...signals,
+      provenance: { displayName: 2, createdAt: 2, country: 2 },
+    };
+    const verdict: Verdict = scoreAccount([strongActivity], overwritten, testWeights, options);
+    expect(verdict.sourcesUsed).toEqual([0, 1, 2]);
+    expect(verdict.sourcesMissing).toEqual([]);
+    expect(verdict.confidence).toBeCloseTo(1, 10);
+    expect(verdict.caveat).not.toMatch(/could not be loaded/);
+  });
+
   it("low confidence caps a many-worthy account at some and flags it", () => {
     const verdict: Verdict = score([strongActivity, strongAge], [0]);
     expect(verdict.confidence).toBeCloseTo(0.25, 10);
