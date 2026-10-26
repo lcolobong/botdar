@@ -1,6 +1,6 @@
 # ADR-0020: Badge on every account
 
-Status: Accepted · Date: 2026-10-25 · Amends ADR-0017
+Status: Accepted, amended by ADR-0022 (a Likely human card's caveat names a counter-case for its strongest ordinary evidence) · Date: 2026-10-25 · Amends ADR-0017
 
 ## Context
 
