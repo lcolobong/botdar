@@ -118,7 +118,8 @@ one-day-old account, cannot dominate.
 
 The tables above say what each feature measures and how much it weighs. This section says why it
 measures anything at all, so that a reader can judge a bin or propose a feature without rereading the
-research. Each entry gives the mechanism (what running accounts at scale does that a person does not),
+research, and so that the hover card's why clauses ("Reason templates and caveats") have a rationale to
+track. Each entry gives the mechanism (what running accounts at scale does that a person does not),
 the evidence (from [research/heuristics.md](research/heuristics.md) and
 [research/reddit-bot-prevalence.md](research/reddit-bot-prevalence.md)), and the honest counter-case,
 which is also what the hover-card caveat tells the user. The recurring theme: every feature is a trace
@@ -299,7 +300,10 @@ Input: `Feature[]` from the platform adapter, the effective platform config, and
      towards automation (`contribution > 0`, such as "Joined 6 weeks ago" or "Default avatar"): a
      young account with a default avatar can stay under `thresholds.some` and must not get a card
      that says it looks ordinary. Neutral items (`contribution = 0`, such as "Custom avatar") count,
-     since most ordinary observations sit in a zero bin. With little data the low prior
+     since most ordinary observations sit in a zero bin, unless the feature has no ordinary reading
+     (the country mismatch held at weight 0): the card shows such an item pointing towards automated,
+     so it cannot vouch for the account (ADR-0022). The rule, the card's arrow and the Likely human
+     counter-case share one test, `isOrdinaryEvidence` in `src/core/scoring/reasons.ts`. With little data the low prior
      alone lands an account in `typical`: on Reddit's page an obvious self-declared bot scored
      `typical` from one non-signal (a username outside the suggested pattern). On Reddit the
      confidence bar means a Tier 2 lookup delivered. Every adapter scores the handle's shape from the
@@ -325,36 +329,60 @@ Everything after step 2 is pure and unit-tested against a golden table of synthe
 Templates use the observed values. Durations render as "3 weeks", "6 years"; rates as "~140 posts/day";
 counts with thousands separators.
 
-| Feature | Reason template | Caveat (by group) |
-|---|---|---|
-| `x.postsPerDay`, `bsky.postsPerDay` | "~{rate} posts/day since joining" | activity: "High-volume human posters, news desks and brand accounts show the same pattern." |
-| `x.accountAgeDays`, `reddit.accountAgeDays`, `bsky.accountAgeDays` | "Joined {ago} ago" / negative: "Account is {age} old" | age: "Every account was new once; a recent join date means little on its own." |
-| `x.followingRatio`, `bsky.followsRatio` | "Following {following}, followed by {followers}" / negative: "Followed by {followers}, following {following}" | graph: "People who follow widely before anyone follows back look the same." |
-| `x.handleNameDigits`, `x.handleTrailingDigits`, `bsky.handleDigitsOnBskySocial` | "Handle is a name followed by {n} digits" / no contribution: nothing | handle: "Many people accept the platform's suggested handle and never change it." |
-| `x.handleBigramLL` | "Handle looks randomly generated" / no contribution: nothing | handle: as above |
-| `x.defaultAvatarEmptyBio`, `bsky.noAvatarEmptyBio` | "No profile photo and no bio" / "No profile photo" / "No bio" / "Has a profile photo and a bio" | profile: "Privacy-minded people often leave profiles blank." |
-| `x.newAndBlue` | "Verified within {age} of joining" / false: nothing | verification: "Paid verification is available to any new account." |
-| `x.replyShare` | "{pct}% of recent posts are replies" | content: "Some people only ever reply; that is a style, not automation." |
-| `x.usernameChanges` | "Username changed {n} times" | profile: as above |
-| `x.countryLocaleMismatch` | "Account based in {country}" / false: nothing | geo: "Location is inferred by the platform and is often wrong for travellers and VPN users." |
-| `reddit.karmaPerDay` | "~{rate} karma/day on a {age}-old account" | activity: as above |
-| `reddit.postToCommentKarma` | "Post karma {link}, comment karma {comment}" | content: "Prolific posters who rarely comment look the same." |
-| `reddit.generatedName` | "Username matches Reddit's auto-generated pattern" / false: nothing | handle: as above |
-| `reddit.noAvatar` | "Default avatar" / false: "Custom avatar" | profile: as above |
-| `reddit.noVerifiedEmail` | "No verified email" / false: "Verified email" | profile: as above |
+Every reason also carries a **direction** and a **why clause** ([ADR-0022](decisions/ADR-0022-reasons-say-why.md)).
+A positive contribution points towards automated (↑ on the card) and a negative one towards ordinary (↓).
+A contribution of zero points towards ordinary, as step 7 counts it, unless the feature has no ordinary
+clause below: such a feature (the country mismatch, held at weight 0) points towards automated whenever
+it is stated. The why clause is the one for the reason's direction, rendered muted after a middle dot.
+Each clause condenses the mechanism in "Why each feature is a signal" above, in at most about eight words,
+so that a reason wraps to two lines at most on the 320px card; when a mechanism changes, its clause
+changes with it. The clauses live in `src/core/scoring/whyClauses.ts`. The reason also carries its signed
+contribution, for a strength scale on top of the direction. Two features can word the same
+observation (both handle-digit features read "Handle is a name followed by 5 digits"); the card lists
+such a line once, from the stronger item.
+
+| Feature | Reason template | Why clause: towards automated / towards ordinary | Caveat (by group) |
+|---|---|---|---|
+| `x.postsPerDay`, `bsky.postsPerDay` | "~{rate} posts/day since joining" | "prolonged hyperactivity" / "a pace a person keeps up" | activity: "High-volume human posters, news desks and brand accounts show the same pattern." |
+| `x.accountAgeDays`, `reddit.accountAgeDays`, `bsky.accountAgeDays` | "Joined {ago} ago" / negative: "Account is {age} old" | "new accounts often replace banned ones" / "outlasted platform enforcement" | age: "Every account was new once; a recent join date means little on its own." |
+| `x.followingRatio`, `bsky.followsRatio` | "Following {following}, followed by {followers}" / negative: "Followed by {followers}, following {following}" | "mass-following nobody returned" / "others opted in" | graph: "People who follow widely before anyone follows back look the same." |
+| `x.handleNameDigits`, `x.handleTrailingDigits`, `bsky.handleDigitsOnBskySocial` | "Handle is a name followed by {n} digits" / no contribution: nothing | "unchanged suggested handle" / none | handle: "Many people accept the platform's suggested handle and never change it." |
+| `x.handleBigramLL` | "Handle looks randomly generated" / no contribution: nothing | "letter pairs no language uses" / none | handle: as above |
+| `x.defaultAvatarEmptyBio`, `bsky.noAvatarEmptyBio` | "No profile photo and no bio" / "No profile photo" / "No bio" / "Has a profile photo and a bio" | "left as created" / "effort spent on this one account" | profile: "Privacy-minded people often leave profiles blank." |
+| `x.newAndBlue` | "Verified within {age} of joining" / false: nothing | "paid for reach before having anything to say" / none | verification: "Paid verification is available to any new account." |
+| `x.replyShare` | "{pct}% of recent posts are replies" | "it inserts itself into others' threads" / "starts its own threads too" | content: "Some people only ever reply; that is a style, not automation." |
+| `x.usernameChanges` | "Username changed {n} times" | "bought or repurposed accounts get renamed" / "too few renames to suggest a resale" | profile: as above |
+| `x.countryLocaleMismatch` | "Account based in {country}" / false: nothing | "a persona run from abroad" / none | geo: "Location is inferred by the platform and is often wrong for travellers and VPN users." |
+| `reddit.karmaPerDay` | "~{rate} karma/day on a {age}-old account" | "karma-farming pattern" / "a pace ordinary use earns" | activity: as above |
+| `reddit.postToCommentKarma` | "Post karma {link}, comment karma {comment}" | "reposts earn it without conversation" / "it joins conversations" | content: as above |
+| `reddit.generatedName` | "Username matches Reddit's auto-generated pattern" / false: nothing | "kept as suggested" / none | handle: as above |
+| `reddit.noAvatar` | "Default avatar" / false: "Custom avatar" | "left as created" / "effort spent on this one account" | profile: as above |
+| `reddit.noVerifiedEmail` | "No verified email" / false: "Verified email" | "verifying takes a mailbox per account" / "a mailbox sits behind this account" | profile: as above |
+| Declared (label, flair, username, bio) | "Carries the platform's own automated-account label", one per source | "self-declared" (always towards automated) | the declared line below |
 
 ### "Why this might be wrong" lines
 
-The caveat row always ends with one of these, chosen by context:
+The card shows the caveat under the label "Why this could be wrong" (ADR-0022), or "What this means" on a
+Declared bot card, whose line explains the label rather than arguing against it. For Likely bot and Unsure
+it is the group caveat of the strongest positive evidence. The label and that sentence carry the
+disclaimer, so a closer follows only when it states something factual about this read:
 
-- When tier is `typical` (Likely human), in place of the group caveat: "These signals look like an
-  ordinary account; nothing here is proof." followed by the missing-sources line when it applies.
-  The card never claims the account is a person, only that nothing stands out.
-- Default: "This is a pattern read, not a verdict. Humans trip these signals every day."
-- When `sourcesMissing` is non-empty: "Some signals could not be loaded, so this read is less certain."
 - When the account is older than two years: "Long-lived accounts are rarely automated; weigh this lightly."
-- When tier is `declared`: "The account operator chose to label it as automated. That is the platform's
-  recommended, transparent practice."
+- Otherwise, when `sourcesMissing` is non-empty: "Some signals could not be loaded, so this read is less certain."
+- Otherwise nothing. (The closers "This is a pattern read, not a verdict." and "Humans trip these
+  signals every day." were dropped by ADR-0022.)
+
+When tier is `typical` (Likely human), in place of the group caveat, a counter-case chosen by the group
+of the strongest worded evidence that points towards ordinary, followed by the missing-sources line when
+it applies. The card never claims the account is a person, only that nothing stands out:
+
+- age: "An aged account can be bought and repurposed."
+- graph: "Followers can be bought."
+- profile: "A persona account fills its profile in too."
+- any other group: "These signals look like an ordinary account."
+
+When tier is `declared`: "The account operator chose to label it as automated. That is the platform's
+recommended, transparent practice."
 
 ## Policy override semantics for weights
 
@@ -403,6 +431,12 @@ badge. "Likely human" is on by default and has to be earned (step 7); `unknown` 
 ("Who dis" on the Sus scale), reading "Checking" while the account's lookup is queued or running.
 Likely human reasons are factual observations of what looks ordinary, and a No read card carries only
 the reason there is nothing to read.
+
+Amendment 2026-10-25 ([ADR-0022](decisions/ADR-0022-reasons-say-why.md)): every reason line carries a
+direction arrow and a why clause, and the caveat sits under "Why this could be wrong". The rules below
+cover the why clauses as reason text: they describe the pattern, never the person, and never contain
+"bot". `allFixedStrings()` in `src/core/scoring/reasons.ts` includes every clause, so the wording-rule
+test checks them.
 
 These apply to every user-visible string in the badge, hover card, popup, options, onboarding and store
 listing.

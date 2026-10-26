@@ -170,6 +170,16 @@ export interface Evidence {
   reason: string;                     // rendered, neutral wording
 }
 
+export type ReasonDirection = 'automated' | 'ordinary';
+
+export interface VerdictReason {
+  text: string;                       // the observation, e.g. "Joined 3 weeks ago"
+  why: string;                        // why it points that way (scoring-spec.md "Why clause")
+  direction: ReasonDirection;         // drives the card's arrow
+  contribution?: number;              // signed, for a strength scale; absent when declared
+  tier: SourceTier;                   // the source dot
+}
+
 export type VerdictTier = 'typical' | 'some' | 'many' | 'declared' | 'unknown';
 
 export interface Verdict {
@@ -177,7 +187,7 @@ export interface Verdict {
   probability: number;
   logOdds: number;
   evidence: Evidence[];               // sorted by |contribution| desc
-  reasons: string[];                  // 2–4 strings for the hover card
+  reasons: VerdictReason[];           // 2–4 lines for the hover card
   confidence: number;                 // 0..1
   confidenceNote?: string;            // present when confidence < 0.7
   caveat: string;                     // "why this might be wrong"

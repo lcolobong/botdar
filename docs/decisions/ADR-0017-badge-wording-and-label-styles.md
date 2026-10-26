@@ -1,6 +1,6 @@
 # ADR-0017: Badge wording, quiet feed, and selectable label styles
 
-Status: Accepted, amended by ADR-0020 (a badge on every account: Likely human on by default and earned, No read for unknown; labels and styles stand) · Date: 2026-10-22 · Amends ADR-0003
+Status: Accepted, amended by ADR-0020 (a badge on every account: Likely human on by default and earned, No read for unknown; labels and styles stand) and ADR-0022 (reasons carry a direction and a why clause; the caveat sits under its own label) · Date: 2026-10-22 · Amends ADR-0003
 
 ## Context
 

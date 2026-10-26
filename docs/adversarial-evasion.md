@@ -117,8 +117,9 @@ marketing pages unless marked otherwise, so read them as order-of-magnitude figu
   Amended by ADR-0020: there is no silence any more. A starved account reads "No read" with the reason,
   and "Likely human" is on by default but needs confidence ≥ 0.5 and two worded reasons that do not point towards automation. The cost
   moves: an operator tuned just under the `some` threshold with a filled-in, aged profile now earns a green
-  "Likely human" badge, a stronger false assurance than silence was. The card's "nothing here is proof"
-  closing and the feedback button are the mitigations; the setting turns it off.
+  "Likely human" badge, a stronger false assurance than silence was. The card's "Why this could be
+  wrong" counter-case (an aged account can be bought, followers can be bought; ADR-0022) and the
+  feedback button are the mitigations; the setting turns it off.
 
 ## 4. Countermeasures
 
