@@ -5,7 +5,13 @@ const DAY_MILLIS = 86_400_000;
 const NOW = Date.UTC(2026, 9, 22, 12, 0, 0);
 
 function signalsFor(handle: string, partial: Partial<AccountSignals> = {}): AccountSignals {
-  return { ref: { platform: "bluesky", handle }, provenance: {}, observedAt: NOW, ...partial };
+  return {
+    ref: { platform: "bluesky", handle },
+    provenance: {},
+    tiersDelivered: [],
+    observedAt: NOW,
+    ...partial,
+  };
 }
 
 function featureById(features: Feature[], id: string): Feature {

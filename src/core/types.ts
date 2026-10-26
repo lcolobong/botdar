@@ -55,12 +55,22 @@ export interface AccountSignals {
   appStore?: string;
   /** Only when a timeline was observable. */
   replyShare?: ReplyShare;
+  /** Which tier last supplied each field; drives the source dots, not which tiers delivered. */
   provenance: Partial<Record<SignalField, SourceTier>>;
+  /**
+   * Tiers that delivered data for this account, ascending. Tracked apart from `provenance` because a
+   * higher tier overwriting every field a lower one supplied erases that tier from the provenance
+   * while it still delivered.
+   */
+  tiersDelivered: SourceTier[];
   /** Epoch milliseconds of the newest observation merged in. */
   observedAt: number;
 }
 
-export type SignalField = Exclude<keyof AccountSignals, "ref" | "provenance" | "observedAt">;
+export type SignalField = Exclude<
+  keyof AccountSignals,
+  "ref" | "provenance" | "tiersDelivered" | "observedAt"
+>;
 
 /** Keys of the per-platform weights config, e.g. "x.postsPerDay". */
 export type FeatureId = string;
@@ -150,7 +160,9 @@ export interface ResolveContext {
   config: EffectivePlatformConfig;
 }
 
-export type PartialSignals = Partial<Omit<AccountSignals, "ref" | "provenance" | "observedAt">>;
+export type PartialSignals = Partial<
+  Omit<AccountSignals, "ref" | "provenance" | "tiersDelivered" | "observedAt">
+>;
 
 export type SignalEmitter = (ref: AccountRef, partial: PartialSignals) => void;
 

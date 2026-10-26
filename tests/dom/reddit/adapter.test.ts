@@ -36,6 +36,7 @@ describe("redditAdapter", () => {
       displayName: "Brisk_Falcon_2210",
       hasDefaultAvatar: true,
       provenance: { displayName: 0, hasDefaultAvatar: 0 },
+      tiersDelivered: [0],
       observedAt: Date.now(),
     };
     expect(redditAdapter.toFeatures(signals).map((feature) => [feature.id, feature.value])).toEqual(
