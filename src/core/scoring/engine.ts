@@ -3,10 +3,18 @@
  * algorithm" step by step; everything after the declared and empty short-circuits is pure.
  */
 
-import type { AccountSignals, Evidence, Feature, SourceTier, Verdict, VerdictTier } from "../types";
+import type {
+  AccountSignals,
+  Evidence,
+  Feature,
+  SourceTier,
+  Verdict,
+  VerdictReason,
+  VerdictTier,
+} from "../types";
 import { applyGroupCaps, featureContribution } from "./contributions";
 import {
-  NO_REASON,
+  isOrdinaryEvidence,
   declaredReasonFor,
   caveatFor,
   confidenceNoteFor,
@@ -14,6 +22,7 @@ import {
   selectReasons,
 } from "./reasons";
 import type { ConfidenceWeights, FeatureSpec, PlatformWeights, TierThresholds } from "./types";
+import { DECLARED_WHY } from "./whyClauses";
 
 export interface ScoreOptions {
   policyVersion: number;
@@ -57,6 +66,18 @@ function confidenceFor(delivered: SourceTier[], confidenceWeights: ConfidenceWei
   }
   const earned: number = delivered.reduce<number>((sum, tier) => sum + confidenceWeights[tier], 0);
   return earned / total;
+}
+
+/** The declared reason keeps the tier that saw the declaration, else the highest that delivered. */
+function declaredReason(signals: AccountSignals, sourcesUsed: SourceTier[]): VerdictReason {
+  // deliveredTiers lists tiers in ascending order, so the last one is the highest.
+  const highestDelivered: SourceTier = sourcesUsed.at(-1) ?? 0;
+  return {
+    text: declaredReasonFor(signals),
+    why: DECLARED_WHY,
+    direction: "automated",
+    tier: signals.provenance.declaredAutomated ?? highestDelivered,
+  };
 }
 
 /**
@@ -120,9 +141,11 @@ function earnsLikelyHuman(evidence: Evidence[], confidence: number): boolean {
   // An item that points towards automation ("Joined 6 weeks ago", "Default avatar") cannot vouch
   // for an ordinary account either, however low the total stays. Neutral items do count: most
   // ordinary observations ("Custom avatar", a karma split) sit in a zero bin, and requiring a
-  // negative bin would leave Reddit only its age bin, so no Reddit account could ever earn it.
+  // negative bin would leave Reddit only its age bin, so no Reddit account could ever earn it. A
+  // zero-weight item with no ordinary reading (the country mismatch) does not count: the card
+  // shows it pointing towards automated.
   const ordinaryBeyondHandle: number = evidence.filter(
-    (item) => item.group !== "handle" && item.reason !== NO_REASON && item.contribution <= 0,
+    (item) => item.group !== "handle" && isOrdinaryEvidence(item),
   ).length;
   return (
     confidence >= LIKELY_HUMAN_MIN_CONFIDENCE && ordinaryBeyondHandle >= LIKELY_HUMAN_MIN_EVIDENCE
@@ -171,7 +194,7 @@ export function scoreAccount(
     return {
       ...unscored,
       tier: "declared",
-      reasons: [declaredReasonFor(signals)],
+      reasons: [declaredReason(signals, sourcesUsed)],
       confidence: 1,
       caveat: caveatFor({
         tier: "declared",

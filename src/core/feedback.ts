@@ -16,6 +16,10 @@ export interface FeedbackInput {
   platform: PlatformId;
   handle: string;
   tier: VerdictTier;
+  /**
+   * The observations only. A reason's direction and why clause follow from its feature and are
+   * intentionally not stored, so the exported schema stays stable when the clauses change.
+   */
   reasons: string[];
   computedAt: number;
 }

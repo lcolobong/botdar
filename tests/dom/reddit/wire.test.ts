@@ -21,6 +21,7 @@ import { wireReddit } from "@/src/platforms/reddit/wire";
 import { defaultWeights } from "@/src/core/scoring/weights";
 import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME } from "@/src/ui/mount";
 import { adoptedCssOf } from "../adoptedCss";
+import { fakeReason } from "../../fakeReasons";
 import { loadRedditFixture } from "./fixtures";
 
 const SHADOW_CSS = ":host { --botdar-test: reddit; }";
@@ -50,7 +51,7 @@ const fakeScorer: Scorer = (features, signals, sourcesAvailable) => {
         reason: "Name",
       },
     ],
-    reasons: ["Name", `Sources ${sourcesAvailable.join("")}`],
+    reasons: [fakeReason("Name"), fakeReason(`Sources ${sourcesAvailable.join("")}`)],
     confidence: 0.5,
     caveat: "This can be wrong.",
     sourcesUsed: [0],

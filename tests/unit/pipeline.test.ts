@@ -22,6 +22,7 @@ import type {
   SourceTier,
   Verdict,
 } from "@/src/core/types";
+import { fakeReason, reasonTexts } from "../fakeReasons";
 
 const ALL_TIERS: SourceTier[] = [0, 1, 2];
 
@@ -30,7 +31,7 @@ const fakeScorer: Scorer = (features, signals, sourcesAvailable) => ({
   probability: 0.5,
   logOdds: 0,
   evidence: [],
-  reasons: features.map((feature) => `${feature.id}@${feature.tier}`),
+  reasons: features.map((feature) => fakeReason(`${feature.id}@${feature.tier}`, feature.tier)),
   confidence: sourcesAvailable.length / ALL_TIERS.length,
   caveat: "This can be wrong.",
   sourcesUsed: sourcesAvailable,
@@ -211,7 +212,7 @@ describe("AccountResolver", () => {
     const handle: BadgeHandle = resolver.attach(post());
     const verdict: Verdict = handle.current();
     expect(extractDomSignals).toHaveBeenCalledTimes(1);
-    expect(verdict.reasons).toEqual(["displayName@0"]);
+    expect(reasonTexts(verdict)).toEqual(["displayName@0"]);
     expect(verdict.sourcesUsed).toEqual([0]);
     expect(verdict.sourcesMissing).toEqual([1, 2]);
   });
@@ -220,7 +221,7 @@ describe("AccountResolver", () => {
     const { resolver, emit } = makeHarness();
     emit(ref(), { followers: 40, displayName: "API name" });
     const verdict: Verdict = resolver.attach(post()).current();
-    expect(verdict.reasons).toEqual(expect.arrayContaining(["followers@1", "displayName@1"]));
+    expect(reasonTexts(verdict)).toEqual(expect.arrayContaining(["followers@1", "displayName@1"]));
     expect(verdict.sourcesUsed).toEqual([0, 1]);
   });
 
@@ -247,7 +248,7 @@ describe("AccountResolver", () => {
 
     emit(ref(), { followers: 41 });
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(handle.current().reasons).toEqual(expect.arrayContaining(["followers@1"]));
+    expect(reasonTexts(handle.current())).toEqual(expect.arrayContaining(["followers@1"]));
   });
 
   it("rescores when an emission adds a tier even if it changes no field", () => {
@@ -293,7 +294,7 @@ describe("AccountResolver", () => {
     expect(cache.get("someone")).toEqual({ followers: 12, postCount: 3 });
     expect(listener).toHaveBeenCalledTimes(1);
     expect(handle.current().sourcesUsed).toEqual([0, 2]);
-    expect(handle.current().reasons).toEqual(expect.arrayContaining(["followers@2"]));
+    expect(reasonTexts(handle.current())).toEqual(expect.arrayContaining(["followers@2"]));
     expect(limiter.nextAllowedAt()).toBe(Date.now());
   });
 
@@ -303,7 +304,7 @@ describe("AccountResolver", () => {
     emit(ref(), { followers: 1 });
     await handle.lookup();
     emit(ref(), { followers: 2 });
-    expect(handle.current().reasons).toContain("followers@2");
+    expect(reasonTexts(handle.current())).toContain("followers@2");
   });
 
   it("serves a cache hit without calling the source", async () => {
@@ -315,7 +316,7 @@ describe("AccountResolver", () => {
     await handle.lookup();
 
     expect(resolve).not.toHaveBeenCalled();
-    expect(handle.current().reasons).toContain("followers@2");
+    expect(reasonTexts(handle.current())).toContain("followers@2");
     expect(handle.current().sourcesUsed).toEqual([0, 2]);
   });
 

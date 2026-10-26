@@ -8,9 +8,9 @@ import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import type { FeedbackEntry, FeedbackInput } from "../../core/feedback";
 import type { BadgeHandle } from "../../core/pipeline";
 import type { LabelStyle } from "../../core/settings";
-import type { PostRef, SourceTier, Verdict } from "../../core/types";
+import type { PostRef, Verdict } from "../../core/types";
 import { HoverCard } from "../../ui/HoverCard";
-import type { CardReason, HoverCardProps } from "../../ui/HoverCard";
+import type { HoverCardProps } from "../../ui/HoverCard";
 import { createHoverController } from "../../ui/hoverController";
 import type { HoverCardPlacement, HoverController } from "../../ui/hoverController";
 import { shouldDrawBadge } from "../../ui/labels";
@@ -53,18 +53,6 @@ export interface CardPresenter {
   dispose: () => void;
 }
 
-/** Selected reasons with their source tier; a reason without evidence (declared) takes the highest delivered tier. */
-export function cardReasons(verdict: Verdict): CardReason[] {
-  const tierByReason = new Map<string, SourceTier>(
-    verdict.evidence.map((item) => [item.reason, item.tier]),
-  );
-  const fallbackTier: SourceTier = verdict.sourcesUsed.reduce<SourceTier>(
-    (highest, tier) => (tier > highest ? tier : highest),
-    0,
-  );
-  return verdict.reasons.map((text) => ({ text, tier: tierByReason.get(text) ?? fallbackTier }));
-}
-
 export function createCardPresenter(options: CardPresenterOptions): CardPresenter {
   const feedbackIdByHandle = new Map<string, string>();
   let current: CardTarget | undefined;
@@ -92,7 +80,7 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
         platform: "bluesky",
         handle,
         tier: verdict.tier,
-        reasons: verdict.reasons,
+        reasons: verdict.reasons.map((reason) => reason.text),
         computedAt: verdict.computedAt,
       });
       feedbackIdByHandle.set(handle, entry.id);
@@ -115,7 +103,7 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
       tier: verdict.tier,
       labelStyle: options.labelStyle(),
       handle: `@${target.post.ref.handle}`,
-      reasons: cardReasons(verdict),
+      reasons: verdict.reasons,
       ...(verdict.confidenceNote === undefined ? {} : { confidenceNote: verdict.confidenceNote }),
       caveat: verdict.caveat,
       ...noReadCardProps(verdict, target.handle),

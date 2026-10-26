@@ -19,8 +19,8 @@ import type {
 } from "@/src/core/types";
 import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME } from "@/src/ui/mount";
 import { adoptedCssOf } from "../adoptedCss";
+import { fakeReason } from "../../fakeReasons";
 import { createBlueskyAdapter } from "@/src/platforms/bluesky/adapter";
-import { cardReasons } from "@/src/platforms/bluesky/cardPresenter";
 import { wireBluesky } from "@/src/platforms/bluesky/wire";
 import type { WireDependencies } from "@/src/platforms/bluesky/wire";
 
@@ -66,7 +66,7 @@ const fakeScore = (
       tier: feature.tier,
       reason: `reason:${feature.id}`,
     })),
-    reasons: features.map((feature) => `reason:${feature.id}`),
+    reasons: features.map((feature) => fakeReason(`reason:${feature.id}`, feature.tier)),
     confidence: 0.5,
     confidenceNote: "Extra lookups not run yet",
     caveat: "This can be wrong: fixture.",
@@ -359,27 +359,5 @@ describe("wireBluesky", () => {
 
     expect(document.querySelectorAll(BADGE_ELEMENT_NAME)).toHaveLength(0);
     expect(cardHost()).toBeNull();
-  });
-});
-
-describe("cardReasons", () => {
-  it("pairs each selected reason with its evidence tier and falls back to the highest delivered tier", () => {
-    const verdict: Verdict = {
-      ...fakeScore(
-        [],
-        { ref: { platform: "bluesky", handle: "a.b" }, provenance: {}, observedAt: 0 },
-        {} as PlatformWeights,
-        { policyVersion: 1 },
-      ),
-      evidence: [
-        { feature: "f", contribution: 1, group: "age", tier: 1, reason: "Joined 3 days ago" },
-      ],
-      reasons: ["Joined 3 days ago", "Carries the platform's own automated-account label"],
-      sourcesUsed: [0, 2],
-    };
-    expect(cardReasons(verdict)).toEqual([
-      { text: "Joined 3 days ago", tier: 1 },
-      { text: "Carries the platform's own automated-account label", tier: 2 },
-    ]);
   });
 });

@@ -1,5 +1,6 @@
 import { scoreAccount } from "@/src/core/scoring/engine";
 import { templatedFeatureIds } from "@/src/core/scoring/reasons";
+import { reasonTexts } from "../../../fakeReasons";
 import type { FeatureSpec, PlatformWeights } from "@/src/core/scoring/types";
 import { WeightsFileError, defaultWeights, parseWeightsFile } from "@/src/core/scoring/weights";
 import type { PlatformId, Verdict } from "@/src/core/types";
@@ -105,7 +106,7 @@ describe("defaultWeights", () => {
       { policyVersion: 1, now: NOW, sourcesAvailable: ALL_TIERS },
     );
     expect(verdict.tier).toBe("many");
-    expect(verdict.reasons).toEqual([
+    expect(reasonTexts(verdict)).toEqual([
       "Joined 3 weeks ago",
       "~140 posts/day since joining",
       "Following 4,900, followed by 12",
