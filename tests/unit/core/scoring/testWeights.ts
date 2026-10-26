@@ -143,6 +143,7 @@ export function signalsWith(options: SignalsOptions = {}): AccountSignals {
     ref: { platform: "x", handle: options.handle ?? "someone" },
     ...options.values,
     provenance,
+    tiersDelivered: [...tiers].sort(),
     observedAt: NOW,
   };
 }

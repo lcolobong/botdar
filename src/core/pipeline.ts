@@ -84,7 +84,6 @@ export interface MergeableSignals {
 interface AccountEntry extends MergeableSignals {
   verdict: Verdict | null;
   listeners: Set<VerdictListener>;
-  sourcesAvailable: Set<SourceTier>;
   posts: Set<Element>;
   pendingLookup: Promise<void> | null;
   /**
@@ -104,7 +103,12 @@ interface AttachedPost {
   listeners: Set<VerdictListener>;
 }
 
-const RESERVED_FIELDS: ReadonlySet<string> = new Set(["ref", "provenance", "observedAt"]);
+const RESERVED_FIELDS: ReadonlySet<string> = new Set([
+  "ref",
+  "provenance",
+  "tiersDelivered",
+  "observedAt",
+]);
 
 /** Field values are primitives or one flat object (`replyShare`), so a shallow comparison is exact. */
 function sameSignalValue(left: unknown, right: unknown): boolean {
@@ -119,6 +123,15 @@ function sameSignalValue(left: unknown, right: unknown): boolean {
     leftEntries.length === Object.keys(right).length &&
     leftEntries.every(([key, value]) => Object.is(value, (right as Record<string, unknown>)[key]))
   );
+}
+
+/** Records that a tier delivered data for the account; false when it was already recorded. */
+function markDelivered(signals: AccountSignals, tier: SourceTier): boolean {
+  if (signals.tiersDelivered.includes(tier)) {
+    return false;
+  }
+  signals.tiersDelivered = [...signals.tiersDelivered, tier].sort();
+  return true;
 }
 
 /**
@@ -204,7 +217,7 @@ export class AccountResolver {
     const entry: AccountEntry = this.entryFor(post.ref);
     entry.posts.add(post.element);
     mergeSignals(entry, this.adapter.extractDomSignals(post), 0, this.now());
-    entry.sourcesAvailable.add(0);
+    markDelivered(entry.signals, 0);
     this.recompute(entry);
 
     const listeners = new Set<VerdictListener>();
@@ -268,7 +281,7 @@ export class AccountResolver {
     if (entry.pendingLookup !== null) {
       return entry.pendingLookup;
     }
-    const alreadyTried: boolean = entry.lookupAttempted || entry.sourcesAvailable.has(2);
+    const alreadyTried: boolean = entry.lookupAttempted || entry.signals.tiersDelivered.includes(2);
     if (alreadyTried || this.activeSourceNeedsLogin()) {
       return Promise.resolve();
     }
@@ -333,7 +346,7 @@ export class AccountResolver {
     if (entry.lookupRunning || this.onSightQueue.has(entry.signals.ref.handle)) {
       return "pending";
     }
-    if (entry.sourcesAvailable.has(2)) {
+    if (entry.signals.tiersDelivered.includes(2)) {
       return "delivered";
     }
     if (this.activeSourceNeedsLogin()) {
@@ -493,8 +506,7 @@ export class AccountResolver {
   ): void {
     if (partial !== null) {
       const changed: boolean = mergeSignals(entry, partial, tier, this.now());
-      const newTier: boolean = !entry.sourcesAvailable.has(tier);
-      entry.sourcesAvailable.add(tier);
+      const newTier: boolean = markDelivered(entry.signals, tier);
       if (!changed && !newTier && entry.verdict !== null && !alwaysRescore) {
         return;
       }
@@ -506,8 +518,7 @@ export class AccountResolver {
 
   private recompute(entry: AccountEntry): Verdict {
     const features: Feature[] = this.adapter.toFeatures(entry.signals);
-    const sourcesAvailable: SourceTier[] = [...entry.sourcesAvailable].sort();
-    const verdict: Verdict = this.scorer(features, entry.signals, sourcesAvailable);
+    const verdict: Verdict = this.scorer(features, entry.signals, entry.signals.tiersDelivered);
     entry.verdict = verdict;
     for (const listener of entry.listeners) {
       listener(verdict);
@@ -522,11 +533,10 @@ export class AccountResolver {
         this.evictIdleEntries();
       }
       entry = {
-        signals: { ref: { ...ref }, provenance: {}, observedAt: 0 },
+        signals: { ref: { ...ref }, provenance: {}, tiersDelivered: [], observedAt: 0 },
         fieldObservedAt: {},
         verdict: null,
         listeners: new Set(),
-        sourcesAvailable: new Set(),
         posts: new Set(),
         pendingLookup: null,
         lookupRunning: false,

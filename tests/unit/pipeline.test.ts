@@ -132,7 +132,7 @@ const post = (handle = "someone"): PostRef => ({
 });
 
 const blankSignals = (): MergeableSignals => ({
-  signals: { ref: ref(), provenance: {}, observedAt: 0 },
+  signals: { ref: ref(), provenance: {}, tiersDelivered: [], observedAt: 0 },
   fieldObservedAt: {},
 });
 
@@ -305,6 +305,28 @@ describe("AccountResolver", () => {
     await handle.lookup();
     emit(ref(), { followers: 2 });
     expect(reasonTexts(handle.current())).toContain("followers@2");
+  });
+
+  it("keeps Tier 0 delivered after Tier 2 overwrites every field the page supplied", async () => {
+    const { resolver, resolve } = makeHarness();
+    resolve.mockResolvedValue({ displayName: "Lookup name" });
+    const handle: BadgeHandle = resolver.attach(post());
+
+    await handle.lookup();
+
+    expect(reasonTexts(handle.current())).toEqual(["displayName@2"]);
+    expect(handle.current().sourcesUsed).toEqual([0, 2]);
+  });
+
+  it("does not count a Tier 2 lookup that found nothing as delivered", async () => {
+    const { resolver, resolve } = makeHarness();
+    resolve.mockResolvedValue(null);
+    const handle: BadgeHandle = resolver.attach(post());
+
+    await handle.lookup();
+
+    expect(handle.current().sourcesUsed).toEqual([0]);
+    expect(handle.lookupStatus()).not.toBe("delivered");
   });
 
   it("serves a cache hit without calling the source", async () => {

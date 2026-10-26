@@ -39,7 +39,7 @@ describe("createXAdapter", () => {
       declaredAutomated: true,
     });
     const ids: string[] = adapter
-      .toFeatures({ ref: post.ref, provenance: {}, observedAt: 0 })
+      .toFeatures({ ref: post.ref, provenance: {}, tiersDelivered: [], observedAt: 0 })
       .map((feature) => feature.id);
     expect(ids).toEqual(["x.handleNameDigits", "x.handleTrailingDigits"]);
   });
