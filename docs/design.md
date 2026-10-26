@@ -64,7 +64,8 @@ tradeoffs are in [decisions/ADR-0017](decisions/ADR-0017-badge-wording-and-label
     automated, ↓ towards ordinary), the observation, a muted why clause after a middle dot, and a
     source dot per tier at the end (on the page, page data, profile lookup). A row wraps to two lines
     at most at the default font.
-  - **"Why this could be wrong"**: the caveat, then the confidence line when sources are missing. A
+  - **"Why this could be wrong"**: the caveat, then the confidence line when sources are missing
+    (a source that delivered data counts even when a later source overwrote all of its fields). A
     Declared bot card heads its neutral declared line "What this means" instead.
 
   The source legend sits between the blocks the first time a card opens in a session, and the footer

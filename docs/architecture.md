@@ -149,7 +149,8 @@ export interface AccountSignals {
   usernameChanges?: number;
   appStore?: string;
   replyShare?: { ratio: number; n: number };   // only when observable
-  provenance: Partial<Record<keyof AccountSignals, SourceTier>>;  // which tier set each field
+  provenance: Partial<Record<keyof AccountSignals, SourceTier>>;  // which tier set each field (source dots)
+  tiersDelivered: SourceTier[];       // tiers that delivered data for this account (confidence)
   observedAt: number;
 }
 
@@ -341,7 +342,9 @@ badge is removed, so a removed post is not kept alive by the context.
    state and the No read card; a finished lookup always rescores so every badge of the account hears
    that it settled.
 4. **Tier-merge rule:** a higher tier overwrites a lower tier's value for the same field; within the same
-   tier, newer wins. `provenance` records the tier for each field so confidence can be computed.
+   tier, newer wins. `provenance` records the tier for each field (the source dots). Which tiers delivered is tracked
+   separately in `tiersDelivered`, which the resolver maintains, because an overwritten field no longer
+   shows the tier that first supplied it; confidence reads `tiersDelivered`.
 5. `config.changed` from the background recomputes every verdict with the new effective config.
 6. The map holds at most 2,000 accounts per tab (`MAX_TRACKED_ACCOUNTS`); past that, the least
    recently touched accounts with no post on screen are evicted a batch at a time.
