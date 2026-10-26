@@ -2,11 +2,7 @@ import type { SourceTier } from "@/src/core/types";
 import { FeedbackButton } from "./FeedbackButton";
 import { Glyph } from "./Glyph";
 import { accessibleLabel, glyphFor, visibleLabel, type BadgeTier, type LabelStyle } from "./labels";
-
-export interface CardReason {
-  text: string;
-  tier: SourceTier;
-}
+import { ReasonRow, type CardReason } from "./ReasonRow";
 
 export interface HoverCardProps {
   id: string;
@@ -42,7 +38,7 @@ export function HoverCard(props: HoverCardProps) {
   return (
     <section
       id={props.id}
-      class="bd-card"
+      class={`bd-card bd-card--${badgeClass(props.tier)}`}
       role="dialog"
       aria-label={`${accessibleLabel(props.tier, props.loading)}: ${props.handle}`}
       aria-busy={props.loading}
@@ -85,17 +81,31 @@ function NoReadBody({ explanation }: { explanation: string | undefined }) {
   return explanation === undefined ? null : <p class="bd-card__explain">{explanation}</p>;
 }
 
+/**
+ * A declared card's closing line explains the label rather than arguing against it, so it is not
+ * headed as a reason the read could be wrong.
+ */
+function caveatLabel(tier: BadgeTier): string {
+  return tier === "declared" ? "What this means" : "Why this could be wrong";
+}
+
+/**
+ * The reasons and the caveat sit under their own labels, so the caveat reads as the case against
+ * the read rather than as part of its reasoning (ADR-0022).
+ */
 function ReadBody(props: HoverCardProps) {
   return (
     <>
-      <ul class="bd-card__reasons">
-        {props.reasons.map((reason: CardReason) => (
-          <li class="bd-card__reason" key={reason.text}>
-            <span class={`bd-dot bd-dot--${reason.tier}`} />
-            {reason.text}
-          </li>
-        ))}
-      </ul>
+      {props.reasons.length > 0 ? (
+        <>
+          <h3 class="bd-card__label">Why it leans this way</h3>
+          <ul class="bd-card__reasons">
+            {props.reasons.map((reason: CardReason) => (
+              <ReasonRow key={reason.text} reason={reason} />
+            ))}
+          </ul>
+        </>
+      ) : null}
       {props.showLegend ? (
         <p class="bd-card__legend">
           {([0, 1, 2] as const).map((tier: SourceTier) => (
@@ -106,8 +116,13 @@ function ReadBody(props: HoverCardProps) {
           ))}
         </p>
       ) : null}
+      {props.caveat ? (
+        <>
+          <h3 class="bd-card__label">{caveatLabel(props.tier)}</h3>
+          <p class="bd-card__caveat">{props.caveat}</p>
+        </>
+      ) : null}
       {props.confidenceNote ? <p class="bd-card__note">{props.confidenceNote}</p> : null}
-      {props.caveat ? <p class="bd-card__caveat">{props.caveat}</p> : null}
     </>
   );
 }

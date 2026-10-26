@@ -264,7 +264,7 @@ describe("wireBluesky", () => {
     expect(badgeButton("alice.example.com").getAttribute("aria-describedby")).toBe("botdar-card");
     expect(card?.querySelector(".bd-card__title")?.textContent).toBe("Likely bot");
     expect(
-      [...(card?.querySelectorAll(".bd-card__reason") ?? [])].map((item) => item.textContent),
+      [...(card?.querySelectorAll(".bd-card__fact") ?? [])].map((item) => item.textContent),
     ).toEqual(["reason:bsky.displayName", "reason:bsky.hasDefaultAvatar", "reason:bsky.followers"]);
     expect(card?.querySelector(".bd-card__reason .bd-dot--2")).not.toBeNull();
 

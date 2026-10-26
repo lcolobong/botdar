@@ -28,10 +28,18 @@
   color: var(--ink-muted);
   margin: 2px 0 0;
 }
+.bd-card__label {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
 .bd-card__reasons {
   list-style: none;
-  margin: var(--space-3) 0 0;
-  padding: var(--space-2) var(--space-3);
+  margin: 0;
+  /* Narrower than the explain box so a reason and its why clause fit in two lines at 320px. */
+  padding: var(--space-2);
   background: var(--surface-sunken);
   border-radius: var(--radius-sm);
   display: grid;
@@ -50,6 +58,10 @@
 }
 .bd-card__reason--ordinary {
   --lean-color: var(--tier-human-fg);
+}
+/* A declared reason is a disclosure, not a suspicion, so its marker takes the neutral declared colour. */
+.bd-card--declared .bd-card__reason--automated {
+  --lean-color: var(--tier-declared-fg);
 }
 .bd-card__lean {
   flex: none;
@@ -112,7 +124,7 @@
   color: var(--ink-muted);
 }
 .bd-card__caveat {
-  margin: var(--space-2) 0 0;
+  margin: 0;
   font-size: 13px;
   line-height: 18px;
 }

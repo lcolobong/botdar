@@ -11,10 +11,20 @@ function mount(overrides: Partial<HoverCardProps> = {}): HTMLElement {
     labelStyle: "plain",
     handle: "@news_update_48213",
     reasons: [
-      { text: "Joined 3 weeks ago", tier: 1 },
-      { text: "Following 4,900, followers 12", tier: 2 },
+      {
+        text: "Joined 3 weeks ago",
+        why: "new accounts often replace banned ones",
+        direction: "automated",
+        tier: 1,
+      },
+      {
+        text: "Following 4,900, followed by 12",
+        why: "mass-following nobody returned",
+        direction: "automated",
+        tier: 2,
+      },
     ],
-    caveat: "This can be wrong: news desks and brand accounts post at this rate too.",
+    caveat: "News desks and brand accounts post at this rate too.",
     loading: false,
     lowConfidence: false,
     showLegend: true,
@@ -35,10 +45,64 @@ describe("HoverCard", () => {
     expect(card.querySelectorAll(".bd-card__reason")).toHaveLength(2);
     expect(card.querySelector(".bd-card__reason .bd-dot--2")).not.toBeNull();
     expect(card.querySelector(".bd-card__legend")).not.toBeNull();
-    expect(card.querySelector(".bd-card__caveat")?.textContent).toContain("This can be wrong");
+    expect(card.querySelector(".bd-card__caveat")?.textContent).toContain("News desks");
     expect(card.querySelector("[role=dialog]")?.getAttribute("aria-label")).toBe(
       "Likely bot: @news_update_48213",
     );
+  });
+
+  it("labels the reasons and the caveat as separate blocks, with the note last", () => {
+    const card: HTMLElement = mount({ confidenceNote: "Extra lookups are off" });
+    const blocks: string[] = [
+      ...card.querySelectorAll(
+        ".bd-card__label, .bd-card__reasons, .bd-card__caveat, .bd-card__note",
+      ),
+    ].map((element: Element) => element.className);
+    expect(blocks).toEqual([
+      "bd-card__label",
+      "bd-card__reasons",
+      "bd-card__label",
+      "bd-card__caveat",
+      "bd-card__note",
+    ]);
+    const labels: string[] = [...card.querySelectorAll(".bd-card__label")].map(
+      (element: Element) => element.textContent ?? "",
+    );
+    expect(labels).toEqual(["Why it leans this way", "Why this could be wrong"]);
+    expect(card.querySelector(".bd-card__why")?.textContent).toBe(
+      " · new accounts often replace banned ones",
+    );
+    expect(card.querySelector(".bd-card__lean")?.getAttribute("aria-label")).toBe(
+      "Points towards automated",
+    );
+  });
+
+  it("heads a declared card's closing line as what the label means, with a neutral marker", () => {
+    const card: HTMLElement = mount({
+      tier: "declared",
+      reasons: [
+        {
+          text: "Carries the platform's own automated-account label",
+          why: "self-declared",
+          direction: "automated",
+          tier: 0,
+        },
+      ],
+      caveat: "The account operator chose to label it as automated.",
+    });
+    const labels: string[] = [...card.querySelectorAll(".bd-card__label")].map(
+      (element: Element) => element.textContent ?? "",
+    );
+    expect(labels).toEqual(["Why it leans this way", "What this means"]);
+    expect(card.querySelector(".bd-card--declared .bd-card__reason--automated")).not.toBeNull();
+  });
+
+  it("leaves out the reasons label when there are no reasons", () => {
+    const card: HTMLElement = mount({ reasons: [] });
+    const labels: string[] = [...card.querySelectorAll(".bd-card__label")].map(
+      (element: Element) => element.textContent ?? "",
+    );
+    expect(labels).toEqual(["Why this could be wrong"]);
   });
 
   it("uses the sus title but keeps the plain dialog label", () => {
@@ -68,6 +132,7 @@ describe("HoverCard", () => {
     expect(card.querySelector(".bd-card__reasons")).toBeNull();
     expect(card.querySelector(".bd-card__caveat")).toBeNull();
     expect(card.querySelector(".bd-card__note")).toBeNull();
+    expect(card.querySelector(".bd-card__label")).toBeNull();
     expect(card.querySelector(".bd-btn--link")?.textContent).toBe("Settings");
     expect(card.querySelectorAll(".bd-btn")).toHaveLength(1);
     expect(card.querySelector(".bd-badge--unknown")).not.toBeNull();
