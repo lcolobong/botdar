@@ -8,6 +8,7 @@ import {
   mergeSignals,
 } from "@/src/core/pipeline";
 import { RateLimitedError, RateLimiter } from "@/src/core/ratelimit";
+import { scoreAccount } from "@/src/core/scoring/engine";
 import type {
   AccountRef,
   AccountSignals,
@@ -23,6 +24,7 @@ import type {
   Verdict,
 } from "@/src/core/types";
 import { fakeReason, reasonTexts } from "../fakeReasons";
+import { testWeights } from "./core/scoring/testWeights";
 
 const ALL_TIERS: SourceTier[] = [0, 1, 2];
 
@@ -70,7 +72,7 @@ interface Harness {
 
 const makeHarness = (
   tiers: { t1: boolean; t2: boolean } = { t1: true, t2: true },
-  options: { cache?: TtlLruCache<string, PartialSignals> } = {},
+  options: { cache?: TtlLruCache<string, PartialSignals>; scorer?: Scorer } = {},
 ): Harness => {
   let emit: SignalEmitter = () => undefined;
   const stopPassive = vi.fn(() => {
@@ -106,7 +108,7 @@ const makeHarness = (
     options.cache ?? new TtlLruCache<string, PartialSignals>(10, TIER2_CACHE_TTL_MS);
   const resolver = new AccountResolver({
     adapter,
-    scorer: fakeScorer,
+    scorer: options.scorer ?? fakeScorer,
     config: config(tiers),
     limiter,
     cache,
@@ -316,6 +318,25 @@ describe("AccountResolver", () => {
 
     expect(reasonTexts(handle.current())).toEqual(["displayName@2"]);
     expect(handle.current().sourcesUsed).toEqual([0, 2]);
+  });
+
+  it("scores no missing-source caveat once Tiers 1 and 2 overwrite every page field", async () => {
+    const scorer: Scorer = (features, signals) =>
+      scoreAccount(features, signals, testWeights, {
+        policyVersion: 1,
+        sourcesAvailable: ALL_TIERS,
+      });
+    const { resolver, emit, resolve } = makeHarness(undefined, { scorer });
+    resolve.mockResolvedValue({ displayName: "Lookup name" });
+    const handle: BadgeHandle = resolver.attach(post());
+    emit(ref(), { displayName: "Relay name" });
+
+    await handle.lookup();
+
+    const verdict: Verdict = handle.current();
+    expect(verdict.sourcesUsed).toEqual([0, 1, 2]);
+    expect(verdict.sourcesMissing).toEqual([]);
+    expect(verdict.caveat).not.toMatch(/could not be loaded/);
   });
 
   it("does not count a Tier 2 lookup that found nothing as delivered", async () => {
