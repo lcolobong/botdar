@@ -44,6 +44,27 @@
   font-size: 13px;
   line-height: 18px;
 }
+/* One colour token per direction, so a strength scale can later grade them without new markup. */
+.bd-card__reason--automated {
+  --lean-color: var(--tier-many-fg);
+}
+.bd-card__reason--ordinary {
+  --lean-color: var(--tier-human-fg);
+}
+.bd-card__lean {
+  flex: none;
+  width: 10px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--lean-color);
+}
+.bd-card__line {
+  flex: 1;
+  min-width: 0;
+}
+.bd-card__why {
+  color: var(--ink-muted);
+}
 .bd-dot {
   width: 6px;
   height: 6px;
