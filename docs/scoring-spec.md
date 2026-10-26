@@ -48,8 +48,8 @@ file (see "Policy override semantics").
 - `thresholds`: probability cut-offs for the `some` and `many` tiers.
 - `groupCaps`: optional cap on the summed positive contributions of a whole independence group, so three
   weak handle features cannot stack into a strong one.
-- `confidenceWeights`: how much each source tier contributes to confidence when it delivered at least one
-  field. They need not sum to 1; confidence is normalised.
+- `confidenceWeights`: how much each source tier contributes to confidence when it delivered data for the
+  account (see step 6). They need not sum to 1; confidence is normalised.
 - Feature `kind`:
   - `bins`: `[lo, hi, logOdds]` triples, half-open `[lo, hi)`, `null` = unbounded. The first matching bin
     wins. A value matching no bin contributes 0.
@@ -264,7 +264,7 @@ anything that costs per-account time, money or patience is skipped, and the skip
 
 ## Engine algorithm
 
-Input: `Feature[]` from the platform adapter, the effective platform config, and the signals' provenance.
+Input: `Feature[]` from the platform adapter, the effective platform config, and the signals' `tiersDelivered`.
 
 1. **Declared override.** If `signals.declaredAutomated` is true, return tier `declared`, confidence 1,
    no scoring. The one reason names what declared it (`signals.declaredBy`): the platform's own label
@@ -284,8 +284,12 @@ Input: `Feature[]` from the platform adapter, the effective platform config, and
    the cap, scale those positive contributions down proportionally so the sum equals the cap. Negative
    contributions are left alone.
 5. **Logistic.** `logOdds = prior + Σ contributions`; `p = 1 / (1 + e^(-logOdds))`.
-6. **Confidence.** Let `delivered` be the set of tiers that set at least one field in `provenance`.
-   `confidence = Σ confidenceWeights[t] for t in delivered / Σ confidenceWeights[all]`. Conservative mode
+6. **Confidence.** Let `delivered` be `signals.tiersDelivered`, the tiers that delivered data for this account. The
+   resolver tracks it per account (Tier 0 when the page was read, Tier 1 when a relayed response was
+   absorbed, Tier 2 when a lookup or cache hit returned data; a tier that returned nothing is not
+   delivered). It is not inferred from `provenance`, because a higher tier overwriting every field a
+   lower tier supplied would otherwise erase the lower tier from the count.
+      `confidence = Σ confidenceWeights[t] for t in delivered / Σ confidenceWeights[all]`. Conservative mode
    therefore reads as lower confidence by design.
 7. **Bucketing.**
    - `many` requires all of: `p ≥ thresholds.many`; at least two evidence items with
