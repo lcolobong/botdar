@@ -3,6 +3,11 @@ import { render } from "preact";
 import { fakeBrowser } from "wxt/testing/fake-browser";
 import { listFeedback, recordFeedback } from "@/src/core/feedback";
 import type { FeedbackInput } from "@/src/core/feedback";
+import {
+  LOOKUP_KEY_PREFIX,
+  LOOKUP_SALT_KEY,
+  PersistedLookupStore,
+} from "@/src/core/persistedLookups";
 import { POLICY_LKG_KEY } from "@/src/core/policy/loader";
 import type { Policy } from "@/src/core/policy/schema";
 import { SETTINGS_STORAGE_KEY, defaultSettings } from "@/src/core/settings";
@@ -44,6 +49,17 @@ function buttonNamed(container: HTMLElement, text: string): HTMLButtonElement {
   return button;
 }
 
+function lookupsRowButton(container: HTMLElement, text: string): HTMLButtonElement {
+  const row: Element | undefined = Array.from(container.querySelectorAll(".bd-row")).find(
+    (candidate) => candidate.querySelector("p")?.textContent === "Clear cached lookups",
+  );
+  const button: HTMLButtonElement | undefined = Array.from(
+    row?.querySelectorAll("button") ?? [],
+  ).find((candidate) => candidate.textContent === text);
+  if (!button) throw new Error(`no lookups button named ${text}`);
+  return button;
+}
+
 const headings = (container: HTMLElement): string[] =>
   Array.from(container.querySelectorAll("h2")).map((heading) => heading.textContent ?? "");
 
@@ -60,9 +76,18 @@ async function storedSettings(): Promise<Settings> {
   return stored[SETTINGS_STORAGE_KEY] as Settings;
 }
 
+async function storedLookupKeys(): Promise<string[]> {
+  const everything: Record<string, unknown> = await fakeBrowser.storage.local.get(null);
+  return Object.keys(everything).filter((key) => key.startsWith(LOOKUP_KEY_PREFIX));
+}
+
 beforeEach(() => {
   fakeBrowser.reset();
   document.body.innerHTML = "";
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("options App", () => {
@@ -127,6 +152,89 @@ describe("options App", () => {
     expect(toggle?.getAttribute("aria-checked")).toBe("false");
     toggle?.click();
     await vi.waitFor(async () => expect((await storedSettings()).developerMode).toBe(true));
+  });
+
+  it("persists the remember-lookups toggle, on by default, and turning it off wipes the store", async () => {
+    await new PersistedLookupStore().write("x", "someone", { followers: 1 });
+    const container: HTMLDivElement = await mount();
+    const toggle: HTMLButtonElement | null = container.querySelector(
+      '[role=switch][aria-label="Remember lookups for 7 days"]',
+    );
+    expect(toggle?.getAttribute("aria-checked")).toBe("true");
+    toggle?.click();
+    await vi.waitFor(async () => expect((await storedSettings()).persistLookups).toBe(false));
+    await vi.waitFor(async () => expect(await storedLookupKeys()).toHaveLength(0));
+  });
+
+  it("clears the cached lookups and rotates the salt without touching feedback", async () => {
+    await recordFeedback(feedback("one"));
+    await new PersistedLookupStore().write("x", "someone", { followers: 1 });
+    const saltBefore: unknown = (await fakeBrowser.storage.local.get(LOOKUP_SALT_KEY))[
+      LOOKUP_SALT_KEY
+    ];
+    const container: HTMLDivElement = await mount();
+    expect(rowTitles(container)).toContain("Clear cached lookups");
+
+    lookupsRowButton(container, "Clear cache").click();
+    await vi.waitFor(() =>
+      expect(container.textContent).toContain("This removes every remembered lookup"),
+    );
+    expect(await storedLookupKeys()).toHaveLength(1);
+    lookupsRowButton(container, "Confirm clear cache").click();
+
+    await vi.waitFor(() => expect(container.textContent).toContain("Cleared."));
+    expect(await storedLookupKeys()).toHaveLength(0);
+    const saltAfter: unknown = (await fakeBrowser.storage.local.get(LOOKUP_SALT_KEY))[
+      LOOKUP_SALT_KEY
+    ];
+    expect(saltAfter).not.toBe(saltBefore);
+    expect(await listFeedback()).toHaveLength(1);
+  });
+
+  it("cancels the lookup clear without touching anything", async () => {
+    await new PersistedLookupStore().write("x", "someone", { followers: 1 });
+    const container: HTMLDivElement = await mount();
+
+    lookupsRowButton(container, "Clear cache").click();
+    await vi.waitFor(() => lookupsRowButton(container, "Cancel"));
+    lookupsRowButton(container, "Cancel").click();
+
+    await vi.waitFor(() => lookupsRowButton(container, "Clear cache"));
+    expect(await storedLookupKeys()).toHaveLength(1);
+  });
+
+  it("says so when clearing the lookups fails", async () => {
+    vi.spyOn(PersistedLookupStore.prototype, "clear").mockRejectedValueOnce(new Error("quota"));
+    const container: HTMLDivElement = await mount();
+
+    lookupsRowButton(container, "Clear cache").click();
+    await vi.waitFor(() => lookupsRowButton(container, "Confirm clear cache"));
+    lookupsRowButton(container, "Confirm clear cache").click();
+
+    await vi.waitFor(() => expect(container.textContent).toContain("Could not clear"));
+  });
+
+  it("drops the Cleared caption after a timeout and when a new lookup is stored", async () => {
+    const container: HTMLDivElement = await mount();
+    const confirmClear = async (): Promise<void> => {
+      lookupsRowButton(container, "Clear cache").click();
+      await vi.waitFor(() => lookupsRowButton(container, "Confirm clear cache"));
+      lookupsRowButton(container, "Confirm clear cache").click();
+      await vi.waitFor(() => expect(container.textContent).toContain("Cleared."));
+    };
+
+    await confirmClear();
+    await new PersistedLookupStore().write("x", "someone", { followers: 1 });
+    await vi.waitFor(() => expect(container.textContent).not.toContain("Cleared."));
+
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      await confirmClear();
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(container.textContent).not.toContain("Cleared.");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("counts the stored reports and exports them as botdar-feedback.json", async () => {
