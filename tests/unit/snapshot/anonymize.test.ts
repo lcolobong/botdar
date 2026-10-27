@@ -123,6 +123,18 @@ describe("anonymizeSnapshot on X and Bluesky markup", () => {
     expect(result.html).toContain("default_profile_images/default_profile_x96.png");
   });
 
+  it("gives X status ids that differ in one place distinct numeric fakes, the same id the same fake", () => {
+    const html = `<a href="/a/status/1234567890123456781">1</a><a href="/a/status/1234567890123456782">2</a>
+      <a href="/a/status/1234567890123456781">3</a>`;
+    const fakeIds: string[] = [
+      ...anonymizeSnapshot(html, "x").html.matchAll(/status\/(\d+)"/g),
+    ].map((match) => match[1] ?? "");
+    expect(fakeIds).toHaveLength(3);
+    expect(fakeIds.every((fakeId) => /^\d{19}$/.test(fakeId))).toBe(true);
+    expect(fakeIds[0]).not.toBe(fakeIds[1]);
+    expect(fakeIds[0]).toBe(fakeIds[2]);
+  });
+
   it("replaces Bluesky handles and DIDs, keeping bsky.social apart from custom domains", () => {
     const html = `<div data-testid="feedItem-by-jane.bsky.social"><a href="/profile/jane.bsky.social">@jane.bsky.social</a></div>
       <a href="/profile/did:plc:abcdefghijklmnopqrstuvwx/post/3kabcdefghij2">x</a>
