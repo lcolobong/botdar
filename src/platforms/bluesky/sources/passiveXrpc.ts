@@ -6,9 +6,18 @@
 import { onRelay } from "../../../core/relay";
 import type { RelayEnvelope } from "../../../core/relay";
 import type { PartialSignals, SignalEmitter, SignalSource } from "../../../core/types";
+import { authorFeedPosts } from "../parsers/authorFeed";
+import type { AuthorFeedPosts } from "../parsers/authorFeed";
 import { parseFeedAuthors, parseProfiles } from "../parsers/profiles";
 import type { ParsedBlueskyProfile } from "../parsers/profiles";
-import { BLUESKY_RELAY_KIND, FEED_OPERATIONS, PROFILE_OPERATIONS } from "../xrpc";
+import {
+  AUTHOR_FEED_FILTER,
+  AUTHOR_FEED_OPERATION,
+  BLUESKY_RELAY_KIND,
+  authorFeedFilterOf,
+  FEED_OPERATIONS,
+  PROFILE_OPERATIONS,
+} from "../xrpc";
 
 export const PASSIVE_XRPC_SOURCE_ID = "bluesky.xrpc";
 
@@ -33,6 +42,14 @@ function profilesIn(envelope: RelayEnvelope): ParsedBlueskyProfile[] {
   return [];
 }
 
+/** Only the page's Posts-tab author feed adds post times: the population the lookup reads too. */
+function isCadenceAuthorFeed(envelope: RelayEnvelope): boolean {
+  return (
+    envelope.op === AUTHOR_FEED_OPERATION &&
+    authorFeedFilterOf(envelope.query) === AUTHOR_FEED_FILTER
+  );
+}
+
 export function createPassiveXrpcSource(target: Window = window): SignalSource {
   return {
     id: PASSIVE_XRPC_SOURCE_ID,
@@ -43,8 +60,17 @@ export function createPassiveXrpcSource(target: Window = window): SignalSource {
       onRelay(
         BLUESKY_RELAY_KIND,
         (envelope: RelayEnvelope): void => {
+          const postTimes: AuthorFeedPosts[] = isCadenceAuthorFeed(envelope)
+            ? authorFeedPosts(envelope.body)
+            : [];
           for (const profile of profilesIn(envelope)) {
-            emit(profile.ref, withoutDeclaredOverride(profile.signals));
+            const timestamps: number[] | undefined = postTimes.find(
+              (posts) => posts.did === profile.ref.id,
+            )?.timestamps;
+            emit(profile.ref, {
+              ...withoutDeclaredOverride(profile.signals),
+              ...(timestamps === undefined ? {} : { postTimestamps: timestamps }),
+            });
           }
         },
         target,

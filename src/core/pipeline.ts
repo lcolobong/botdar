@@ -85,6 +85,14 @@ export interface AccountResolverOptions {
   now?: () => number;
 }
 
+interface ActiveRunOptions {
+  settleWhenTurnedAway: boolean;
+  /** The sources to run; every active Tier 2 source unless a storage hit answered for some. */
+  sources?: SignalSource[];
+  /** The run tops up a storage hit, so it is neither cached nor persisted. */
+  topUp?: boolean;
+}
+
 export interface MergeableSignals {
   signals: AccountSignals;
   /** When each field was last observed, for the same-tier "newer wins" rule. */
@@ -269,7 +277,10 @@ export class AccountResolver {
     this.persistence = options.persistence;
     this.now = options.now ?? Date.now;
     this.onSightQueue = new LookupQueue({
-      limiter: this.limiter,
+      // A queued lookup is ready only when every call it makes can be paid for.
+      limiter: {
+        nextAllowedAt: () => this.limiter.nextAllowedAt(this.activeLookupSources().length),
+      },
       now: this.now,
       run: (handle) => this.runQueuedLookup(handle),
     });
@@ -377,13 +388,24 @@ export class AccountResolver {
     return entry.pendingLookup ?? Promise.resolve();
   }
 
-  /** Memory missed: a storage hit settles the account without a platform call; a miss fetches. */
+  /**
+   * Memory missed: a storage hit settles the account without a call to the sources it answers for;
+   * a source whose fields storage never holds (`memoryOnly`, the Bluesky author feed) still runs,
+   * for its fields alone. A miss fetches everything.
+   */
   private async lookupPersistedThenFetch(entry: AccountEntry): Promise<void> {
-    if ((await this.settleFromPersisted(entry)) || !this.stillWorthFetching(entry)) {
+    const settled: boolean = await this.settleFromPersisted(entry);
+    if (!this.stillWorthFetching(entry)) {
+      return;
+    }
+    const sources: SignalSource[] = settled
+      ? this.activeLookupSources().filter((source) => source.memoryOnly === true)
+      : this.activeLookupSources();
+    if (sources.length === 0) {
       return;
     }
     recordLookup("started");
-    await this.runActiveSources(entry);
+    await this.runActiveSources(entry, { settleWhenTurnedAway: true, sources, topUp: settled });
   }
 
   /** The on-sight variant: a storage hit skips the queue, so it does not wait for a rate-limit token. */
@@ -516,7 +538,12 @@ export class AccountResolver {
   }
 
   private hasActiveLookupSource(): boolean {
-    return this.adapter.sources.some(
+    return this.activeLookupSources().length > 0;
+  }
+
+  /** The Tier 2 sources a lookup runs; each call costs one limiter token. */
+  private activeLookupSources(): SignalSource[] {
+    return this.adapter.sources.filter(
       (source) => source.kind === "active" && source.tier === 2 && source.resolve !== undefined,
     );
   }
@@ -618,32 +645,33 @@ export class AccountResolver {
    */
   private async runActiveSources(
     entry: AccountEntry,
-    { settleWhenTurnedAway }: { settleWhenTurnedAway: boolean } = { settleWhenTurnedAway: true },
+    {
+      settleWhenTurnedAway,
+      sources = this.activeLookupSources(),
+      topUp = false,
+    }: ActiveRunOptions = { settleWhenTurnedAway: true },
   ): Promise<boolean> {
     const ref: AccountRef = entry.signals.ref;
     const collected: PartialSignals = {};
     let delivered = false;
     let outcome: "empty" | "rateLimited" | "failed" = "empty";
-    let ran = false;
+    // One token per platform call, all taken up front: a lookup that got only some of its calls
+    // would be cached as if whole and hide the missing source's fields for the cache's lifetime.
+    const ran: boolean =
+      sources.length > 0 && !this.disposed && this.limiter.tryAcquire(sources.length);
+    if (sources.length > 0 && !ran) {
+      outcome = "rateLimited";
+    }
     entry.lookupRunning = true;
-    for (const source of this.adapter.sources) {
-      if (source.kind !== "active" || source.tier !== 2 || source.resolve === undefined) {
-        continue;
-      }
-      // One token per platform call; an open circuit or an empty bucket skips the rest of the lookup.
-      if (this.disposed || !this.limiter.tryAcquire()) {
-        outcome = "rateLimited";
-        break;
-      }
-      entry.lookupAttempted = true;
-      ran = true;
+    entry.lookupAttempted ||= ran;
+    for (const source of ran ? sources : []) {
       try {
-        const partial: PartialSignals | null = await source.resolve(ref, {
+        const partial: PartialSignals | null | undefined = await source.resolve?.(ref, {
           signal: this.abortController.signal,
           config: this.config,
         });
         this.limiter.reportSuccess();
-        if (partial !== null) {
+        if (partial !== null && partial !== undefined) {
           Object.assign(collected, partial);
           delivered = true;
         }
@@ -660,11 +688,16 @@ export class AccountResolver {
     if (this.disposed) {
       return ran;
     }
-    recordLookup(delivered ? "delivered" : outcome);
+    // A lookup where any call failed is not whole: what arrived still scores, but it is neither
+    // cached nor recorded as delivered, so the next hover asks again.
+    const whole: boolean = outcome === "empty";
+    recordLookup(delivered && whole ? "delivered" : outcome);
     if (!ran && !settleWhenTurnedAway) {
       return false;
     }
-    if (delivered) {
+    // A top-up after a storage hit leaves the cached snapshot as it is: its memory copy keeps the
+    // stored entry's expiry, and the topped-up fields live on the account for this tab.
+    if (delivered && whole && !topUp) {
       this.cache.set(ref.handle, collected);
       this.persist(ref.handle, collected);
     }

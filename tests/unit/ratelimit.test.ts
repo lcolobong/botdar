@@ -17,6 +17,20 @@ describe("RateLimiter", () => {
 
   const makeLimiter = (): RateLimiter => new RateLimiter({ perMinute: 60, burst: 3 });
 
+  describe("several tokens at once", () => {
+    it("takes them all or none, and says when they will be there", () => {
+      let now = 0;
+      const limiter = new RateLimiter({ perMinute: 60, burst: 3, now: () => now });
+      expect(limiter.tryAcquire(2)).toBe(true);
+      expect(limiter.tryAcquire(2)).toBe(false);
+      expect(limiter.nextAllowedAt(2)).toBe(1000);
+      expect(limiter.tryAcquire()).toBe(true);
+      now = 2000;
+      expect(limiter.tryAcquire(2)).toBe(true);
+      expect(limiter.tryAcquire(4)).toBe(false);
+    });
+  });
+
   describe("token bucket", () => {
     it("allows up to the burst immediately, then refuses", () => {
       const limiter = makeLimiter();

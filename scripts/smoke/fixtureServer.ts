@@ -63,6 +63,15 @@ export const smokeFeedScenes: readonly SmokeFeedScene[] = [
     fixtureFile: "comments.html",
   },
   { platform: "bluesky", scene: "feed", path: "/" },
+  // The feed page again, at a profile path where its script also fetches alice.example.com's
+  // author feed (a hand-written body under tests/fixtures/smoke/).
+  {
+    platform: "bluesky",
+    scene: "profile",
+    path: "/profile/alice.example.com",
+    fixtureFile: "feed.html",
+    hoverAnchor: 'a[href="/profile/alice.example.com"]',
+  },
 ];
 
 export interface FixtureSource {
@@ -174,6 +183,11 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
     platform: "bluesky",
     path: "/xrpc/app.bsky.actor.getProfiles",
     file: "tests/fixtures/bluesky/get-profiles.json",
+  },
+  {
+    platform: "bluesky",
+    path: "/xrpc/app.bsky.feed.getAuthorFeed",
+    file: "tests/fixtures/smoke/bluesky-author-feed.json",
   },
   // The recorded thread's OP. The other authors answer 404, so a capture shows both a profile
   // that was read and one that returned nothing.

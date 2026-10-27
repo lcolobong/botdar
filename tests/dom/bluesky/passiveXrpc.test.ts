@@ -13,10 +13,17 @@ function loadFixture(name: string): unknown {
   );
 }
 
-const dispatchEnvelope = (op: string | undefined, body: unknown): void => {
+const dispatchEnvelope = (op: string | undefined, body: unknown, query?: string): void => {
   window.dispatchEvent(
     new MessageEvent("message", {
-      data: { __botdar: 1, v: 1, kind: "bsky.xrpc", ...(op === undefined ? {} : { op }), body },
+      data: {
+        __botdar: 1,
+        v: 1,
+        kind: "bsky.xrpc",
+        ...(op === undefined ? {} : { op }),
+        ...(query === undefined ? {} : { query }),
+        body,
+      },
       origin: location.origin,
       source: window,
     }),
@@ -75,6 +82,31 @@ describe("passive XRPC source", () => {
   ])("walks %s bodies for authors", (op, fixture) => {
     dispatchEnvelope(op, loadFixture(fixture));
     expect(emitted.length).toBeGreaterThan(0);
+  });
+
+  it("adds post times only from a Posts-tab getAuthorFeed body", () => {
+    const owner = { did: "did:plc:owner", handle: "owner.example.com" };
+    const body = {
+      feed: [
+        { post: { author: owner, indexedAt: "2026-10-21T10:00:00.000Z" } },
+        { post: { author: owner, indexedAt: "2026-10-21T12:00:00.000Z" } },
+      ],
+    };
+    const postsTab = "?actor=owner.example.com&filter=posts_and_author_threads&limit=30";
+    dispatchEnvelope("app.bsky.feed.getAuthorFeed", body, postsTab);
+    dispatchEnvelope("app.bsky.feed.getAuthorFeed", body, "?actor=x&filter=posts_with_replies");
+    dispatchEnvelope("app.bsky.feed.getAuthorFeed", body);
+    dispatchEnvelope("app.bsky.feed.getTimeline", body, postsTab);
+
+    const emissions = emitted.filter((entry) => entry.ref.handle === "owner.example.com");
+    expect(emissions).toHaveLength(4);
+    expect(emissions[0]?.partial.postTimestamps).toEqual([
+      Date.parse("2026-10-21T10:00:00.000Z"),
+      Date.parse("2026-10-21T12:00:00.000Z"),
+    ]);
+    for (const entry of emissions.slice(1)) {
+      expect(entry.partial).not.toHaveProperty("postTimestamps");
+    }
   });
 
   it("reads getProfiles bodies with their counts", () => {

@@ -10,7 +10,12 @@
  * that residual risk is documented in docs/architecture.md (threat model) and accepted (ADR-0011).
  */
 import { MAX_RELAY_BODY_CHARS, postRelay } from "../../core/relay";
-import { BLUESKY_RELAY_KIND, xrpcOperationOf } from "./xrpc";
+import {
+  AUTHOR_FEED_OPERATION,
+  BLUESKY_RELAY_KIND,
+  MAX_RELAYED_QUERY_LENGTH,
+  xrpcOperationOf,
+} from "./xrpc";
 
 type FetchFn = typeof globalThis.fetch;
 
@@ -21,8 +26,18 @@ function requestUrlOf(input: RequestInfo | URL): string {
   return input instanceof URL ? input.href : input.url;
 }
 
+/** The author feed's query string (its filter decides whether its posts count), capped. */
+function authorFeedQueryOf(operation: string, requestUrl: string): string | undefined {
+  if (operation !== AUTHOR_FEED_OPERATION) {
+    return undefined;
+  }
+  const query: string = new URL(requestUrl, "https://bsky.app").search;
+  return query.length <= MAX_RELAYED_QUERY_LENGTH ? query : undefined;
+}
+
 async function relayResponseBody(
   operation: string,
+  query: string | undefined,
   response: Response,
   target: Window,
 ): Promise<void> {
@@ -33,7 +48,11 @@ async function relayResponseBody(
       return;
     }
     const body: unknown = JSON.parse(text);
-    postRelay(BLUESKY_RELAY_KIND, { op: operation, body }, target);
+    postRelay(
+      BLUESKY_RELAY_KIND,
+      { op: operation, ...(query === undefined ? {} : { query }), body },
+      target,
+    );
   } catch {
     // A non-JSON or already-consumed body is the interceptor's loss, never the page's.
   }
@@ -61,12 +80,15 @@ export function installXrpcInterceptor(target: Window = window): void {
   ): Promise<Response> {
     const response: Response = await original.call(this ?? target, input, init);
     try {
-      const operation: string | undefined = xrpcOperationOf(
-        requestUrlOf(input),
-        target.location.href,
-      );
+      const requestUrl: string = requestUrlOf(input);
+      const operation: string | undefined = xrpcOperationOf(requestUrl, target.location.href);
       if (operation !== undefined) {
-        void relayResponseBody(operation, response, target);
+        void relayResponseBody(
+          operation,
+          authorFeedQueryOf(operation, requestUrl),
+          response,
+          target,
+        );
       }
     } catch {
       // Matching must never change what the page receives, even when reading the input throws.
