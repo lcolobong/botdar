@@ -63,6 +63,14 @@ describe("X thread replies", () => {
     });
   });
 
+  it("records a reply with no text, whose links arrive from Tier 1", () => {
+    const reply: Element | undefined = articles().find(
+      (article) => threadReplyOf(article, THREAD_URL) !== undefined,
+    );
+    reply?.querySelector('[data-testid="tweetText"]')?.remove();
+    expect(threadReplyOf(reply as Element, THREAD_URL)?.text).toBe("");
+  });
+
   it("never records the root or an ancestor", () => {
     const [ancestor, root] = articles();
     expect(threadReplyOf(ancestor as Element, THREAD_URL)).toBeUndefined();

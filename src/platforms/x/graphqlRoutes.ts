@@ -10,6 +10,8 @@ export const X_GRAPHQL_RELAY_KIND = "x.graphql";
 export const X_GRAPHQL_REQUEST_RELAY_KIND = "x.graphql.request";
 
 export const ABOUT_ACCOUNT_OPERATION = "AboutAccountQuery";
+/** A post page's conversation: the root, its ancestors and the replies the page shows. */
+export const THREAD_OPERATION = "TweetDetail";
 
 /**
  * A profile's own posts, which the page fetches when someone opens the profile and scrolls. Only
@@ -31,7 +33,7 @@ export const X_GRAPHQL_OPERATIONS: ReadonlySet<string> = new Set([
   "SearchTimeline",
   PROFILE_TIMELINE_OPERATION,
   PROFILE_REPLIES_OPERATION,
-  "TweetDetail",
+  THREAD_OPERATION,
   "UserByScreenName",
   ABOUT_ACCOUNT_OPERATION,
   "Followers",

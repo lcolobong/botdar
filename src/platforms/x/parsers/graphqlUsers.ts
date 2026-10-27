@@ -8,10 +8,17 @@
  * older shape keeps all of that under `legacy.*`. The newer field wins whenever both are present.
  * Posts keep their text under `legacy.full_text` and their author under `core.user_results.result`.
  */
+import type { UnknownRecord } from "../../../core/json/untrusted";
+import {
+  isRecord,
+  readBoolean,
+  readCount,
+  readRecord,
+  readString,
+} from "../../../core/json/untrusted";
 import type { AccountRef, PartialSignals, VerifiedKind } from "../../../core/types";
 import { MAX_POST_TEXT_LENGTH } from "../../../core/types";
-
-type UnknownRecord = Record<string, unknown>;
+import { expandedLinksOf } from "./postLinks";
 
 export interface ParsedXUser {
   ref: AccountRef;
@@ -36,6 +43,8 @@ export interface ParsedXPost {
   createdAt?: number;
   /** Whether the post answers another post. A repost wrapper is never one. */
   isReply: boolean;
+  /** The pages the post links, expanded from t.co (postLinks.ts); omitted when it links none. */
+  links?: string[];
 }
 
 export interface ParsedXBody {
@@ -72,33 +81,6 @@ const MONTH_ABBREVIATIONS = [
 const X_TIMESTAMP_PATTERN =
   /^[A-Za-z]{3} ([A-Za-z]{3}) (\d{1,2}) (\d{2}):(\d{2}):(\d{2}) ([+-])(\d{2})(\d{2}) (\d{4})$/;
 const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T/;
-
-// MARK: - Type guards
-
-function isRecord(value: unknown): value is UnknownRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readRecord(parent: UnknownRecord | undefined, key: string): UnknownRecord | undefined {
-  const value = parent?.[key];
-  return isRecord(value) ? value : undefined;
-}
-
-function readString(parent: UnknownRecord | undefined, key: string): string | undefined {
-  const value = parent?.[key];
-  return typeof value === "string" ? value : undefined;
-}
-
-function readBoolean(parent: UnknownRecord | undefined, key: string): boolean | undefined {
-  const value = parent?.[key];
-  return typeof value === "boolean" ? value : undefined;
-}
-
-/** Non-negative safe integers only; X occasionally serialises counts as strings, which stay unobserved. */
-function readCount(parent: UnknownRecord | undefined, key: string): number | undefined {
-  const value = parent?.[key];
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
-}
 
 // MARK: - Field readers
 
@@ -256,6 +238,10 @@ function asPost(node: UnknownRecord): ParsedXPost | undefined {
     : (longPostTextOf(node) ?? readString(legacy, "full_text"));
   if (text !== undefined) {
     post.text = text.slice(0, MAX_SINGLE_POST_TEXT_LENGTH);
+  }
+  const links: string[] = isRepost ? [] : expandedLinksOf(node);
+  if (links.length > 0) {
+    post.links = links;
   }
   // GUESS: a post's own time is legacy.created_at in X's weekday-first format, as on the user
   // object; the recorded timeline bodies under tests/fixtures/x/graphql/ do not carry it.

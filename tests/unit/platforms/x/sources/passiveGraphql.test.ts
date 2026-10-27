@@ -35,6 +35,24 @@ const relay = (op: string, body: unknown, query?: string): void => {
 
 type Emission = [AccountRef, PartialSignals];
 
+/** Gives the post with `statusId` in a parsed body one link, the way X states it. */
+function withLinks(body: unknown, statusId: string, expandedUrl: string): void {
+  const pending: unknown[] = [body];
+  while (pending.length > 0) {
+    const node: unknown = pending.pop();
+    if (typeof node !== "object" || node === null) continue;
+    const record = node as Record<string, unknown>;
+    if (record.rest_id === statusId && typeof record.legacy === "object") {
+      (record.legacy as Record<string, unknown>).entities = {
+        urls: [{ url: "https://t.co/abc", expanded_url: expandedUrl }],
+      };
+      return;
+    }
+    pending.push(...Object.values(record));
+  }
+  throw new Error(`no post ${statusId}`);
+}
+
 function start(): { emissions: Emission[]; stop: () => void; source: SignalSource } {
   const emissions: Emission[] = [];
   const source: SignalSource = createPassiveGraphqlSource();
@@ -216,6 +234,20 @@ describe("createPassiveGraphqlSource", () => {
     for (const [ref] of emissions) {
       expect(ref.platform).toBe("x");
     }
+  });
+
+  it("hands on the expanded links of a conversation's posts by status id, only from TweetDetail", () => {
+    const body = loadFixture("tweet-detail-legacy.json");
+    withLinks(body, "1600000000000000002", "https://www.example-gazette.net/story");
+    const heard: Array<[string, readonly string[]]> = [];
+    const source: SignalSource = createPassiveGraphqlSource(window, (statusId, links) =>
+      heard.push([statusId, links]),
+    );
+    const stop: () => void = source.start?.(() => undefined) ?? (() => undefined);
+    relay("HomeTimeline", body);
+    relay("TweetDetail", body);
+    stop();
+    expect(heard).toEqual([["1600000000000000002", ["https://www.example-gazette.net/story"]]]);
   });
 
   it("stops emitting after unsubscribe", () => {

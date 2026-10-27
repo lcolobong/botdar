@@ -10,6 +10,7 @@ import {
   ABOUT_ACCOUNT_OPERATION,
   PROFILE_REPLIES_OPERATION,
   PROFILE_TIMELINE_OPERATION,
+  THREAD_OPERATION,
   X_GRAPHQL_RELAY_KIND,
 } from "../graphqlRoutes";
 import type {
@@ -118,7 +119,17 @@ function postSignalsByHandle(
   return signalsByHandle;
 }
 
-export function createPassiveGraphqlSource(target: Window = window): SignalSource {
+/** Called with each post of a thread body that links a page, by status id (ADR-0029). */
+export type ThreadPostLinksListener = (statusId: string, links: readonly string[]) => void;
+
+/**
+ * `onThreadPostLinks` hears the expanded links of every post in a conversation body; they reach the
+ * page's thread index only while this source runs, so only with Tier 1 on.
+ */
+export function createPassiveGraphqlSource(
+  target: Window = window,
+  onThreadPostLinks?: ThreadPostLinksListener,
+): SignalSource {
   const replyFlagsByOwner = new Map<string, ReplyFlagsByTweetId>();
   return {
     id: PASSIVE_GRAPHQL_SOURCE_ID,
@@ -141,6 +152,13 @@ export function createPassiveGraphqlSource(target: Window = window): SignalSourc
               ...withoutDeclaredOverride(toSignals(user)),
               ...postSignals.get(user.ref.handle),
             });
+          }
+          if (envelope.op === THREAD_OPERATION) {
+            for (const post of parsed.posts) {
+              if (post.links !== undefined) {
+                onThreadPostLinks?.(post.id, post.links);
+              }
+            }
           }
           if (envelope.op !== ABOUT_ACCOUNT_OPERATION) {
             return;
