@@ -119,6 +119,66 @@ describe("createPassiveGraphqlSource", () => {
     expect(otherUser?.[1]).not.toHaveProperty("postTimestamps");
   });
 
+  const OWNER_ID = "1000000000000000007";
+  const repliesTabPage = (from: number, to: number): unknown => {
+    const body = loadFixture("user-tweets-and-replies.json") as {
+      data: {
+        user: { result: { timeline: { timeline: { instructions: [{ entries: unknown[] }] } } } };
+      };
+    };
+    const [instruction] = body.data.user.result.timeline.timeline.instructions;
+    return {
+      data: {
+        user: {
+          result: {
+            timeline: {
+              timeline: {
+                instructions: [{ entries: (instruction?.entries ?? []).slice(from, to) }],
+              },
+            },
+          },
+        },
+      },
+    };
+  };
+  const replyShares = (emissions: Emission[]): unknown[] =>
+    emissions
+      .filter(([ref]) => ref.handle === "reply_guy_01")
+      .map(([, signals]) => signals.replyShare);
+
+  it("emits the reply share of the replies tab's owner, and from no other operation", () => {
+    const { emissions, stop } = start();
+    const repliesTab: unknown = loadFixture("user-tweets-and-replies.json");
+    relay("UserTweetsAndReplies", repliesTab, variablesFor(OWNER_ID));
+    relay("UserTweetsAndReplies", repliesTab, variablesFor("1000000000000000999"));
+    relay("UserTweetsAndReplies", repliesTab);
+    relay("UserTweets", repliesTab, variablesFor(OWNER_ID));
+    relay("HomeTimeline", repliesTab);
+    stop();
+    expect(replyShares(emissions)).toEqual([
+      { ratio: 20 / 24, sampleSize: 24 },
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+
+  it("accumulates the pages of a replies tab by tweet id, so overlap and re-fetches add nothing", () => {
+    const { emissions, stop } = start();
+    relay("UserTweetsAndReplies", repliesTabPage(0, 12), variablesFor(OWNER_ID));
+    relay("UserTweetsAndReplies", repliesTabPage(0, 12), variablesFor(OWNER_ID));
+    relay("UserTweetsAndReplies", repliesTabPage(8, 24), variablesFor(OWNER_ID));
+    relay("UserTweetsAndReplies", repliesTabPage(20, 24), variablesFor(OWNER_ID));
+    stop();
+    expect(replyShares(emissions)).toEqual([
+      { ratio: 1, sampleSize: 12 },
+      { ratio: 1, sampleSize: 12 },
+      { ratio: 20 / 24, sampleSize: 24 },
+      { ratio: 20 / 24, sampleSize: 24 },
+    ]);
+  });
+
   it("emits the user and the About projection for an AboutAccountQuery body", () => {
     const { emissions, stop } = start();
     relay("AboutAccountQuery", loadFixture("about-account.json"));

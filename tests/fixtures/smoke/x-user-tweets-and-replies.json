@@ -1,0 +1,822 @@
+{
+  "_fixture": "Hand-written for scripts/smoke, not a recording: a UserTweetsAndReplies body for the recorded timeline's maria_dev with 24 tweets of her own, 22 of them replies (a reply share of 22/24). The wrapper path and legacy.in_reply_to_status_id_str are GUESSES until a recording confirms them (docs/test-plan.md, ADR-0021).",
+  "data": {
+    "user": {
+      "result": {
+        "__typename": "User",
+        "timeline": {
+          "timeline": {
+            "instructions": [
+              {
+                "type": "TimelineAddEntries",
+                "entries": [
+                  {
+                    "entryId": "tweet-1720000000000000000",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000000",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA0",
+                                  "rest_id": "1000000000000000004",
+                                  "affiliates_highlighted_label": {},
+                                  "avatar": {
+                                    "image_url": "https://pbs.twimg.com/profile_images/1000000000000000004/maria_normal.jpg"
+                                  },
+                                  "core": {
+                                    "created_at": "Fri Jun 14 08:30:00 +0000 2013",
+                                    "name": "Maria Dev",
+                                    "screen_name": "maria_dev"
+                                  },
+                                  "is_blue_verified": false,
+                                  "legacy": {
+                                    "default_profile_image": false,
+                                    "pinned_tweet_ids_str": []
+                                  },
+                                  "location": {
+                                    "location": "Berlin"
+                                  },
+                                  "profile_bio": {
+                                    "description": "Compilers by day, gardens by night.",
+                                    "entities": {
+                                      "description": {
+                                        "urls": []
+                                      }
+                                    }
+                                  },
+                                  "relationship_counts": {
+                                    "followers": 15200,
+                                    "following": 870
+                                  },
+                                  "tweet_counts": {
+                                    "tweets": 31000,
+                                    "media_tweets": 2100
+                                  },
+                                  "verification": {
+                                    "verified": false
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000000"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000001",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000001",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000001"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000002",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000002",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000002"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000003",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000003",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000003"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000004",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000004",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000004"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000005",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000005",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000005"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000006",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000006",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000006"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000007",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000007",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000007"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000008",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000008",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000008"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000009",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000009",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000009"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000010",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000010",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000010"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000011",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000011",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000011"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000012",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000012",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000012"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000013",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000013",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000013"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000014",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000014",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000014"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000015",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000015",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000015"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000016",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000016",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000016"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000017",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000017",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000017"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000018",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000018",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000018"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000019",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000019",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000019"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000020",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000020",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000020"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000021",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000021",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone thanks, that helps",
+                              "in_reply_to_status_id_str": "1600000000000000021"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000022",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000022",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "Shipped a small compiler fix today."
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000023",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000023",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "1000000000000000004",
+                                  "core": {
+                                    "screen_name": "maria_dev"
+                                  }
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "Shipped a small compiler fix today."
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
