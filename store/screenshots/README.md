@@ -18,7 +18,7 @@ Rules for every capture:
 | `02-bluesky-dark-card.png` | Works on Bluesky too, in light and dark. Every card names the innocent explanation.  |
 | `03-reddit-declared.png`   | Accounts that label themselves as automated get a "Declared bot" badge.              |
 | `04-options.png`           | Switch platforms on or off, pick a label style, or keep to what the page shows.      |
-| `05-popup.png`             | Everything stays in your browser. Nothing about the accounts you see leaves it.      |
+| `05-popup.png`             | Computed in your browser. Profile lookups go only to the platform; nothing to us.    |
 
 Regenerate all five with:
 

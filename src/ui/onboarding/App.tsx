@@ -68,7 +68,7 @@ function BadgePanel() {
 function PrivacyPanel() {
   return (
     <>
-      <h1 class="bd-display">Everything stays on this device</h1>
+      <h1 class="bd-display">Computed on this device</h1>
       <p>Botdar reads what is already on the page and computes the badge in your browser.</p>
       <div class="bd-panel__body">
         <div class="bd-block">
@@ -77,11 +77,12 @@ function PrivacyPanel() {
           when a post comes into view, elsewhere when you hover a badge.
         </div>
         <div class="bd-block">
-          <strong>What leaves your browser:</strong> nothing about the accounts you see. Once a day
-          it downloads a small signed settings file from this project's site.
+          <strong>What leaves your browser:</strong> an author's name, sent only to the platform's
+          site or public API for their public profile; nothing goes to us. Once a day it downloads a
+          small signed settings file from this project's site.
         </div>
         <div class="bd-block">
-          <strong>What it never does:</strong> hide posts, send names anywhere, or call anyone a
+          <strong>What it never does:</strong> hide posts, send anything to us, or call anyone a
           bot. It describes patterns and shows you why.
         </div>
         <p class="bd-caption">{PRIVACY_SENTENCE}</p>

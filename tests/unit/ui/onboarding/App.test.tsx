@@ -60,13 +60,16 @@ describe("onboarding App", () => {
   it("steps through the privacy panel to the controls panel", async () => {
     const container: HTMLDivElement = mount();
     await advance(container);
-    expect(headline(container)).toBe("Everything stays on this device");
+    expect(headline(container)).toBe("Computed on this device");
     const blocks: string[] = Array.from(container.querySelectorAll(".bd-block strong")).map(
       (block) => block.textContent ?? "",
     );
     expect(blocks).toEqual(["What it reads:", "What leaves your browser:", "What it never does:"]);
     expect(container.textContent).toContain(
-      "Nothing about the accounts you see leaves this browser.",
+      "an author's name, sent only to the platform's site or public API for their public profile; nothing goes to us.",
+    );
+    expect(container.textContent).toContain(
+      "Nothing is sent to us; lookups go only to the platform.",
     );
     expect(activeDot(container)).toBe(1);
 

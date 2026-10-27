@@ -112,7 +112,7 @@ describe("options App", () => {
     const privacy: HTMLAnchorElement | null = container.querySelector(`a[href="${PRIVACY_URL}"]`);
     expect(privacy?.textContent).toBe("Privacy");
     expect(container.textContent).toContain(
-      "Nothing about the accounts you see leaves this browser.",
+      "Nothing is sent to us; lookups go only to the platform.",
     );
   });
 
