@@ -53,6 +53,7 @@ returns 404 for every other API path:
 | `https://x.com/i/api/graphql/SMOKEQUERYID00000001/HomeTimeline` | `tests/fixtures/x/graphql/home-timeline-core.json` |
 | `https://x.com/i/api/graphql/SMOKEQUERYID00000002/AboutAccountQuery` | `tests/fixtures/smoke/x-about-account.json` (hand-written) |
 | `https://x.com/i/api/graphql/SMOKEQUERYID00000003/UserTweets` | `tests/fixtures/smoke/x-user-tweets.json` (hand-written) |
+| `https://x.com/i/api/graphql/SMOKEQUERYID00000004/UserTweetsAndReplies` | `tests/fixtures/smoke/x-user-tweets-and-replies.json` (hand-written) |
 | `https://bsky.app/xrpc/app.bsky.feed.getTimeline`              | `tests/fixtures/bluesky/get-timeline.json`      |
 | `https://bsky.app/xrpc/app.bsky.actor.getProfiles`             | `tests/fixtures/bluesky/get-profiles.json`      |
 | `https://bsky.app/xrpc/app.bsky.feed.getAuthorFeed`            | `tests/fixtures/smoke/bluesky-author-feed.json` (hand-written) |

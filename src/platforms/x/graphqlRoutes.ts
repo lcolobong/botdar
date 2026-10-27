@@ -17,7 +17,12 @@ export const ABOUT_ACCOUNT_OPERATION = "AboutAccountQuery";
  * population of posts, and mixing the two would mix two rhythms.
  */
 export const PROFILE_TIMELINE_OPERATION = "UserTweets";
-/** The profile timeline's request query is relayed with its body, capped, for the actor's id. */
+/**
+ * A profile's replies tab. Its tweets are not the cadence population, but they are the one place a
+ * reply share can be counted, since the posts tab holds no replies.
+ */
+export const PROFILE_REPLIES_OPERATION = "UserTweetsAndReplies";
+/** The profile timelines' request query is relayed with their body, capped, for the owner's id. */
 export const MAX_RELAYED_QUERY_LENGTH = 4096;
 
 export const X_GRAPHQL_OPERATIONS: ReadonlySet<string> = new Set([
@@ -25,7 +30,7 @@ export const X_GRAPHQL_OPERATIONS: ReadonlySet<string> = new Set([
   "HomeLatestTimeline",
   "SearchTimeline",
   PROFILE_TIMELINE_OPERATION,
-  "UserTweetsAndReplies",
+  PROFILE_REPLIES_OPERATION,
   "TweetDetail",
   "UserByScreenName",
   ABOUT_ACCOUNT_OPERATION,
@@ -36,7 +41,7 @@ export const X_GRAPHQL_OPERATIONS: ReadonlySet<string> = new Set([
 export interface GraphqlOperation {
   op: string;
   queryId: string;
-  /** The request's query string, for the profile timeline only (it names the profile's user). */
+  /** The request's query string, for the profile timelines only (it names the profile's user). */
   query?: string;
 }
 
@@ -59,7 +64,9 @@ export function matchGraphqlOperation(url: string, base: string): GraphqlOperati
   if (queryId === undefined || op === undefined) {
     return undefined;
   }
-  return op === PROFILE_TIMELINE_OPERATION && parsed.search.length <= MAX_RELAYED_QUERY_LENGTH
+  const namesProfile: boolean =
+    op === PROFILE_TIMELINE_OPERATION || op === PROFILE_REPLIES_OPERATION;
+  return namesProfile && parsed.search.length <= MAX_RELAYED_QUERY_LENGTH
     ? { op, queryId, query: parsed.search }
     : { op, queryId };
 }

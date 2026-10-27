@@ -57,7 +57,7 @@ export interface SmokeFeedScene {
 export const smokeFeedScenes: readonly SmokeFeedScene[] = [
   { platform: "x", scene: "feed", path: "/home" },
   // The recorded timeline again, at a profile path where its script also fetches maria_dev's
-  // About lookup and profile timeline (hand-written bodies under tests/fixtures/smoke/).
+  // About lookup, profile timeline and replies tab (hand-written bodies under tests/fixtures/smoke/).
   {
     platform: "x",
     scene: "profile",
@@ -199,6 +199,11 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
     platform: "x",
     path: "/i/api/graphql/SMOKEQUERYID00000003/UserTweets",
     file: "tests/fixtures/smoke/x-user-tweets.json",
+  },
+  {
+    platform: "x",
+    path: "/i/api/graphql/SMOKEQUERYID00000004/UserTweetsAndReplies",
+    file: "tests/fixtures/smoke/x-user-tweets-and-replies.json",
   },
   {
     platform: "bluesky",

@@ -82,7 +82,7 @@ const envelope = (kind: string, op: string, body: unknown) => ({
 });
 
 describe("matchGraphqlOperation", () => {
-  it("keeps the request query for the profile's posts tab only, capped", () => {
+  it("keeps the request query for the profile's posts and replies tabs only, capped", () => {
     const query = "?variables=%7B%22userId%22%3A%2212%22%7D";
     expect(matchGraphqlOperation(`/i/api/graphql/${QUERY_ID}/UserTweets${query}`, PAGE)).toEqual({
       op: "UserTweets",
@@ -91,7 +91,11 @@ describe("matchGraphqlOperation", () => {
     });
     expect(
       matchGraphqlOperation(`/i/api/graphql/${QUERY_ID}/UserTweetsAndReplies${query}`, PAGE),
-    ).toEqual({ op: "UserTweetsAndReplies", queryId: QUERY_ID });
+    ).toEqual({ op: "UserTweetsAndReplies", queryId: QUERY_ID, query });
+    expect(matchGraphqlOperation(`/i/api/graphql/${QUERY_ID}/TweetDetail${query}`, PAGE)).toEqual({
+      op: "TweetDetail",
+      queryId: QUERY_ID,
+    });
     const huge = `?variables=${"x".repeat(5000)}`;
     expect(matchGraphqlOperation(`/i/api/graphql/${QUERY_ID}/UserTweets${huge}`, PAGE)).toEqual({
       op: "UserTweets",
