@@ -1,7 +1,7 @@
 /**
  * Helpers every platform's `toFeatures` shares: the day length the rates divide by, the tier a
  * feature is attributed to, the age gate the karma-rate features use on Reddit and Hacker News, and
- * the near-duplicate reply feature every platform reads from its thread index.
+ * the two coordination features every platform reads from its thread index.
  */
 import type { AccountSignals, Feature, FeatureId, SignalField, SourceTier } from "../types";
 
@@ -38,4 +38,28 @@ export function nearDuplicateReplyFeatures(copiedReplies: number | undefined): F
   return copiedReplies === undefined
     ? []
     : [{ id: NEAR_DUPLICATE_REPLY_FEATURE, value: copiedReplies, group: "coordination", tier: 0 }];
+}
+
+export const SHARED_RARE_DOMAIN_FEATURE: FeatureId = "thread.sharedRareDomain";
+
+/**
+ * How many other accounts linked the same rare domain earlier in the same thread as one of the
+ * account's replies (ADR-0029), from the page's thread index; omitted when none of the account's
+ * replies on the page links a domain that counts. `linkTier` is the tier that resolved the links:
+ * 0 where the page shows them, 1 on X, whose page shows only t.co.
+ */
+export function sharedRareDomainFeatures(
+  otherLinkers: number | undefined,
+  linkTier: SourceTier,
+): Feature[] {
+  return otherLinkers === undefined
+    ? []
+    : [
+        {
+          id: SHARED_RARE_DOMAIN_FEATURE,
+          value: otherLinkers,
+          group: "coordination",
+          tier: linkTier,
+        },
+      ];
 }

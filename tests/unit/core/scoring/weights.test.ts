@@ -72,6 +72,36 @@ describe("defaultWeights", () => {
     }
   });
 
+  it("weighs shared rare domains the same on every platform, from the third other linker", () => {
+    for (const platform of PLATFORMS) {
+      expect(defaultWeights[platform].features["thread.sharedRareDomain"]).toEqual({
+        group: "coordination",
+        cap: 1.2,
+        kind: "bins",
+        bins: [
+          [0, 3, 0],
+          [3, 5, 0.8],
+          [5, null, 1.2],
+        ],
+      });
+    }
+  });
+
+  it("caps the two coordination features together, alone below Unsure", () => {
+    for (const platform of PLATFORMS) {
+      const verdict: Verdict = scoreAccount(
+        [
+          feature("thread.nearDuplicateReply", 12, "coordination", 0),
+          feature("thread.sharedRareDomain", 12, "coordination", 0),
+        ],
+        signalsWith({ tiersDelivered: ALL_TIERS }),
+        defaultWeights[platform],
+        { policyVersion: 0, now: NOW, sourcesAvailable: ALL_TIERS },
+      );
+      expect(verdict.probability, platform).toBeLessThan(defaultWeights[platform].thresholds.some);
+    }
+  });
+
   it("keeps a thread of copied replies alone below Unsure", () => {
     for (const platform of PLATFORMS) {
       const verdict: Verdict = scoreAccount(
@@ -126,10 +156,11 @@ describe("defaultWeights", () => {
       "x.gapRegularity",
       "x.noSleepWindow",
       "thread.nearDuplicateReply",
+      "thread.sharedRareDomain",
     ]);
-    expect(Object.keys(defaultWeights.reddit.features)).toHaveLength(8);
-    expect(Object.keys(defaultWeights.bluesky.features)).toHaveLength(8);
-    expect(Object.keys(defaultWeights.hackernews.features)).toHaveLength(5);
+    expect(Object.keys(defaultWeights.reddit.features)).toHaveLength(9);
+    expect(Object.keys(defaultWeights.bluesky.features)).toHaveLength(9);
+    expect(Object.keys(defaultWeights.hackernews.features)).toHaveLength(6);
   });
 
   it("has a reason template for every feature id it defines", () => {
