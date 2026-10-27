@@ -337,11 +337,17 @@ Every reason also carries a **direction** and a **why clause** ([ADR-0022](decis
 A positive contribution points towards automated (↑ on the card) and a negative one towards ordinary (↓).
 A contribution of zero points towards ordinary, as step 7 counts it, unless the feature has no ordinary
 clause below: such a feature (the country mismatch, held at weight 0) points towards automated whenever
-it is stated. The why clause is the one for the reason's direction, rendered muted after a middle dot.
+it is stated. The why clause is the one for the reason's direction. The card keeps it hidden until the
+reader presses "What these mean" under the reasons, then shows it as a muted sentence on its own line
+under the observation ([ADR-0023](decisions/ADR-0023-strength-scale-and-progressive-disclosure.md)).
 Each clause condenses the mechanism in "Why each feature is a signal" above, in at most about eight words,
-so that a reason wraps to two lines at most on the 320px card; when a mechanism changes, its clause
-changes with it. The clauses live in `src/core/scoring/whyClauses.ts`. The reason also carries its signed
-contribution, for a strength scale on top of the direction. Two features can word the same
+aiming for one 12px line on the 320px card; when a mechanism changes, its clause changes with it. The
+clauses live in `src/core/scoring/whyClauses.ts` as lowercase fragments; the card adds the capital and
+the full stop. The reason also carries its signed contribution, and `reasonStrength()` in
+`src/core/scoring/strength.ts` buckets its size for the card's strength bar: strong from 0.6 (the
+threshold the independence rule counts), moderate from 0.3 (the bar a reason clears to be listed on
+its own merit, below), weak below, so a weak reason is exactly one listed only to pad the card to two;
+the declared reason carries no contribution and no bucket. Two features can word the same
 observation (both handle-digit features read "Handle is a name followed by 5 digits"); the card lists
 such a line once, from the stronger item.
 
@@ -441,6 +447,13 @@ direction arrow and a why clause, and the caveat sits under "Why this could be w
 cover the why clauses as reason text: they describe the pattern, never the person, and never contain
 "bot". `allFixedStrings()` in `src/core/scoring/reasons.ts` includes every clause, so the wording-rule
 test checks them.
+
+Amendment 2026-10-26 ([ADR-0023](decisions/ADR-0023-strength-scale-and-progressive-disclosure.md)):
+the clauses wait behind one toggle on the card, and each reason's marker gains a strength bar. The
+card's own fixed strings (the marker names such as "Strong, points towards automated" and the toggle
+labels "What these mean", "What this means", "Hide explanations", "Hide explanation") come from
+`cardFixedStrings()` in `src/ui/cardCopy.ts`. `tests/unit/ui/cardCopy.test.ts` holds them to the same
+rules, so the core tests never import the UI.
 
 These apply to every user-visible string in the badge, hover card, popup, options, onboarding and store
 listing.

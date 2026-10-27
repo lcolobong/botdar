@@ -1,9 +1,11 @@
 # Design
 
-Date: 2026-10-22, badge states amended 2026-10-25 (ADR-0020), card copy amended 2026-10-25 (ADR-0022) ·
+Date: 2026-10-22, badge states amended 2026-10-25 (ADR-0020), card copy amended 2026-10-25 (ADR-0022), card
+strength and disclosure amended 2026-10-26 (ADR-0023) ·
 Status: approved after one review round · Design system: https://claude.ai/artifact/2jacALGXFe96ubLp62qRAe ·
 Project canvas: https://claude.ai/artifact/AM2UKsqdyJU7qy919pPFAe (the "Project" page has every surface's
-mockups; the "Hover card explorations" page has the card alternatives A–D)
+mockups; the "Hover card explorations" page has the card alternatives A–D and the disclosure variants
+P1–P3)
 
 ## Principles
 
@@ -14,8 +16,10 @@ mockups; the "Hover card explorations" page has the card alternatives A–D)
    away for Likely human).
 2. Plain words on the badge, facts and reasons on the card. The badge says "Likely bot" or "Unsure"; the
    hover card lists two to four observations with numbers and dates under "Why it leans this way", each
-   with the way it points and a short clause on why, and ends under "Why this could be wrong" with the
-   case against the read (amended by [ADR-0022](decisions/ADR-0022-reasons-say-why.md)). A Likely
+   with how strong a flag it is and the way it points, keeps a short clause on why each one counts
+   one click away, and ends under "Why this could be wrong" with the case against the read (amended
+   by [ADR-0022](decisions/ADR-0022-reasons-say-why.md) and
+   [ADR-0023](decisions/ADR-0023-strength-scale-and-progressive-disclosure.md)). A Likely
    human card lists what looks ordinary ("Account is 9 years old", "Custom avatar") and says how an
    automated account could look the same; a No read card says why there is nothing to read and claims
    nothing.
@@ -58,19 +62,27 @@ tradeoffs are in [decisions/ADR-0017](decisions/ADR-0017-badge-wording-and-label
   No read), dashed (paused), loading (while the account's Tier 2 lookup is queued or running: on Reddit
   from mount, since authors are looked up on sight, with a still, dimmed glyph except under the
   pointer; on X and Bluesky a pulsing glyph while a hover lookup runs).
-- **Hover card.** 320px, anchored below the badge, flipped above when there is no room. Title repeats the
-  badge label, handle in mono. Then two labelled blocks (ADR-0022):
-  - **"Why it leans this way"**: the reasons in a sunken list. Each row is an arrow (↑ towards
-    automated, ↓ towards ordinary), the observation, a muted why clause after a middle dot, and a
-    source dot per tier at the end (on the page, page data, profile lookup). A row wraps to two lines
-    at most at the default font.
+- **Hover card.** 320px, anchored below the badge, flipped above when there is no room. A card that
+  grows while open (its clauses opened, a lookup landed) keeps the side it opened on and is clamped
+  inside the viewport, overlapping the badge if it must. Title repeats the badge label, handle in mono. Then two labelled
+  blocks (ADR-0022):
+  - **"Why it leans this way"**: the reasons in a sunken list. Each row is a marker, the observation
+    and a source dot per tier at the end (on the page, page data, profile lookup). The marker is a
+    strength bar, whose fill takes a third, two thirds or all of its track for a weak, moderate or
+    strong reason and runs from red through amber and grey to green (ADR-0023), then an arrow (↑
+    towards automated, ↓ towards ordinary). Under the list, one link-style button with a chevron,
+    "What these mean" ("What this means" for one reason), shows every row's why clause on its own
+    muted line under the observation and then reads "Hide explanations" ("Hide explanation"). Each
+    opening of the card starts with the clauses hidden; no button is drawn when no reason has a
+    clause.
   - **"Why this could be wrong"**: the caveat, then the confidence line when sources are missing
     (a source that delivered data counts even when a later source overwrote all of its fields). A
     Declared bot card heads its neutral declared line "What this means" instead.
 
   The source legend sits between the blocks the first time a card opens in a session, and the footer
   has "This looks wrong" and "Settings". Declared bot cards use the same blocks with their one declared
-  reason, its arrow in the declared colour, and the neutral declared line. Opens after 150ms, closes 200ms after the pointer leaves badge and
+  reason, its arrow in the declared colour with no strength bar, no clause toggle (its clause,
+  "self-declared", would repeat the block below), and the neutral declared line. Opens after 150ms, closes 200ms after the pointer leaves badge and
   card, also opens on keyboard focus and closes on Escape. A No read card replaces the reasons with one
   sentence on why there is nothing to read (lookups off, a login wall, nothing returned, not looked up
   yet, or "Loading this account's public profile." while it runs) and drops the confidence line, the
@@ -87,10 +99,11 @@ tradeoffs are in [decisions/ADR-0017](decisions/ADR-0017-badge-wording-and-label
 - Observations are sentence case, carry a number or a date, no trailing period, at most 60 characters.
 - A Likely human observation may be a plain fact with no number ("Custom avatar", "Verified email"); a
   pattern that is absent gets no line, never a negated one.
-- Every reason carries a why clause: lowercase, no trailing period, at most about eight words, wrapping
-  the row to two lines at most on the 320px card. Clauses condense the mechanism in scoring-spec.md "Why
-  each feature is a signal" and change when it changes; the table of clauses is in scoring-spec.md
-  "Reason templates and caveats".
+- Every reason carries a why clause: written as a lowercase fragment with no trailing period, at most
+  about eight words, aiming for one 12px line on the 320px card. The card shows it as a sentence (first
+  letter capitalised, a full stop added) on its own line once the reader opens the clauses. Clauses
+  condense the mechanism in scoring-spec.md "Why each feature is a signal" and change when it changes;
+  the table of clauses is in scoring-spec.md "Reason templates and caveats".
 - The caveat names the innocent explanation for the dominant signal; on a Likely human card it names
   how an automated account could show the same ordinary evidence. It sits under its own label, so it
   reads as the case against the read, not as part of the reasoning. The label carries the
@@ -111,8 +124,15 @@ tradeoffs are in [decisions/ADR-0017](decisions/ADR-0017-badge-wording-and-label
 - The badge is a button with an accessible name; the card is a dialog with the handle in its label.
 - A reason's direction is carried by the arrow's shape, with the direction's colour token (Likely
   bot's for automated, Likely human's for ordinary, Declared bot's on a declared card) as
-  reinforcement only. The arrow is an image with
-  an accessible name ("Points towards automated" or "Points towards ordinary") and the same title.
+  reinforcement only. Its strength is carried by the fill's height, with the colour as reinforcement
+  only. The bar and arrow are one image with one accessible name and the same title, strength first:
+  "Strong, points towards automated", "Weak, points towards ordinary"; a declared reason, which has
+  no strength, is "Points towards automated".
+- The clause toggle is a real button in the tab order, with `aria-expanded` and `aria-controls`
+  naming the reasons list. While the pointer is inside the card, a close request from the badge
+  (its blur when the click lands in the card) is ignored, so a click anywhere in the card, on a
+  control or on text, never closes it. Keyboard focus leaving the card closes it, and so does a
+  touch or pen press elsewhere on the page, since those pointers fire no mouseleave.
 - Reduced motion removes the rise on open and the loading pulse.
 
 ## Name

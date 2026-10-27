@@ -1,6 +1,6 @@
 # ADR-0022: Reasons say why; the caveat is labelled
 
-Status: Accepted · Date: 2026-10-25 · Amends ADR-0017 and ADR-0020
+Status: Accepted, amended by ADR-0023 (a strength bar beside each arrow; why clauses wait behind one "What these mean" toggle) · Date: 2026-10-25 · Amends ADR-0017 and ADR-0020
 
 ## Context
 
@@ -71,11 +71,10 @@ https://claude.ai/artifact/AM2UKsqdyJU7qy919pPFAe; this decision is the structur
 - Why clauses must change when the scoring-spec rationale for their feature changes, and a new feature
   needs a clause before it can ship (whyClauses.test.ts checks every template has one).
 - The feedback log still stores the observation text only; the direction and clause follow from it.
-- **Planned follow-up: a strength scale.** Mocks are being drawn for colouring each reason row from red
-  through yellow to green by how strong a flag it is. The reason already carries its signed
-  contribution and the marker takes its colour from a per-direction custom property, so the scale can
-  replace those tokens (with Unsure's tokens for a middle bucket) without another model or markup
-  change. It must keep the arrow's shape and accessible name, never colour alone.
+- **Follow-up: a strength scale.** Done in
+  [ADR-0023](ADR-0023-strength-scale-and-progressive-disclosure.md): a bar beside the arrow grades each
+  reason weak, moderate or strong from its contribution, and the why clauses now wait behind one
+  toggle instead of following every observation.
 
 ## Alternatives considered
 

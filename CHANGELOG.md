@@ -16,8 +16,9 @@ The first release, covering the MVP.
   two do, and "Declared bot" when the platform's own automated label is set. Accounts that look fine
   and accounts with too little data get no badge, so the feed stays quiet.
 - A hover card for every badge that lists the two to four observations behind it, each with a number
-  or a date, a note when some data sources did not deliver, and a "This can be wrong:" line that names
-  the innocent explanation.
+  or a date, a strength bar and an arrow for how strong a flag it is and which way it points, and a
+  short explanation of why it counts behind one "What these mean" link; a note when some data
+  sources did not deliver; and, under "Why this could be wrong", the innocent explanation.
 - A hollow badge when fewer than half the data sources delivered and a dashed badge when lookups are
   paused.
 - A "This looks wrong" button on every card. Feedback stays on the device and can be exported or
