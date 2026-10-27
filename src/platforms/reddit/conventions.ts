@@ -12,6 +12,12 @@ const USERNAME_PATTERN = /^[A-Za-z0-9_-]{1,20}$/;
  */
 const DEFAULT_AVATAR_PATTERN = /redditstatic\.com\/avatars\/(?:defaults\/|avatar_default_)/i;
 
+/**
+ * Items asked of `overview.json` (its maximum page). A listing that returns fewer is the account's
+ * whole visible history, so its oldest item is its first.
+ */
+export const OVERVIEW_PAGE_LIMIT = 100;
+
 /** Rejects "[deleted]", empty strings and anything else Reddit would not accept as a username. */
 export function isPlausibleUsername(name: string): boolean {
   return USERNAME_PATTERN.test(name);
