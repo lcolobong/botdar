@@ -53,6 +53,16 @@ describe("reason templates", () => {
     expect(render("thread.nearDuplicateReply", 2, { contribution: 0 })).toBe(NO_REASON);
   });
 
+  it("words shared rare domains by the number of other accounts, only when they weigh", () => {
+    expect(render("thread.sharedRareDomain", 1, { contribution: 0.2 })).toBe(
+      "Links a site another account linked earlier in this thread",
+    );
+    expect(render("thread.sharedRareDomain", 5, { contribution: 1.2 })).toBe(
+      "Links a site 5 other accounts linked earlier in this thread",
+    );
+    expect(render("thread.sharedRareDomain", 2, { contribution: 0 })).toBe(NO_REASON);
+  });
+
   it("renders posting rate with a whole number", () => {
     expect(render("x.postsPerDay", 143.2)).toBe("~143 posts/day since joining");
     expect(render("bsky.postsPerDay", 1500)).toBe("~1,500 posts/day since joining");
@@ -371,6 +381,17 @@ describe("caveatFor", () => {
       }),
     ).toBe("Popular phrases and memes get repeated by real people.");
     expect(allFixedStrings()).toContain("Popular phrases and memes get repeated by real people.");
+  });
+
+  it("names people sharing one story's link when shared rare domains lead", () => {
+    const caveat = "People discussing the same story often share the same link.";
+    expect(
+      caveatFor({
+        ...base,
+        evidenceByMagnitude: [evidence("thread.sharedRareDomain", 0.8, "coordination")],
+      }),
+    ).toBe(caveat);
+    expect(allFixedStrings()).toContain(caveat);
   });
 
   it("tells long-time readers apart when the first-activity karma rate leads", () => {

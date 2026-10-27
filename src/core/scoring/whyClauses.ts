@@ -53,6 +53,10 @@ const NEAR_DUPLICATE_REPLY: WhyClauses = {
   automated: "reply templates get reused across accounts",
   caveat: "Popular phrases and memes get repeated by real people.",
 };
+const SHARED_RARE_DOMAIN: WhyClauses = {
+  automated: "networks push one site from many accounts",
+  caveat: "People discussing the same story often share the same link.",
+};
 
 /** One entry per reason template in reasons.ts; whyClauses.test.ts checks the two lists match. */
 const WHY_CLAUSES: Readonly<Record<FeatureId, WhyClauses>> = {
@@ -84,6 +88,7 @@ const WHY_CLAUSES: Readonly<Record<FeatureId, WhyClauses>> = {
   "x.noSleepWindow": NO_QUIET_HOURS,
   "bsky.noSleepWindow": NO_QUIET_HOURS,
   "thread.nearDuplicateReply": NEAR_DUPLICATE_REPLY,
+  "thread.sharedRareDomain": SHARED_RARE_DOMAIN,
   "reddit.karmaPerDay": KARMA_RATE,
   "reddit.karmaSinceFirstActivity": {
     ...KARMA_RATE,

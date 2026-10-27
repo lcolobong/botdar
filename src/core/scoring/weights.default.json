@@ -150,6 +150,16 @@
             [2, 4, 1.0],
             [4, null, 1.5]
           ]
+        },
+        "thread.sharedRareDomain": {
+          "group": "coordination",
+          "cap": 1.2,
+          "kind": "bins",
+          "bins": [
+            [0, 3, 0],
+            [3, 5, 0.8],
+            [5, null, 1.2]
+          ]
         }
       }
     },
@@ -238,6 +248,16 @@
             [1, 2, 0.6],
             [2, 4, 1.0],
             [4, null, 1.5]
+          ]
+        },
+        "thread.sharedRareDomain": {
+          "group": "coordination",
+          "cap": 1.2,
+          "kind": "bins",
+          "bins": [
+            [0, 3, 0],
+            [3, 5, 0.8],
+            [5, null, 1.2]
           ]
         }
       }
@@ -341,6 +361,16 @@
             [2, 4, 1.0],
             [4, null, 1.5]
           ]
+        },
+        "thread.sharedRareDomain": {
+          "group": "coordination",
+          "cap": 1.2,
+          "kind": "bins",
+          "bins": [
+            [0, 3, 0],
+            [3, 5, 0.8],
+            [5, null, 1.2]
+          ]
         }
       }
     },
@@ -407,6 +437,16 @@
             [1, 2, 0.6],
             [2, 4, 1.0],
             [4, null, 1.5]
+          ]
+        },
+        "thread.sharedRareDomain": {
+          "group": "coordination",
+          "cap": 1.2,
+          "kind": "bins",
+          "bins": [
+            [0, 3, 0],
+            [3, 5, 0.8],
+            [5, null, 1.2]
           ]
         }
       }

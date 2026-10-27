@@ -250,6 +250,17 @@ function nearDuplicateReplyReason({ value, contribution }: ReasonContext): strin
     : `Reply closely matches earlier ones by ${formatCount(otherAccounts)} other accounts`;
 }
 
+/** Like the near-duplicate line, the value counts other accounts, each once. */
+function sharedRareDomainReason({ value, contribution }: ReasonContext): string {
+  const otherAccounts: number = Number(value);
+  if (contribution <= 0 || otherAccounts < 1) {
+    return NO_REASON;
+  }
+  return otherAccounts === 1
+    ? "Links a site another account linked earlier in this thread"
+    : `Links a site ${formatCount(otherAccounts)} other accounts linked earlier in this thread`;
+}
+
 const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "x.postsPerDay": postsPerDayReason,
   "bsky.postsPerDay": postsPerDayReason,
@@ -274,6 +285,7 @@ const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "x.noSleepWindow": roundTheClockReason,
   "bsky.noSleepWindow": roundTheClockReason,
   "thread.nearDuplicateReply": nearDuplicateReplyReason,
+  "thread.sharedRareDomain": sharedRareDomainReason,
   "reddit.karmaPerDay": karmaPerDayReason,
   "reddit.karmaSinceFirstActivity": karmaSinceFirstActivityReason,
   "reddit.postToCommentKarma": karmaSplitReason,
