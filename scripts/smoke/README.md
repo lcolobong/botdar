@@ -14,6 +14,7 @@ missing page or badge is logged and skipped rather than failing the run.
 | `reddit`  | `feed`     | `https://www.reddit.com/` ← `feed.html`  | Declared bot badge on the APP-tagged post             | 600×820           |
 | `reddit`  | `comments` | thread URL ← `comments.html`             | Likely human on the OP (served profile), No read on the rest | 600×820    |
 | `reddit`  | `copied-replies` | thread URL ← `copied-replies.html` (hand-written) | Badges on the two copiers (served two-week-old profiles); the hover opens Bright_Sail_8803's card | 600×820 |
+| `reddit`  | `shared-links` | thread URL ← `shared-links.html` (hand-written) | A badge on Tidal_Quill_5530 (served two-week-old profile), the last of six accounts linking one small site; the hover opens its card | 600×820 |
 | `bluesky` | `feed`     | `https://bsky.app/` ← `feed.html`        | Declared bot (kai) and Likely bot (mila) badges       | 600×820           |
 | `bluesky` | `profile`  | `https://bsky.app/profile/alice.example.com` ← `feed.html` | As `feed`, plus alice's author feed; the hover opens her card | 600×820 |
 | `hackernews` | `thread` | `https://news.ycombinator.com/item` ← `thread.html` | Likely human on the OP, Unsure on the first commenter, No read on the rest | 600×820 |
@@ -58,7 +59,7 @@ returns 404 for every other API path:
 | `https://bsky.app/xrpc/app.bsky.actor.getProfiles`             | `tests/fixtures/bluesky/get-profiles.json`      |
 | `https://bsky.app/xrpc/app.bsky.feed.getAuthorFeed`            | `tests/fixtures/smoke/bluesky-author-feed.json` (hand-written) |
 | `https://www.reddit.com/user/quiet_lantern_4821/about.json`    | `tests/fixtures/reddit/about/normal.json`       |
-| `https://www.reddit.com/user/<name>/about.json` for `quick_fern_2291`, `bright_sail_8803` | `tests/fixtures/smoke/reddit-about-<name>.json` (hand-written) |
+| `https://www.reddit.com/user/<name>/about.json` for `quick_fern_2291`, `bright_sail_8803`, `tidal_quill_5530` | `tests/fixtures/smoke/reddit-about-<name>.json` (hand-written) |
 | `https://www.reddit.com/user/quiet_lantern_4821/overview.json` | `tests/fixtures/reddit/overview/short.json` (hand-written) |
 | `https://hacker-news.firebaseio.com/v0/user/<name>.json` for `tomas_bakes28`, `jonas_draws01`, `priya_draws51` | `tests/fixtures/hackernews/firebase/smoke/<name>.json` |
 

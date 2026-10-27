@@ -81,6 +81,15 @@ export const smokeFeedScenes: readonly SmokeFeedScene[] = [
     fixtureFile: "copied-replies.html",
     hoverAnchor: 'a[href="/user/Bright_Sail_8803/"]',
   },
+  // A hand-written link post whose comments link one small site from six accounts; the last of
+  // them has a profile served below, so its hover card shows a full read.
+  {
+    platform: "reddit",
+    scene: "shared-links",
+    path: "/r/harbourcity/comments/1kb4c7d/council_votes_to_close_the_harbour_street_bridge/",
+    fixtureFile: "shared-links.html",
+    hoverAnchor: 'a[href="/user/Tidal_Quill_5530/"]',
+  },
   { platform: "bluesky", scene: "feed", path: "/" },
   // The feed page again, at a profile path where its script also fetches alice.example.com's
   // author feed (a hand-written body under tests/fixtures/smoke/).
@@ -227,8 +236,9 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
     path: "/user/quiet_lantern_4821/about.json",
     file: "tests/fixtures/reddit/about/normal.json",
   },
-  // The two copiers in the copied-replies scene: accounts two weeks old, hand-written bodies.
-  ...["quick_fern_2291", "bright_sail_8803"].map((handle): ApiFixtureRoute => ({
+  // The two copiers in the copied-replies scene and the last linker in the shared-links scene:
+  // accounts two weeks old, hand-written bodies.
+  ...["quick_fern_2291", "bright_sail_8803", "tidal_quill_5530"].map((handle): ApiFixtureRoute => ({
     platform: "reddit",
     path: `/user/${handle}/about.json`,
     file: `tests/fixtures/smoke/reddit-about-${handle}.json`,
