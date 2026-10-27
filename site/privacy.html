@@ -17,13 +17,54 @@
 
     <h2>What leaves your browser</h2>
     <p>
-      One thing: once a day the extension downloads a small signed configuration file from this
-      project's GitHub Pages site. That request carries no information about you or about the
-      accounts you have seen. GitHub may log the request like any web request.
+      Nothing is sent to us. Botdar has no server of its own: no account names, no scores, no
+      browsing history, no analytics and no crash reports ever reach the developer.
+    </p>
+    <p>Two kinds of request do leave your browser.</p>
+    <p>
+      <strong>The daily configuration file.</strong> Once a day the extension downloads a small
+      signed configuration file from this project's GitHub Pages site (lcolobong.github.io). That
+      request carries no information about you or about the accounts you have seen. GitHub may log
+      the request like any web request. It is not affected by the switches below.
     </p>
     <p>
-      Nothing else. No account names, no scores, no browsing history, no analytics, no crash
-      reports.
+      <strong>Profile lookups.</strong> The page shows little more than a name, so to read an
+      author's public profile the extension asks the platform the post is on. Each request names one
+      author (or, on Bluesky, a few authors at once), the way the profile link on the page does, and
+      goes either to the site you are using or to that platform's official public API:
+    </p>
+    <ul>
+      <li>
+        <strong>X</strong>: to x.com, with your existing X session, when you hover a badge. It names
+        the author's handle.
+      </li>
+      <li>
+        <strong>Reddit</strong>: to the Reddit site you are on (www.reddit.com or old.reddit.com),
+        with your existing Reddit session, when a post comes into view (at most once per author per
+        page) and again when you hover a badge if the answer is not already remembered. It names the
+        author's username.
+      </li>
+      <li>
+        <strong>Bluesky</strong>: to Bluesky's public service at public.api.bsky.app, without your
+        session, when you hover a badge. It names the author's handle, or Bluesky's internal account
+        id for that author.
+      </li>
+      <li>
+        <strong>Hacker News</strong>: to Hacker News's official public API at
+        hacker-news.firebaseio.com (run by Y Combinator on Google's Firebase), without cookies, when
+        a story or comment comes into view (at most once per author per page) and again when you
+        hover a badge if the answer is not already remembered. It names the author's username.
+      </li>
+    </ul>
+    <p>
+      A request to the site you are using carries that site's own cookies, as the site's own
+      requests do; nothing about you is added to any request. What comes back is kept on your device
+      (see below) and is never passed on.
+    </p>
+    <p>
+      To turn the lookups off: switch on "conservative mode" to stop every lookup on every platform,
+      or switch a platform off to stop everything Botdar does there. The maintainer can also turn
+      them off for everyone, per platform or everywhere, through the configuration file.
     </p>
 
     <h2>What is stored on your device</h2>
@@ -31,19 +72,22 @@
       <li>Your settings (which platforms are on, conservative mode).</li>
       <li>The last configuration file that was downloaded.</li>
       <li>
-        Feedback you chose to send with the "This looks wrong" button, which stays on your device
+        Feedback you chose to record with the "This looks wrong" button, which stays on your device
         until you export or delete it from the options page.
       </li>
       <li>
         Remembered lookups: when a lookup returns profile data (for example follower counts and
         account age), the extension keeps that data on your device for seven days so the same
-        account is not fetched again. Each entry is filed under a one-way hash of the platform and
-        the handle mixed with a random value created on your device, so the stored data lists no
-        handles; it holds no display name and no bio text (only whether a bio is empty) and is never
-        sent anywhere. At most 5,000 entries are kept, and expired ones are deleted. You can turn
-        this off ("Remember lookups for 7 days") or erase it at any time ("Clear cache") on the
-        options page; both remove every remembered lookup, and clearing also replaces the random
-        value. With conservative mode on, nothing is read from or written to this store.
+        account is not fetched again. On Reddit, a hover also keeps two numbers from the account's
+        public activity list, the date of its oldest item and how many items it listed, for one day;
+        no titles, comments or subreddits are read or kept. Each entry is filed under a one-way hash
+        of the platform and the handle mixed with a random value created on your device, so the
+        stored data lists no handles; it holds no display name and no bio text (only whether a bio
+        is empty) and is never sent anywhere. At most 5,000 entries are kept, and expired ones are
+        deleted. You can turn this off ("Remember lookups for 7 days") or erase it at any time
+        ("Clear cache") on the options page; both remove every remembered lookup, and clearing also
+        replaces the random value. With conservative mode on, nothing is read from or written to
+        this store.
       </li>
     </ul>
     <p>Scores for accounts are kept in memory while a tab is open and discarded afterwards.</p>
@@ -63,28 +107,41 @@
     </p>
 
     <h2>Requests to platforms</h2>
+    <p>What each lookup reads from the answer:</p>
+    <ul>
+      <li>
+        On X, the "About this account" details the profile page offers: the account's country, how
+        many times its username changed, and which app store it signed up through.
+      </li>
+      <li>
+        On Reddit, the account's public profile: join date, karma, display name, bio and whether it
+        has an avatar. When you hover a badge on an account that is at least six months old, the
+        extension also asks for the account's latest public posts and comments
+        (/user/&lt;name&gt;/overview.json) and reads only when they were posted and how many there
+        are.
+      </li>
+      <li>
+        On Bluesky, the public profile (join date, follower, following and post counts, bio, avatar,
+        labels and verification) and the author's recent public posts, read only for when they were
+        posted.
+      </li>
+      <li>
+        On Hacker News, the public profile: join date, karma, how many items they have submitted,
+        and their about text.
+      </li>
+    </ul>
     <p>
-      On X, Reddit and Bluesky, when you hover a badge, the extension may ask the platform for the
-      same public profile information the page itself shows, using your existing session. On Bluesky
-      a hover also asks Bluesky's public service, without your session, for that author's recent
-      public posts, to read only when they post. These requests are rate-limited, cached, and can be
-      turned off with "conservative mode" or per platform. The maintainer can also turn them off for
-      everyone through the configuration file.
-    </p>
-    <p>
-      On Hacker News, when a story or comment comes into view, the extension asks Hacker News's
-      official public API at hacker-news.firebaseio.com (run by Y Combinator on Google's Firebase)
-      for that author's public profile: join date, karma, how many items they have submitted, and
-      their about text. The request names the author, as the profile link on the page does; it
-      carries no cookies and nothing about you, and the cache answers repeats.
+      All lookups are rate-limited and cached: an answer is reused in the open tab for up to a day
+      and, unless you turn remembered lookups off, remembered on your device as described above. On
+      Reddit, the lookups pause for ten minutes after Reddit answers as if you were logged out.
     </p>
 
     <h2>Permissions</h2>
     <p>
       The extension asks for access to x.com, twitter.com, reddit.com, bsky.app and
       news.ycombinator.com only, plus local storage and a timer for the daily configuration fetch.
-      The Hacker News API needs no permission of its own: it is open to requests from the Hacker
-      News page.
+      The Bluesky and Hacker News APIs need no permission of their own: they are open to requests
+      from the Bluesky and Hacker News pages.
     </p>
 
     <h2>Contact</h2>
