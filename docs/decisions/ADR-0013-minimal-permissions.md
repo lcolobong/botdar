@@ -1,6 +1,6 @@
 # ADR-0013: Minimal permissions, no web-accessible resources, no remote code
 
-Status: Accepted
+Status: Accepted, amended 2026-10-27 (Firefox declares `websiteContent`)
 Date: 2026-10-22
 
 ## Context
@@ -38,3 +38,15 @@ to be self-contained.
 
 - **`<all_urls>` with runtime matching.** Rejected: slower review, bigger blast radius, worse optics.
 - **Injected script via `web_accessible_resources`.** Rejected: fingerprintable.
+
+## Amended 2026-10-27
+
+The Firefox declaration is now `data_collection_permissions: { required: ["websiteContent"] }`, not
+`["none"]`. Mozilla's add-on policies count as data transmission any data "collected, used,
+transferred, shared, or handled outside of the add-on or the local browser", with no exception for
+the site the user is on, and the four Tier 2 lookups send an author's name out of the browser: to
+x.com and to the Reddit site in use (same-origin), to `public.api.bsky.app` and to
+`hacker-news.firebaseio.com` (neither of them the page). Nothing goes to the developer, so no other
+category applies; the reasoning and the Chrome Web Store answers are in `store/README.md`.
+`tests/unit/manifest.test.ts` guards the amended invariant on the Firefox build, alongside the
+unchanged ones (explicit host permissions, no `web_accessible_resources`).

@@ -10,7 +10,7 @@ export default defineConfig({
   manifest: {
     name: "Botdar",
     description:
-      "A badge on every author on X, Reddit and Bluesky for patterns common in automated accounts. Nothing leaves your browser.",
+      "A badge on each author on X, Reddit, Bluesky and Hacker News for patterns common in automated accounts. Nothing is sent to us.",
     icons: {
       16: "icon/16.png",
       32: "icon/32.png",
@@ -40,7 +40,9 @@ export default defineConfig({
       gecko: {
         id: "botdar@lcolobong.github.io",
         strict_min_version: "128.0",
-        data_collection_permissions: { required: ["none"] },
+        // Mozilla counts any data handled outside the browser as transmission (extensionworkshop.com,
+        // "Firefox built-in data consent"): the Tier 2 lookups send author names to each platform.
+        data_collection_permissions: { required: ["websiteContent"] },
       },
     },
   },

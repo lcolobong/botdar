@@ -48,7 +48,7 @@ File name is `ADR-00NN-<kebab-case-slug>.md`.
 | [0010](ADR-0010-stack-wxt-preact.md) | Stack | WXT + TypeScript + Preact + Vitest on pnpm; Preact is the only runtime dependency. |
 | [0011](ADR-0011-main-world-interception.md) | MAIN-world interception | Patch fetch/XHR in the page world for an allowlist of operations; relay through a guarded postMessage; parse in the isolated world. |
 | [0012](ADR-0012-no-account-data-at-rest.md) | No per-account data at rest | In-memory 24h cache only; feedback is the sole persisted account reference and never leaves the browser. |
-| [0013](ADR-0013-minimal-permissions.md) | Minimal permissions | Explicit host permissions, no `<all_urls>`, no `web_accessible_resources`, no remote code. |
+| [0013](ADR-0013-minimal-permissions.md) | Minimal permissions | Explicit host permissions, no `<all_urls>`, no `web_accessible_resources`, no remote code. Amended 2026-10-27: Firefox declares `websiteContent` for the Tier 2 lookups. |
 | [0014](ADR-0014-docs-in-repo-mirrored-to-notion.md) | Docs in repo, mirrored to Notion | `docs/` is canonical and reviewed in PRs; Notion holds mirrors and the task tracker. |
 | [0015](ADR-0015-bluesky-extension-not-labeler.md) | Bluesky via extension | Bluesky support ships inside the extension; a labeler is a separate later decision. |
 | [0016](ADR-0016-public-repo-stacked-prs.md) | Public repo, stacked PRs | Public GitHub repo, small commits, stacked PRs, rebase-merge, 250/400 production-line limits. |
