@@ -140,6 +140,21 @@ const blankSignals = (): MergeableSignals => ({
 });
 
 describe("mergeSignals", () => {
+  it("stores a first post text observation longer than the cap truncated", () => {
+    const target = blankSignals();
+    mergeSignals(target, { postText: "x".repeat(MAX_POST_TEXT_LENGTH + 50) }, 1, 100);
+    expect(target.signals.postText).toHaveLength(MAX_POST_TEXT_LENGTH);
+  });
+
+  it("applies the default rule to a field without its own merge strategy", () => {
+    const target = blankSignals();
+    mergeSignals(target, { bio: "new" }, 1, 200);
+    expect(mergeSignals(target, { bio: "older" }, 1, 100)).toBe(false);
+    expect(target.signals.bio).toBe("new");
+    expect(mergeSignals(target, { bio: "higher" }, 2, 50)).toBe(true);
+    expect(target.signals.bio).toBe("higher");
+  });
+
   it("records the tier per field and the newest observation time", () => {
     const target = blankSignals();
     expect(mergeSignals(target, { followers: 5, bio: "hi" }, 1, 100)).toBe(true);
