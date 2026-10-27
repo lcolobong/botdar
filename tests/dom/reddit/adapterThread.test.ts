@@ -17,6 +17,45 @@ function copiedReplies(adapter: PlatformAdapter, handle: string): Feature["value
     ?.value;
 }
 
+function sharedDomains(adapter: PlatformAdapter, handle: string): Feature["value"] | undefined {
+  const signals: AccountSignals = {
+    ref: { platform: "reddit", handle },
+    provenance: {},
+    tiersDelivered: [0],
+    observedAt: 0,
+  };
+  return adapter.toFeatures(signals).find((feature) => feature.id === "thread.sharedRareDomain")
+    ?.value;
+}
+
+describe("createRedditAdapter on a thread with shared links", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("counts the earlier linkers of a small site, never the post's own site", async () => {
+    window.history.pushState(
+      null,
+      "",
+      "/r/harbourcity/comments/1kb4c7d/council_votes_to_close_the_harbour_street_bridge/",
+    );
+    const adapter: PlatformAdapter = createRedditAdapter({ sources: [] });
+    loadRedditFixture("shared-links.html");
+    const stop: () => void = adapter.observeFeed(
+      () => undefined,
+      () => undefined,
+    );
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(IDLE_TIMEOUT_MS);
+
+    expect(sharedDomains(adapter, "tidal_quill_5530")).toBe(5);
+    expect(sharedDomains(adapter, "amber_wren_4471")).toBe(0);
+    expect(sharedDomains(adapter, "rusty_kettle")).toBeUndefined();
+    expect(sharedDomains(adapter, "fern_garden")).toBeUndefined();
+    stop();
+    window.history.back();
+  });
+});
+
 describe("createRedditAdapter on a comment thread", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());

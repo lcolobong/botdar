@@ -5,13 +5,15 @@
  * feature table from features.ts. Stories and comments share one compact density.
  */
 import { PageThreads } from "../../core/thread/pageThreads";
+import type { ThreadPostReading } from "../../core/thread/replyText";
 import type { PlatformAdapter, SignalSource } from "../../core/types";
+import type { HackerNewsRow } from "./dom";
 import type { OnSightPlatform } from "../onSightWire";
 import { extractDomSignals } from "./dom";
 import { toFeatures } from "./features";
 import { observeHackerNewsFeed } from "./observer";
 import { firebaseUserSource } from "./sources/firebaseUser";
-import { threadReplyOf } from "./threadReply";
+import { threadReplyOf, threadRootLinksOf } from "./threadReply";
 
 export const HACKER_NEWS_HOST = "news.ycombinator.com";
 
@@ -25,7 +27,11 @@ export function matchesHackerNews(url: URL): boolean {
 
 /** Navigation is a full page load, so the thread index never needs clearing in place. */
 export function createHackerNewsAdapter(options: HackerNewsAdapterOptions = {}): PlatformAdapter {
-  const threads = new PageThreads((row) => threadReplyOf(row, new URL(window.location.href)));
+  const readThreadPost = (row: Element, classified?: HackerNewsRow): ThreadPostReading => {
+    const pageUrl: URL = new URL(window.location.href);
+    return threadReplyOf(row, pageUrl, classified) ?? threadRootLinksOf(row, pageUrl);
+  };
+  const threads = new PageThreads(readThreadPost);
   return {
     id: "hackernews",
     matches: matchesHackerNews,
@@ -34,9 +40,7 @@ export function createHackerNewsAdapter(options: HackerNewsAdapterOptions = {}):
         onPost,
         onRemoved,
         onDiscovered: (row, classified) =>
-          threads.discovered(row, () =>
-            threadReplyOf(row, new URL(window.location.href), classified),
-          ),
+          threads.discovered(row, () => readThreadPost(row, classified)),
       }),
     extractDomSignals,
     sources: options.sources ?? [firebaseUserSource],
