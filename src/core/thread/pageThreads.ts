@@ -8,7 +8,7 @@ import { nearDuplicateReplyFeatures } from "../scoring/featureSupport";
 import type { AccountSignals, Feature } from "../types";
 import type { ReplyReading } from "./replyText";
 import { NOT_YET_READABLE } from "./replyText";
-import type { CopiedReplyListener } from "./threadIndex";
+import type { AuthorsChangedListener } from "./answeredCounts";
 import { ThreadIndex } from "./threadIndex";
 
 export type ReplyReader = (element: Element) => ReplyReading;
@@ -63,6 +63,6 @@ export class PageThreads {
     ];
 
   /** `PlatformAdapter.onEvidenceChanged`: the authors whose count changed after they were scored. */
-  readonly subscribe = (listener: CopiedReplyListener): (() => void) =>
+  readonly subscribe = (listener: AuthorsChangedListener): (() => void) =>
     this.index.subscribe(listener);
 }
