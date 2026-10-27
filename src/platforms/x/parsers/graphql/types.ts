@@ -7,14 +7,6 @@ export interface ParsedXUser {
   node: UnknownRecord;
 }
 
-export interface ParsedAboutAccount {
-  handle: string;
-  country?: string;
-  usernameChanges?: number;
-  appStore?: string;
-  declaredAutomated?: boolean;
-}
-
 /** One post in a timeline body, attributed to its author. */
 export interface ParsedXPost {
   id: string;
