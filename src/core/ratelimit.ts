@@ -54,16 +54,19 @@ export class RateLimiter {
     this.lastRefillAt = now();
   }
 
-  /** Consumes a token when one is available and the circuit is closed. */
-  tryAcquire(): boolean {
+  /**
+   * Consumes `count` tokens at once when that many are available and the circuit is closed, so a
+   * lookup that makes several calls runs whole or not at all. A count above the burst never fits.
+   */
+  tryAcquire(count = 1): boolean {
     if (this.isOpen()) {
       return false;
     }
     this.refill();
-    if (this.tokens < 1) {
+    if (this.tokens < count) {
       return false;
     }
-    this.tokens -= 1;
+    this.tokens -= count;
     return true;
   }
 
@@ -90,17 +93,17 @@ export class RateLimiter {
     return this.now() < this.circuitOpenUntil;
   }
 
-  /** Earliest time a call to tryAcquire() can succeed; the current time when one would succeed now. */
-  nextAllowedAt(): number {
+  /** Earliest time `tryAcquire(count)` can succeed; the current time when it would succeed now. */
+  nextAllowedAt(count = 1): number {
     const currentTime: number = this.now();
     if (currentTime < this.circuitOpenUntil) {
       return this.circuitOpenUntil;
     }
     this.refill();
-    if (this.tokens >= 1) {
+    if (this.tokens >= count) {
       return currentTime;
     }
-    return currentTime + Math.ceil((1 - this.tokens) / this.refillPerMs);
+    return currentTime + Math.ceil((count - this.tokens) / this.refillPerMs);
   }
 
   private refill(): void {

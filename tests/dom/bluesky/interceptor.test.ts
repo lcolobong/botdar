@@ -50,6 +50,18 @@ describe("installXrpcInterceptor", () => {
     );
   });
 
+  it("relays an author feed's query string with its body, and no other operation's", async () => {
+    const { target, postMessage } = fakeWindow(() => jsonResponse({ feed: [] }));
+    installXrpcInterceptor(target);
+
+    const query = "?actor=a.example.com&filter=posts_and_author_threads&limit=30";
+    await target.fetch(`https://api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed${query}`);
+    await target.fetch(`https://api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?${"x".repeat(3000)}`);
+    await flush();
+
+    expect(postMessage.mock.calls.map((call) => call[0].query)).toEqual([query, undefined]);
+  });
+
   it("reads the URL from Request and URL inputs", async () => {
     const { target, postMessage } = fakeWindow(() => jsonResponse({ profiles: [] }));
     installXrpcInterceptor(target);

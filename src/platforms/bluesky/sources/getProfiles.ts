@@ -35,7 +35,7 @@ interface Waiter {
 }
 
 /** Seconds or an HTTP date; undefined when absent or unreadable so the limiter uses its ladder. */
-function retryAfterMsOf(response: Response): number | undefined {
+export function retryAfterMsOf(response: Response): number | undefined {
   const header: string | null = response.headers.get("retry-after");
   if (header === null) {
     return undefined;

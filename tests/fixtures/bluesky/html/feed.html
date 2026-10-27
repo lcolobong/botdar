@@ -123,13 +123,18 @@
       // Served by scripts/smoke: fetching the recorded timeline and profiles bodies the way the
       // web app does lets the extension's MAIN-world interceptor relay them to Tier 1. The content
       // script only subscribes after document_idle, so the requests are repeated a few times.
+      // At alice.example.com's profile path it also fetches her author feed, a hand-written body
+      // under tests/fixtures/smoke/.
+      const smokeBodies = ["/xrpc/app.bsky.feed.getTimeline", "/xrpc/app.bsky.actor.getProfiles"];
+      if (location.pathname === "/profile/alice.example.com") {
+        smokeBodies.push(
+          "/xrpc/app.bsky.feed.getAuthorFeed?actor=alice.example.com&filter=posts_and_author_threads",
+        );
+      }
       window.addEventListener("load", () => {
         for (const delay of [0, 400, 1200, 2500]) {
           setTimeout(() => {
-            for (const path of [
-              "/xrpc/app.bsky.feed.getTimeline",
-              "/xrpc/app.bsky.actor.getProfiles",
-            ]) {
+            for (const path of smokeBodies) {
               fetch(path).catch(() => undefined);
             }
           }, delay);

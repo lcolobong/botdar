@@ -42,7 +42,8 @@ import { BOTDAR_MARK_ATTRIBUTE } from "./dom";
 
 const PLATFORM = "bluesky";
 const CACHE_CAPACITY = 500;
-const LIMITER_BURST = 3;
+/** Three hovered authors back to back; each lookup spends two tokens (getProfiles, getAuthorFeed). */
+const LIMITER_BURST = 6;
 
 export interface WireDependencies {
   adapter: PlatformAdapter;

@@ -196,6 +196,11 @@ export interface SignalSource {
   resolve?: (ref: AccountRef, context: ResolveContext) => Promise<PartialSignals | null>;
   /** Active: true while the source has paused itself after a logged-out answer. */
   loginRequired?: () => boolean;
+  /**
+   * Active: its fields are never persisted (ADR-0025 stores profile fields only), so a stored
+   * snapshot does not answer for it and a lookup that hits storage still runs it.
+   */
+  memoryOnly?: boolean;
 }
 
 export type BadgeDensity = "x" | "reddit-post" | "reddit-comment" | "bluesky";

@@ -269,3 +269,53 @@ describe("AccountResolver memory refill from storage", () => {
     expect(cache.has("someone")).toBe(false);
   });
 });
+
+describe("a memory-only source behind a storage hit", () => {
+  it("still runs on a hover, alone, and leaves the stored snapshot and the cache as they were", async () => {
+    const store = new PersistedLookupStore();
+    await store.write("bluesky", "someone", { followers: 99 });
+    const profiles = vi.fn(async (): Promise<PartialSignals | null> => ({ followers: 12 }));
+    const authorFeed = vi.fn(async (): Promise<PartialSignals | null> => ({
+      postTimestamps: [Date.now() - 60_000],
+    }));
+    const sources: SignalSource[] = [
+      { id: "profiles", platform: "bluesky", tier: 2, kind: "active", resolve: profiles },
+      {
+        id: "feed",
+        platform: "bluesky",
+        tier: 2,
+        kind: "active",
+        memoryOnly: true,
+        resolve: authorFeed,
+      },
+    ];
+    const cache = new TtlLruCache<string, PartialSignals>(10, TIER2_CACHE_TTL_MS);
+    const resolver = new AccountResolver({
+      adapter: {
+        id: "bluesky",
+        matches: () => true,
+        observeFeed: () => () => undefined,
+        extractDomSignals: () => ({}),
+        sources,
+        toFeatures: () => [],
+        badgeDensity: "bluesky",
+      },
+      scorer,
+      config: { ...config(true), platform: "bluesky" },
+      limiter: new RateLimiter({ perMinute: 60, burst: 2 }),
+      cache,
+      persistence: { store, enabled: () => true },
+    });
+    const handle = resolver.attach({ ...post(), ref: { platform: "bluesky", handle: "someone" } });
+
+    await handle.lookup();
+    await handle.lookup();
+
+    expect(profiles).not.toHaveBeenCalled();
+    expect(authorFeed).toHaveBeenCalledTimes(1);
+    expect(cache.get("someone")).toEqual({ followers: 99 });
+    expect((await store.read("bluesky", "someone"))?.signals).toEqual({ followers: 99 });
+    expect(handle.current().reasons.map((reason) => reason.text)).toContain("followers=99");
+    resolver.dispose();
+  });
+});

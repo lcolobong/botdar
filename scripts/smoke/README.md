@@ -14,6 +14,7 @@ missing page or badge is logged and skipped rather than failing the run.
 | `reddit`  | `feed`     | `https://www.reddit.com/` ← `feed.html`  | Declared bot badge on the APP-tagged post             | 600×820           |
 | `reddit`  | `comments` | thread URL ← `comments.html`             | Likely human on the OP (served profile), No read on the rest | 600×820    |
 | `bluesky` | `feed`     | `https://bsky.app/` ← `feed.html`        | Declared bot (kai) and Likely bot (mila) badges       | 600×820           |
+| `bluesky` | `profile`  | `https://bsky.app/profile/alice.example.com` ← `feed.html` | As `feed`, plus alice's author feed; the hover opens her card | 600×820 |
 
 Every feed scene also has a hover capture (`hover` for the `feed` scene, `<scene>-hover` for the
 others) with a badge hovered and the card open. Every scene is captured at 2x in light and dark.
@@ -46,6 +47,7 @@ returns 404 for every other API path:
 | `https://x.com/i/api/graphql/SMOKEQUERYID00000003/UserTweets` | `tests/fixtures/smoke/x-user-tweets.json` (hand-written) |
 | `https://bsky.app/xrpc/app.bsky.feed.getTimeline`              | `tests/fixtures/bluesky/get-timeline.json`      |
 | `https://bsky.app/xrpc/app.bsky.actor.getProfiles`             | `tests/fixtures/bluesky/get-profiles.json`      |
+| `https://bsky.app/xrpc/app.bsky.feed.getAuthorFeed`            | `tests/fixtures/smoke/bluesky-author-feed.json` (hand-written) |
 | `https://www.reddit.com/user/quiet_lantern_4821/about.json`    | `tests/fixtures/reddit/about/normal.json`       |
 
 The Reddit route answers the extension's own Tier 2 lookup for the recorded thread's OP, matched
@@ -64,7 +66,9 @@ lookup (country Brazil) and a profile timeline of 100 Russian-language posts, on
 minutes over seven and a half days. The recorded page fetches them only at the `profile` scene's
 path, so the `feed` scene is unchanged; they give her card the observations that need an About
 country and a timeline. Replace them with recordings when `pnpm capture` has recorded a profile
-visit.
+visit. The hand-written Bluesky author feed does the same for alice.example.com at the Bluesky
+`profile` scene's path: 100 posts, one about every 110 minutes over seven and a half days (the
+recorded get-author-feed.json holds a single repost).
 
 The hover scene hovers the badge's button inside its shadow root (the `botdar-badge` host itself
 lays out as a block, so hovering it would land on empty row space), preferring a badge named
