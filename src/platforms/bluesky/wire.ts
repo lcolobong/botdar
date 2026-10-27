@@ -9,6 +9,7 @@ import { h, render } from "preact";
 import { browser } from "wxt/browser";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import { TtlLruCache } from "../../core/cache";
+import { PersistedLookupStore } from "../../core/persistedLookups";
 import { kindOfPost, recordBadged } from "../../core/diagnostics.ts";
 import { recordFeedback, removeFeedback } from "../../core/feedback";
 import { onRequest, sendRequest } from "../../core/messaging";
@@ -132,6 +133,7 @@ export async function wireBluesky(
     // The limiter is sized once: a lowered policy limit applies from the next page load.
     limiter: new RateLimiter({ perMinute: config.rateLimitPerMinute, burst: LIMITER_BURST }),
     cache: new TtlLruCache<string, PartialSignals>(CACHE_CAPACITY, TIER2_CACHE_TTL_MS),
+    persistence: { store: new PersistedLookupStore(), enabled: () => settings.persistLookups },
   });
 
   const card: CardPresenter = createCardPresenter({

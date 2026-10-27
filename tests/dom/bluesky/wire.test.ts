@@ -90,7 +90,11 @@ interface Harness {
 }
 
 /** Likely human off, so the fixture's typical authors draw nothing unless a test turns it on. */
-const QUIET_SETTINGS: Settings = { ...defaultSettings, showLikelyHuman: false };
+const QUIET_SETTINGS: Settings = {
+  ...defaultSettings,
+  showLikelyHuman: false,
+  persistLookups: false,
+};
 
 const makeHarness = (
   initial: EffectivePlatformConfig = config(),

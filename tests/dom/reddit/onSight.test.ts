@@ -12,6 +12,9 @@ import { IDLE_TIMEOUT_MS } from "@/src/platforms/reddit/observer";
 import type { RedditRuntime } from "@/src/platforms/reddit/wire";
 import { wireReddit } from "@/src/platforms/reddit/wire";
 import { BADGE_ELEMENT_NAME } from "@/src/ui/mount";
+
+/** These tests count platform calls under fake timers; storage hashing is covered in the core tests. */
+const onSightSettings = { ...defaultSettings, persistLookups: false };
 import { TtlLruCache } from "@/src/core/cache";
 import { hydrateDeclarativeShadowRoots, loadRedditFixture } from "./fixtures";
 
@@ -68,7 +71,7 @@ async function wire(initialT2: boolean, options: WireOptions = {}): Promise<Harn
   if (options.authors === undefined) loadRedditFixture("comments.html");
   else threadOf(options.authors);
   let t2: boolean = initialT2;
-  await fakeBrowser.storage.local.set({ [SETTINGS_STORAGE_KEY]: defaultSettings });
+  await fakeBrowser.storage.local.set({ [SETTINGS_STORAGE_KEY]: onSightSettings });
   const waiting: Array<(partial: PartialSignals | null) => void> = [];
   const resolve = vi.fn(
     () => new Promise<PartialSignals | null>((resolvePartial) => waiting.push(resolvePartial)),
@@ -89,7 +92,7 @@ async function wire(initialT2: boolean, options: WireOptions = {}): Promise<Harn
       policyVersion: 1,
     },
     weights: defaultWeights.reddit,
-    settings: defaultSettings,
+    settings: onSightSettings,
   });
   const dispose: () => void = await wireReddit(ctx, "", {
     adapter: createRedditAdapter({ sources: [source] }),
@@ -105,7 +108,7 @@ async function wire(initialT2: boolean, options: WireOptions = {}): Promise<Harn
   const setTier2 = async (next: boolean): Promise<void> => {
     t2 = next;
     await fakeBrowser.storage.local.set({
-      [SETTINGS_STORAGE_KEY]: { ...defaultSettings, conservativeMode: !next },
+      [SETTINGS_STORAGE_KEY]: { ...onSightSettings, conservativeMode: !next },
     });
     await vi.advanceTimersByTimeAsync(0);
   };

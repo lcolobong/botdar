@@ -2,6 +2,7 @@ import tokensCss from "../src/ui/tokens.css?inline";
 import badgeCss from "../src/ui/badge.css?inline";
 import cardCss from "../src/ui/card.css?inline";
 import { TtlLruCache } from "../src/core/cache.ts";
+import { PersistedLookupStore } from "../src/core/persistedLookups.ts";
 import { recordFeedback, removeFeedback } from "../src/core/feedback.ts";
 import { registerDiagnosticsHandlers } from "../src/core/diagnosticsHandlers.ts";
 import { onRequest, sendRequest } from "../src/core/messaging.ts";
@@ -76,6 +77,7 @@ export default defineContentScript({
         burst: LOOKUP_BURST,
       }),
       cache: new TtlLruCache<string, PartialSignals>(TIER2_CACHE_ENTRIES, TIER2_CACHE_TTL_MS),
+      persistence: { store: new PersistedLookupStore(), enabled: () => settings.persistLookups },
     });
     const wiring: PlatformWiring = wirePlatform({
       ctx,

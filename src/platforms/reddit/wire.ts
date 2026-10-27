@@ -9,6 +9,7 @@ import { kindOfPost, recordBadged } from "../../core/diagnostics.ts";
 import { browser } from "wxt/browser";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import { TtlLruCache } from "../../core/cache";
+import { PersistedLookupStore } from "../../core/persistedLookups";
 import type { FeedbackEntry } from "../../core/feedback";
 import { recordFeedback, removeFeedback } from "../../core/feedback";
 import { onRequest, sendRequest } from "../../core/messaging";
@@ -124,6 +125,10 @@ export async function wireReddit(
     // A lowered rate limit applies on the next page load; switching Tier 2 off applies at once.
     limiter: new RateLimiter({ perMinute: runtime.config.rateLimitPerMinute, burst: LOOKUP_BURST }),
     cache: new TtlLruCache<string, PartialSignals>(CACHE_CAPACITY, TIER2_CACHE_TTL_MS),
+    persistence: {
+      store: new PersistedLookupStore(),
+      enabled: () => runtime.settings.persistLookups,
+    },
   });
   const slots = new Map<Element, BadgeSlot>();
   const slotByHost = new WeakMap<Element, BadgeSlot>();
