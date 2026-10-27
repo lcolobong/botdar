@@ -29,8 +29,8 @@ marketing pages unless marked otherwise, so read them as order-of-magnitude figu
 - **Two v1 issues found while doing this.** `x.countryLocaleMismatch` compares the account's country
   with the *viewer's* browser region (`regionFromNavigatorLanguage()` in `src/platforms/x/features.ts`),
   not with the account's bio language as the spec says, so a viewer whose browser locale is `en-US` adds
-  +0.4 to every account based outside the US. And `x.replyShare` has no producer anywhere in `src/`, so
-  it never fires. (Bluesky's `features.ts` does not exist yet either.) The first should be neutralised
+  +0.4 to every account based outside the US. And `x.replyShare` had no producer anywhere in `src/`, so
+  it never fired. *Update 2026-10-27:* fixed. Tier 1 now counts the replies in the profile's replies tab. (Bluesky's `features.ts` does not exist yet either.) The first should be neutralised
   by policy now (`weight: 0`) and fixed in v1.1. *Update 2026-10-26:* fixed. The feature now compares
   the About country with the language detected in the account's own bio and posts
   (`src/core/text/`), `regionFromNavigatorLanguage()` is gone, and the spec'd weight of 0.4 under a
@@ -59,7 +59,7 @@ marketing pages unless marked otherwise, so read them as order-of-magnitude figu
 | `x.handleNameDigits`, `x.handleTrailingDigits`, `x.handleBigramLL` | Choose a pronounceable custom handle; an LLM can generate thousands. | Seconds. | None. The cheapest v1 signal to defeat. |
 | `x.defaultAvatarEmptyBio` | AI-generated face plus an LLM-written bio. | Free. | StyleGAN faces put the eyes at the same position in every image ([arXiv 2401.02627](https://arxiv.org/pdf/2401.02627)); bios repeat a template across a network. Both need image analysis or cross-account comparison. |
 | `x.newAndBlue` | Verify an aged account instead of a new one. | $8/month. | `x.agedRepurposed`: a recent verified-since date on an old account. |
-| `x.replyShare` (no producer in v1) | Mix in original posts, quote posts and reposts to stay under 90% replies. | One scheduled post per ten replies. | The original posts are generic and repeated, and cadence is unchanged. |
+| `x.replyShare` (producer shipped 2026-10-27) | Mix in original posts, quote posts and reposts to stay under 90% replies. | One scheduled post per ten replies. | The original posts are generic and repeated, and cadence is unchanged. |
 | `x.usernameChanges` | Keep renames under 3; buy accounts that have never been renamed. | Limits handle reuse. | The last-change date: one recent rename on an old account is the aged-market tell. |
 | `x.countryLocaleMismatch` | Route through residential proxies in the target audience's country so "based in" matches. | $1–8/GB ([DataImpulse](https://dataimpulse.com/blog/residential-proxy-pricing-comparison/), [Databay](https://databay.com/blog/how-much-do-residential-proxies-cost)). | The "connected via" app-store region can still disagree with the country if the device is foreign. |
 | X About panel: app-store field | Use the web client, or a phone registered in the target country. | A cloud phone from about $3/month ([ScrapingBee](https://www.scrapingbee.com/blog/anti-detect-browser/)). | Weak; travellers and expats produce the same mismatch. |
@@ -184,7 +184,7 @@ about 0.6. Accounts verified `org` or `gov` are excluded from the `timing` group
 | Feature (group, cap) | Detects | Input and bins | Tier, cost to us | False-positive risk; caveat copy | v1.1 |
 |---|---|---|---|---|---|
 | `x.agedRepurposed` (profile, 1.0) | Bought aged accounts, renamed and re-verified | Bool, 1.0: age ≥ 730 d, last username change ≤ 90 d ago, verified-since ≤ 90 d ago | 2: fields of the About lookup Botdar already makes on hover | Low with all three: rebrands that coincide with subscribing. "People often rename and subscribe at the same time after a career change." | **Yes** |
-| `x.replyShare` producer | Reply-only timelines | Not new: count `in_reply_to_status_id_str` in Tier 1 `UserTweetsAndReplies` instead of DOM rows | 1 | As in v1. | Yes, as a fix |
+| `x.replyShare` producer | Reply-only timelines | Not new: count `in_reply_to_status_id_str` in Tier 1 `UserTweetsAndReplies` instead of DOM rows | 1 | As in v1. | Yes, as a fix (shipped 2026-10-27) |
 | `x.premiumEngagementBait` (content, 0.6) | Premium payout farming after the November 2024 change | Bool: `verified === 'blue'`, reply share ≥ 0.9 and phrase-list hits on ≥ 30% of replies | 1 | High: Premium reply-guys are often humans with a hobby, and it stacks two style signals. | No |
 | `x.storeCountryMismatch` (geo, 0.3) | A foreign device behind a local proxy | About "connected via" store region differs from "based in" | 2 | High: travellers, expats, imported phones. | No |
 
@@ -249,7 +249,7 @@ carry a `many` verdict.
 6. `reddit.karmaSinceFirstActivity` (shipped 2026-10-27, ADR-0028): closes the 180-day gate that lets every aged Reddit account skip
    the rate check.
 
-Alongside, as fixes rather than features: produce `x.replyShare` from Tier 1, and set
+Alongside, as fixes rather than features: produce `x.replyShare` from Tier 1 (done 2026-10-27), and set
 `x.countryLocaleMismatch` to weight 0 by policy until its input is the account's bio language. (Done
 2026-10-26: its input is now the language of the account's bio and posts, and it is no longer zeroed.)
 

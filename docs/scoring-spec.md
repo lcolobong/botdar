@@ -75,7 +75,7 @@ follow ratios). They will move after the calibration pass.
 | `x.handleBigramLL` | handle | 0.8 | mean log character-bigram likelihood of the handle's letters | `(-∞,-3.8)→0.8` `[-3.8,-3.4)→0.4` `[-3.4,∞)→0` | handle has ≥ 4 letters |
 | `x.defaultAvatarEmptyBio` | profile | 1.0 | 0, 1 or 2 of {default avatar, empty bio} | `[0,1)→0` `[1,2)→0.3` `[2,3)→1.0` | both fields known |
 | `x.newAndBlue` | verification | 0.8 | `verified === 'blue'` and age < 90 d | bool, 0.8 | both known |
-| `x.replyShare` | content | 0.8 | `replyShare.ratio` | `[0,0.9)→0` `[0.9,∞)→0.8` | `replyShare.n ≥ 20` |
+| `x.replyShare` | content | 0.8 | `replyShare.ratio` | `[0,0.9)→0` `[0.9,∞)→0.8` | `replyShare.sampleSize ≥ 20`, counted over the owner's tweets in the Tier 1 `UserTweetsAndReplies` bodies |
 | `x.usernameChanges` | profile | 0.6 | count from About | `[0,3)→0` `[3,∞)→0.6` | Tier 2 delivered |
 | `x.countryLocaleMismatch` | geo | 0.4 | About country is not among the plausible regions of the language detected in the account's bio plus the post text Tier 1 carries for it (`src/core/text/`) | bool, 0.4 | About country known and resolved to a code; a language detected (≥ 12 words, confidence ≥ 0.5) that has a region table; never English. Weak and error-prone (VPNs, travel, second-language writers) |
 | `x.gapRegularity` | timing | 1.0 | coefficient of variation of the gaps between the newest ≤ 100 `postTimestamps`, gaps over 7 days dropped | `[0,0.5)→1.0` `[0.5,0.8)→0.5` `[0.8,∞)→0` | ≥ 30 gaps spanning ≥ 3 days; not verified `org` or `gov`, not declared automated. Post times come from Tier 1 `UserTweets` only (the posts tab of a profile visit), owned by the user the request names |
@@ -261,7 +261,13 @@ anything that costs per-account time, money or patience is skipped, and the skip
 
 - **Mechanism.** Reply bots exist to insert themselves into other people's threads (promotion,
   engagement farming, LLM reply bots), so their timeline is almost entirely replies; original posts
-  need something to say. The `n ≥ 20` gate stops a handful of visible posts from firing it.
+  need something to say. The `sampleSize ≥ 20` gate stops a handful of visible posts from firing it. The share is the
+  owner's tweets with a non-empty `legacy.in_reply_to_status_id_str` over all the owner's tweets in the
+  replies tab (`UserTweetsAndReplies`, Tier 1, passive), which arrives a page at a time and is tallied
+  across pages by tweet id. The owner is the user the request names; without one nothing is counted. A
+  repost counts as a post and never as a reply, nor does a post answering its own author (a thread
+  continuation), and the posts tab is not read, since it holds no replies. The field names are guesses
+  until a recording confirms them.
 - **Evidence.** Practitioner lists and platform statements on reply spam; no peer-reviewed metadata
   study, hence a modest 0.8.
 - **Counter-case.** Some people only ever reply. That is a style, and the caveat says so.
