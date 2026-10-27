@@ -3,10 +3,17 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { ReplyReading } from "@/src/core/thread/replyText";
+import { NOT_YET_READABLE } from "@/src/core/thread/replyText";
 import type { ThreadReply } from "@/src/core/thread/threadIndex";
 import { ThreadIndex } from "@/src/core/thread/threadIndex";
 import { POST_SELECTOR } from "@/src/platforms/bluesky/dom";
-import { threadKeyOf, threadReplyOf, tidMillis } from "@/src/platforms/bluesky/threadReply";
+import {
+  threadKeyOf,
+  threadReplyOf,
+  threadRootLinksOf,
+  tidMillis,
+} from "@/src/platforms/bluesky/threadReply";
 
 const THREAD_URL = new URL("https://bsky.app/profile/citypaper.example.com/post/3mytupxwd222b");
 
@@ -20,6 +27,15 @@ function itemBy(handle: string): Element {
     throw new Error(`no item by ${handle}`);
   }
   return found;
+}
+
+/** The reading as a reply; fails the test when the item was not readable yet. */
+function readReply(item: Element, pageUrl: URL = THREAD_URL): ThreadReply | undefined {
+  const reading: ReplyReading = threadReplyOf(item, pageUrl);
+  if (reading === NOT_YET_READABLE) {
+    throw new Error("item not readable yet");
+  }
+  return reading;
 }
 
 beforeEach(() => {
@@ -61,6 +77,39 @@ describe("Bluesky thread replies", () => {
     expect(threadReplyOf(root as Element, THREAD_URL)).toBeUndefined();
   });
 
+  it("reads every absolute link in a reply, the link card's included", () => {
+    expect(readReply(itemBy("maria.example.com"))?.links).toEqual([
+      "https://elmstreet-parking.example/survey",
+    ]);
+    expect(threadReplyOf(itemBy("alice.example.com"), THREAD_URL)).not.toHaveProperty("links");
+  });
+
+  it("records a reply that is a link card alone, with empty text", () => {
+    const maria: Element = itemBy("maria.example.com");
+    maria.querySelector('[data-testid="postText"]')?.remove();
+    expect(threadReplyOf(maria, THREAD_URL)).toMatchObject({
+      text: "",
+      links: ["https://elmstreet-parking.example/survey"],
+    });
+  });
+
+  it("reads an item with neither text nor a link again later, as not rendered yet", () => {
+    const maria: Element = itemBy("maria.example.com");
+    maria.querySelector('[data-testid="postText"]')?.remove();
+    maria.querySelector('a[href^="https://"]')?.remove();
+    expect(threadReplyOf(maria, THREAD_URL)).toBe(NOT_YET_READABLE);
+  });
+
+  it("reads the root's links, and no other item's", () => {
+    const [ancestor, root] = items();
+    expect(threadRootLinksOf(root as Element, THREAD_URL)).toEqual({
+      threadKey: "3mytupxwd222b",
+      links: ["https://citypaper.example.com/2026/10/bike-lanes-vote"],
+    });
+    expect(threadRootLinksOf(ancestor as Element, THREAD_URL)).toBeUndefined();
+    expect(threadRootLinksOf(itemBy("maria.example.com"), THREAD_URL)).toBeUndefined();
+  });
+
   it("records nothing on a feed", () => {
     expect(threadReplyOf(itemBy("alice.example.com"), new URL("https://bsky.app/"))).toBe(
       undefined,
@@ -70,7 +119,7 @@ describe("Bluesky thread replies", () => {
   it("counts the copies when the whole page is indexed", () => {
     const index = new ThreadIndex();
     for (const item of items()) {
-      const reply: ThreadReply | undefined = threadReplyOf(item, THREAD_URL);
+      const reply: ThreadReply | undefined = readReply(item);
       if (reply !== undefined) {
         index.record(reply);
       }

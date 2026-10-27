@@ -4,8 +4,9 @@
   https://bsky.app/profile/citypaper.example.com/post/3mytupxwd222b. An ancestor post (08:55) sits
   above the root (09:00); below it alice.example.com replies first (09:02), kai.bsky.social (09:07)
   and mila48213907.bsky.social (09:12) post near copies of her reply, and maria.example.com writes
-  something else (09:09). Record keys are TIDs of those times. The `postText` test id and the
-  timestamp link to `/profile/<handle>/post/<rkey>` are unconfirmed guesses.
+  something else (09:09). Record keys are TIDs of those times. The root and maria's reply each
+  carry a card for a linked page. The `postText` test id, the timestamp link to
+  `/profile/<handle>/post/<rkey>` and the card's absolute-URL anchor are unconfirmed guesses.
 -->
 <html lang="en" data-theme="light">
   <head>
@@ -27,6 +28,9 @@
       <div data-testid="postText">
         Update: the council voted to extend the Main Street bike lanes to the river.
       </div>
+      <a href="https://citypaper.example.com/2026/10/bike-lanes-vote" role="link">
+        <span>citypaper.example.com</span>
+      </a>
       <a href="/profile/citypaper.example.com/post/3mytupxwd222b">October 27, 2026 at 9:00 AM</a>
     </div>
     <div data-testid="postThreadItem-by-alice.example.com">
@@ -55,6 +59,9 @@
         Parking got harder on Elm Street though, I wonder whether anyone at the council looked at
         that.
       </div>
+      <a href="https://elmstreet-parking.example/survey" role="link">
+        <span>elmstreet-parking.example</span>
+      </a>
     </div>
     <div data-testid="postThreadItem-by-mila48213907.bsky.social">
       <a href="/profile/mila48213907.bsky.social"><span>Mila</span></a>

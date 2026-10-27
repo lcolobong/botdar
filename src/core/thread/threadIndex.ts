@@ -27,6 +27,8 @@ export interface ThreadReply {
   postedAt: number;
   /** The reply this one answers, when the page says; quoting a parent is not copying it. */
   parentId?: string;
+  /** The absolute links in the reply's own words (ADR-0029); omitted when it has none. */
+  links?: readonly string[];
 }
 
 /** Where a reply sits in its thread: what deciding whether one reply is another's source needs. */

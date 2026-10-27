@@ -15,6 +15,15 @@ export const NOT_YET_READABLE = "notYetReadable";
 /** What a platform's reader makes of one post element; undefined when it is not a reply. */
 export type ReplyReading = ThreadReply | undefined | typeof NOT_YET_READABLE;
 
+/**
+ * A thread's root post, read only for the links it carries (ADR-0029): replies discussing a story
+ * link its site, so the root's domains never count as shared.
+ */
+export interface ThreadRootLinks {
+  threadKey: string;
+  links: readonly string[];
+}
+
 const EXPLICIT_ZONE_PATTERN = /(?:Z|[+-]\d\d:?\d\d)$/i;
 const COLONLESS_OFFSET_PATTERN = /([+-]\d\d)(\d\d)$/;
 
@@ -34,6 +43,29 @@ export function withExplicitZone(isoTime: string): string {
 export function pageTimestampMillis(isoTime: string): number | undefined {
   const millis: number = Date.parse(withExplicitZone(isoTime.trim()));
   return Number.isNaN(millis) ? undefined : millis;
+}
+
+const WEB_LINK_SELECTOR = 'a[href^="https://"], a[href^="http://"]';
+
+/**
+ * The absolute links in `root`, without those inside an element matching `excludedSelector` within
+ * it. A relative link stays on the platform, whose own domains never count.
+ */
+export function webLinksIn(root: Element, excludedSelector?: string): string[] {
+  const links: string[] = [];
+  for (const anchor of root.querySelectorAll(WEB_LINK_SELECTOR)) {
+    const excluded: Element | null =
+      excludedSelector === undefined ? null : anchor.closest(excludedSelector);
+    if (excluded === null || !root.contains(excluded)) {
+      links.push(anchor.getAttribute("href") ?? "");
+    }
+  }
+  return links;
+}
+
+/** The reply's links as `ThreadReply.links` spreads them: omitted when there are none. */
+export function linksField(links: readonly string[]): { links?: readonly string[] } {
+  return links.length === 0 ? {} : { links };
 }
 
 const TEXT_NODE_FILTER = 4; // NodeFilter.SHOW_TEXT, spelled out so the module loads without a DOM.
