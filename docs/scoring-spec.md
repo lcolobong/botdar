@@ -88,6 +88,7 @@ Group caps: `handle` 1.2, `profile` 1.2, `geo` 0.4, `timing` 1.5, `coordination`
 | Feature | Group | Cap | Input | Bins / weight | Gate |
 |---|---|---|---|---|---|
 | `reddit.karmaPerDay` | activity | 1.5 | `(linkKarma + commentKarma) / max(ageDays, 1)` | `[0,50)→0` `[50,200)→0.6` `[200,1000)→1.0` `[1000,∞)→1.5` | `ageDays < 180` |
+| `reddit.karmaSinceFirstActivity` | activity | 1.0 | `(linkKarma + commentKarma) / days since the oldest visible item` | `[0,50)→0` `[50,200)→0.4` `[200,1000)→0.7` `[1000,∞)→1.0` | `ageDays ≥ 180` (the complement of `reddit.karmaPerDay`, so the two never both fire), the overview listing returned 1 to 99 items (its oldest item is the first and the profile shows something), the oldest item at least 7 days old. Tier 2 only: one `overview.json?limit=100` on hover |
 | `reddit.accountAgeDays` | age | 1.2 | days since `createdAt` | `[0,30)→1.2` `[30,180)→0.6` `[180,730)→0` `[730,∞)→-0.6` | `createdAt` known |
 | `reddit.postToCommentKarma` | content | 1.0 | `linkKarma / (commentKarma + 1)` | `[0,5)→0` `[5,20)→0.5` `[20,∞)→1.0` | `linkKarma ≥ 500` |
 | `reddit.generatedName` | handle | 0.4 | matches `^[A-Z][a-z]+[-_][A-Z][a-z]+[-_]?\d{1,4}$` | bool, 0.4 | always; many humans keep it, so low weight |
@@ -164,7 +165,7 @@ which is also what the hover-card caveat tells the user. The recurring theme: ev
 of **effort that was not spent per account**. Operators optimise for volume across many accounts, so
 anything that costs per-account time, money or patience is skipped, and the skip is visible.
 
-### Activity rate (`x.postsPerDay`, `bsky.postsPerDay`, `reddit.karmaPerDay`, `hn.submissionsPerDay`, `hn.karmaPerDay`)
+### Activity rate (`x.postsPerDay`, `bsky.postsPerDay`, `reddit.karmaPerDay`, `reddit.karmaSinceFirstActivity`, `hn.submissionsPerDay`, `hn.karmaPerDay`)
 
 - **Mechanism.** Software does not sleep, work or tire, and an operator's return scales with output
   per account, so automated accounts post at rates a person cannot sustain. Dividing by account age
@@ -177,6 +178,16 @@ anything that costs per-account time, money or patience is skipped, and the skip
   dilute the rate until it says nothing.
 - **Counter-case.** Newsrooms, brands, live-tweeters and a few compulsive humans post at these rates,
   which is why the cap is 2.0 and not enough on its own to reach `many`.
+- **On Reddit, past the gate.** The 180-day gate is also the evasion: an aged account is never
+  rate-checked. `reddit.karmaSinceFirstActivity` divides the same karma by the days since the oldest
+  item in the user's public overview, which is the account's first visible activity when the listing
+  is shorter than one 100-item page (a longer one hides it, so the feature is omitted). It takes the
+  other side of the age line, so it never stacks with `reddit.karmaPerDay`. It weighs less (cap 1.0)
+  and needs a span of at least a week: Reddit keeps karma after the posts that earned it are deleted,
+  so an account that wiped its history and posted a few comments lately shows its whole karma over a
+  few days, which the data cannot tell from farming. Counter-cases: that, and long-time readers who
+  start posting in large communities and earn karma quickly. It is fetched on hover only and kept for a day
+  ([ADR-0028](decisions/ADR-0028-reddit-karma-since-first-activity.md)).
 - **On Hacker News.** `submitted` counts stories and comments together, and the site throttles new
   accounts that post fast, so ten a day sustained is already rare for a person; the bins start there
   and stop at 1.2. Karma is weaker than on Reddit: one Show HN that reaches the front page earns a
@@ -468,6 +479,7 @@ such a line once, from the stronger item.
 | `x.noSleepWindow`, `bsky.noSleepWindow` | "Posts around the clock" / no contribution: nothing | "no daily quiet window" / none | this feature's own: "Shared and team-run accounts post around the clock." |
 | `thread.nearDuplicateReply` | "Reply closely matches an earlier one by another account" / "… earlier ones by {n} other accounts" / no contribution: nothing | "reply templates get reused across accounts" / none | this feature's own: "Popular phrases and memes get repeated by real people." (group coordination: "People reacting to the same post often say the same thing.") |
 | `reddit.karmaPerDay`, `hn.karmaPerDay` | "~{rate} karma/day on a {age}-old account" | "karma-farming pattern" / "a pace ordinary use earns" | activity: as above |
+| `reddit.karmaSinceFirstActivity` | "~{rate} karma/day since first activity {age} ago" ({age} counted from the oldest visible item; "today" under a day) | "karma-farming pattern" / "a pace ordinary use earns" | this feature's own: "Long-time readers who start posting in large communities can earn karma quickly. Accounts that delete their old posts keep their karma, so the rate can look inflated." |
 | `hn.submissionsPerDay` | "{n} posts and comments in {age}" (a rate under one a day reads better as a count) | "prolonged hyperactivity" / "a pace a person keeps up" | activity: as above |
 | `hn.hasAbout` | "Has an about section" / false: nothing | "left as created" / "effort spent on this one account" | profile: as above |
 | `reddit.postToCommentKarma` | "Post karma {link}, comment karma {comment}" | "reposts earn it without conversation" / "it joins conversations" | content: as above |

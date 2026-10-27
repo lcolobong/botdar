@@ -24,6 +24,8 @@ Nothing else. No account names, no scores, no browsing history, no analytics, no
 
 - Remembered lookups: when a lookup returns profile data (for example follower counts and account age),
   the extension keeps that data on your device for seven days so the same account is not fetched again.
+  On Reddit, a hover also keeps two numbers from the account's public activity list, the date of its
+  oldest item and how many items it listed, for one day; no titles, comments or subreddits are read or kept.
   Each entry is filed under a one-way hash of the platform and the handle mixed with a random value
   created on your device, so the stored data lists no handles; it holds no display name and no bio text (only whether a bio is empty) and is never
   sent anywhere. At most 5,000 entries are kept, and expired ones are deleted. You can turn this off
@@ -42,7 +44,10 @@ dropped when you move to another page.
 
 On X and Bluesky when you hover a badge, and on Reddit when a post comes into view, the extension may ask
 the platform for the same public profile information the page itself shows, using your existing session.
-On Reddit that is one request per author per page at most, and the cache answers repeats. On Bluesky
+On Reddit that is one request per author per page at most, and the cache answers repeats. When you
+hover a badge on an account that is at least six months old, the extension also asks Reddit for the
+account's latest public posts and comments (`/user/<name>/overview.json`), again with your session, and
+reads only when they were posted and how many there are. On Bluesky
 a hover also asks Bluesky's public service, without your session, for that author's recent public
 posts, to read only when they post.
 

@@ -81,7 +81,8 @@ Stores the user's settings (which platforms are on, conservative mode, label sty
 downloaded signed configuration file, and the optional "This looks wrong" feedback the user chooses to
 record, which stays on the device until the user exports or clears it, and, unless the user turns it
 off, profile lookups kept for seven days under salted one-way hashes (no handles or names in readable
-form) so the same account is not fetched twice; the user can clear them at any time. No scores are
+form), and two numbers from an account's public activity list for one day, so the same account is not
+fetched twice; the user can clear them at any time. No scores are
 written to storage.
 ```
 
