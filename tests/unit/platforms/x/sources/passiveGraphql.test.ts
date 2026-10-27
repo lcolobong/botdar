@@ -15,7 +15,7 @@ function loadFixture(name: string): unknown {
   return JSON.parse(readFileSync(join(process.cwd(), "tests/fixtures/x/graphql", name), "utf8"));
 }
 
-const relay = (op: string, body: unknown): void => {
+const relay = (op: string, body: unknown, query?: string): void => {
   window.dispatchEvent(
     new MessageEvent("message", {
       data: {
@@ -24,6 +24,7 @@ const relay = (op: string, body: unknown): void => {
         kind: X_GRAPHQL_RELAY_KIND,
         op,
         queryId: "QueryId_000000000001",
+        ...(query === undefined ? {} : { query }),
         body,
       },
       origin: location.origin,
@@ -84,6 +85,38 @@ describe("createPassiveGraphqlSource", () => {
       maria_dev: undefined,
       mila48213907: "Follow for daily picks 🔥",
     });
+  });
+
+  const userTweets = (): unknown =>
+    JSON.parse(
+      readFileSync(join(process.cwd(), "tests/fixtures/smoke/x-user-tweets.json"), "utf8"),
+    );
+  const variablesFor = (userId: string): string =>
+    `?${new URLSearchParams({ variables: JSON.stringify({ userId, count: 20 }) })}`;
+
+  it("emits the owner's post times from the posts tab, and from no other operation", () => {
+    const { emissions, stop } = start();
+    relay("UserTweets", userTweets());
+    relay("UserTweetsAndReplies", userTweets());
+    relay("HomeTimeline", userTweets());
+    stop();
+    const [fromProfile, fromReplies, fromFeed] = emissions.filter(
+      ([ref]) => ref.handle === "maria_dev",
+    );
+    expect(fromProfile?.[1].postTimestamps).toHaveLength(100);
+    expect(fromReplies?.[1]).not.toHaveProperty("postTimestamps");
+    expect(fromFeed?.[1]).not.toHaveProperty("postTimestamps");
+    expect(fromFeed?.[1].postText).toBe(fromProfile?.[1].postText);
+  });
+
+  it("takes the owner from the request's variables when the relay carries them", () => {
+    const { emissions, stop } = start();
+    relay("UserTweets", userTweets(), variablesFor("1000000000000000004"));
+    relay("UserTweets", userTweets(), variablesFor("1000000000000000999"));
+    stop();
+    const [named, otherUser] = emissions.filter(([ref]) => ref.handle === "maria_dev");
+    expect(named?.[1].postTimestamps).toHaveLength(100);
+    expect(otherUser?.[1]).not.toHaveProperty("postTimestamps");
   });
 
   it("emits the user and the About projection for an AboutAccountQuery body", () => {

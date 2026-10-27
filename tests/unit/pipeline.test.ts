@@ -225,6 +225,54 @@ describe("mergeSignals", () => {
     expect(target.signals.ref.handle).toBe("someone");
     expect(target.signals.observedAt).toBe(0);
   });
+
+  describe("post timestamps", () => {
+    it("accumulates across observations, newest first, without duplicates", () => {
+      const target = blankSignals();
+      expect(mergeSignals(target, { postTimestamps: [300, 100] }, 1, 10)).toBe(true);
+      expect(mergeSignals(target, { postTimestamps: [400, 300, 200] }, 1, 20)).toBe(true);
+      expect(target.signals.postTimestamps).toEqual([400, 300, 200, 100]);
+      expect(mergeSignals(target, { postTimestamps: [200] }, 1, 30)).toBe(false);
+      expect(target.signals.observedAt).toBe(30);
+    });
+
+    it("lets a higher tier's set replace a lower tier's, never the other way round", () => {
+      const target = blankSignals();
+      mergeSignals(target, { postTimestamps: [400, 300] }, 1, 10);
+      expect(mergeSignals(target, { postTimestamps: [500] }, 2, 20)).toBe(true);
+      expect(target.signals.postTimestamps).toEqual([500]);
+      expect(target.signals.provenance.postTimestamps).toBe(2);
+      expect(mergeSignals(target, { postTimestamps: [450] }, 1, 30)).toBe(false);
+      expect(target.signals.postTimestamps).toEqual([500]);
+      expect(mergeSignals(target, { postTimestamps: [500] }, 2, 40)).toBe(false);
+    });
+
+    it("drops post times in the future", () => {
+      const target = blankSignals();
+      const now: number = Date.UTC(2026, 9, 22);
+      mergeSignals(target, { postTimestamps: [now - 1000, Date.UTC(2099, 0, 1)] }, 2, now);
+      expect(target.signals.postTimestamps).toEqual([now - 1000]);
+    });
+
+    it("keeps only the newest 100", () => {
+      const target = blankSignals();
+      const older: number[] = Array.from({ length: 80 }, (_, index) => index);
+      const newer: number[] = Array.from({ length: 80 }, (_, index) => 1000 + index);
+      mergeSignals(target, { postTimestamps: older }, 1, 10);
+      mergeSignals(target, { postTimestamps: newer }, 1, 20);
+      expect(target.signals.postTimestamps).toHaveLength(100);
+      expect(target.signals.postTimestamps?.[0]).toBe(1079);
+      expect(target.signals.postTimestamps?.at(-1)).toBe(60);
+    });
+
+    it("merges the other fields of the same emission by the usual rule", () => {
+      const target = blankSignals();
+      mergeSignals(target, { followers: 9 }, 2, 10);
+      mergeSignals(target, { followers: 5, postTimestamps: [1] }, 1, 20);
+      expect(target.signals.followers).toBe(9);
+      expect(target.signals.postTimestamps).toEqual([1]);
+    });
+  });
 });
 
 describe("AccountResolver", () => {

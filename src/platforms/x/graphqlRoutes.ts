@@ -11,11 +11,20 @@ export const X_GRAPHQL_REQUEST_RELAY_KIND = "x.graphql.request";
 
 export const ABOUT_ACCOUNT_OPERATION = "AboutAccountQuery";
 
+/**
+ * A profile's own posts, which the page fetches when someone opens the profile and scrolls. Only
+ * this tab feeds the cadence features: the replies tab (`UserTweetsAndReplies`) is a different
+ * population of posts, and mixing the two would mix two rhythms.
+ */
+export const PROFILE_TIMELINE_OPERATION = "UserTweets";
+/** The profile timeline's request query is relayed with its body, capped, for the actor's id. */
+export const MAX_RELAYED_QUERY_LENGTH = 4096;
+
 export const X_GRAPHQL_OPERATIONS: ReadonlySet<string> = new Set([
   "HomeTimeline",
   "HomeLatestTimeline",
   "SearchTimeline",
-  "UserTweets",
+  PROFILE_TIMELINE_OPERATION,
   "UserTweetsAndReplies",
   "TweetDetail",
   "UserByScreenName",
@@ -27,6 +36,8 @@ export const X_GRAPHQL_OPERATIONS: ReadonlySet<string> = new Set([
 export interface GraphqlOperation {
   op: string;
   queryId: string;
+  /** The request's query string, for the profile timeline only (it names the profile's user). */
+  query?: string;
 }
 
 const GRAPHQL_PATH_PATTERN = /^\/i\/api\/graphql\/([A-Za-z0-9_-]{15,40})\/([A-Za-z0-9_]{1,64})$/;
@@ -45,5 +56,10 @@ export function matchGraphqlOperation(url: string, base: string): GraphqlOperati
   }
   const match: RegExpExecArray | null = GRAPHQL_PATH_PATTERN.exec(parsed.pathname);
   const [, queryId, op] = match ?? [];
-  return queryId === undefined || op === undefined ? undefined : { op, queryId };
+  if (queryId === undefined || op === undefined) {
+    return undefined;
+  }
+  return op === PROFILE_TIMELINE_OPERATION && parsed.search.length <= MAX_RELAYED_QUERY_LENGTH
+    ? { op, queryId, query: parsed.search }
+    : { op, queryId };
 }

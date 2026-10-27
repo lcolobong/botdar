@@ -32,6 +32,8 @@ export interface ParsedXPost {
   id: string;
   author: AccountRef;
   text?: string;
+  /** Epoch milliseconds. */
+  createdAt?: number;
 }
 
 export interface ParsedXBody {
@@ -232,6 +234,12 @@ function asPost(node: UnknownRecord): ParsedXPost | undefined {
   if (text !== undefined) {
     post.text = text.slice(0, MAX_SINGLE_POST_TEXT_LENGTH);
   }
+  // GUESS: a post's own time is legacy.created_at in X's weekday-first format, as on the user
+  // object; the recorded timeline bodies under tests/fixtures/x/graphql/ do not carry it.
+  const createdAt: number | undefined = parseXTimestamp(readString(legacy, "created_at"));
+  if (createdAt !== undefined) {
+    post.createdAt = createdAt;
+  }
   return post;
 }
 
@@ -298,6 +306,66 @@ export function postTextByHandle(posts: ParsedXPost[]): Map<string, string> {
     texts.set(post.author.handle, joined.slice(0, MAX_POST_TEXT_LENGTH));
   }
   return texts;
+}
+
+export interface TimelineOwnerPosts {
+  handle: string;
+  /** Epoch milliseconds, as the body carried them; the pipeline normalises. */
+  timestamps: number[];
+}
+
+const USER_ID_PATTERN = /^\d{1,20}$/;
+
+/**
+ * The profile's user id from a UserTweets request query, `variables={"userId":"…",…}`.
+ * GUESS: the web client sends UserTweets as a GET with its variables JSON in the query string;
+ * no recorded request confirms it. A POST, or a query without a readable id, gives undefined and
+ * the owner falls back to the post count below.
+ */
+export function profileTimelineUserIdOf(query: string | undefined): string | undefined {
+  if (query === undefined) {
+    return undefined;
+  }
+  try {
+    const variables: unknown = JSON.parse(new URLSearchParams(query).get("variables") ?? "");
+    const userId: string | undefined = isRecord(variables)
+      ? readString(variables, "userId")
+      : undefined;
+    return userId !== undefined && USER_ID_PATTERN.test(userId) ? userId : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The post times of a profile timeline's owner. Such a body also carries other authors' posts
+ * (quoted and reposted posts), each a scattered sample of that author's timeline that would read as
+ * false gaps. The owner is the user the request named (`ownerId`); only when the request did not
+ * say does the author with the most posts count, and then a tie names no owner.
+ */
+export function timelineOwnerPosts(
+  posts: ParsedXPost[],
+  ownerId?: string,
+): TimelineOwnerPosts | undefined {
+  const postsByAuthor = new Map<string, TimelineOwnerPosts>();
+  for (const post of posts) {
+    const authorKey: string = post.author.id ?? post.author.handle;
+    if (post.createdAt === undefined || (ownerId !== undefined && authorKey !== ownerId)) {
+      continue;
+    }
+    const entry: TimelineOwnerPosts = postsByAuthor.get(authorKey) ?? {
+      handle: post.author.handle,
+      timestamps: [],
+    };
+    entry.timestamps.push(post.createdAt);
+    postsByAuthor.set(authorKey, entry);
+  }
+  const [owner, runnerUp] = [...postsByAuthor.values()].sort(
+    (left, right) => right.timestamps.length - left.timestamps.length,
+  );
+  return owner === undefined || owner.timestamps.length === runnerUp?.timestamps.length
+    ? undefined
+    : owner;
 }
 
 // MARK: - Signals

@@ -82,6 +82,23 @@ const envelope = (kind: string, op: string, body: unknown) => ({
 });
 
 describe("matchGraphqlOperation", () => {
+  it("keeps the request query for the profile's posts tab only, capped", () => {
+    const query = "?variables=%7B%22userId%22%3A%2212%22%7D";
+    expect(matchGraphqlOperation(`/i/api/graphql/${QUERY_ID}/UserTweets${query}`, PAGE)).toEqual({
+      op: "UserTweets",
+      queryId: QUERY_ID,
+      query,
+    });
+    expect(
+      matchGraphqlOperation(`/i/api/graphql/${QUERY_ID}/UserTweetsAndReplies${query}`, PAGE),
+    ).toEqual({ op: "UserTweetsAndReplies", queryId: QUERY_ID });
+    const huge = `?variables=${"x".repeat(5000)}`;
+    expect(matchGraphqlOperation(`/i/api/graphql/${QUERY_ID}/UserTweets${huge}`, PAGE)).toEqual({
+      op: "UserTweets",
+      queryId: QUERY_ID,
+    });
+  });
+
   it("reads the query id and operation from an X GraphQL URL, absolute or relative", () => {
     expect(matchGraphqlOperation(timelineUrl, PAGE)).toEqual({
       op: "HomeTimeline",
