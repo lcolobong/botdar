@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "about": "High-frequency function words per language, space-separated, lowercase, NFC. Read by src/core/text/language.ts; a word listed by several languages counts as a fraction for each.",
+    "distinctiveCharacters": "Letters that occur in one language of the set and rarely in the others; each occurrence adds a small bonus."
+  },
+  "stopwords": {
+    "en": "the and of to in is it you that for on with this are be my at not have was but we they your from just about all me so what like will can our out more if an or do been has had would there their when who which them some no how its t m ll ve",
+    "es": "de la que el en y los del se las por un para con no una su al lo como más pero sus le ya este sí porque esta entre cuando muy sin sobre también me hasta hay donde quien desde todo nos ni eso ellos esto yo mi mis tú te tu ella es soy son fue hoy gracias",
+    "pt": "de a o que e do da em um para é com não uma os no se na por mais as dos como mas foi ao ele das tem à seu sua ou ser quando muito há nos já está eu também só pelo pela até isso ela entre sem mesmo ter quem me esse eles você meu minha são aqui agora obrigado",
+    "fr": "de la le et les des en un du une que est pour qui dans par plus pas au sur ne se ce il sont avec je mais nous vous on ou son sa aux elle ils été être très tout cette comme leur mon ma mes moi fait aussi bien même c j qu suis",
+    "de": "der die und in den von zu das mit sich des auf für ist im dem nicht ein eine als auch es an werden aus er hat dass sie nach wird bei einer um am sind noch wie einem über einen so zum war haben nur oder aber vor zur bis mehr durch man sein ich wir mein meine uns schon hier immer",
+    "it": "di e il la che è per un in del non una con i gli le si da al della sono mi ma lo ho ci come più anche nel se questo io ha alla dei delle cosa tutto mio mia tu ti sei noi voi loro perché quando molto ancora sempre oggi solo grazie già",
+    "nl": "de en het van een in is dat op te zijn met voor niet aan er die maar om ook als dan bij of door naar nog wat uit wel over ik je we wij zij hij mijn ons onze deze dit geen heb heeft worden wordt kan meer nu hier jullie gewoon echt",
+    "tr": "ve bir bu da de için ile ne çok gibi daha ama en o ben sen biz siz onlar mi mı mu mü olan olarak var yok her şey kadar sonra değil bana beni benim ki ya diye nasıl neden şimdi bugün artık hem hiç oldu ise göre",
+    "pl": "i w z na się nie do to że jest o a jak co po ale od za tak dla czy jego już by tylko ze przez mnie mi jestem są był była ich ja ty my wy oni tego tym ten ta też może jeszcze bardzo gdy kiedy sobie oraz który która które",
+    "id": "yang dan di ini itu dengan untuk tidak dari dalam akan pada juga ke ada saya kita kami mereka kamu aku anda bisa sudah belum atau karena tapi tetapi jadi lebih sangat hanya oleh seperti adalah banyak semua lagi apa siapa bagaimana kalau jika sama telah harus baru masih terima kasih",
+    "sv": "och i att det som en på är av för med till den har de inte om ett han men var jag sig från vi så kan man när år hon under också efter eller nu sin där vid mot ska skulle kommer ut får finns vara hade alla andra mycket än här då sedan över bara dig mig min mitt du ni dem",
+    "vi": "và của là có không những được cho với người này một các trong đã để khi thì mà cũng như đến từ ra sẽ làm đó nhiều nhưng tôi bạn chúng ta mình họ về rất nào gì vì nếu theo lại còn năm ở vào trên",
+    "tl": "ang ng sa na mga at ay ko ako ka mo siya niya kami tayo sila nila ito iyan iyon hindi oo po lang din rin pa naman kasi pero para kung may wala lahat isang yung talaga ba natin namin kayo ninyo akin dito doon ngayon salamat",
+    "ro": "și de în la cu pe un o care nu se din mai ce să pentru este sunt sau dar am ai au a al ale lui ei el ea noi voi eu tu mea meu foarte acest această fost fi fie când cum doar după până prin acum aici",
+    "cs": "a v se na je že s z do to k i o jsem jako ale by si po pro za od které který která jak tak už jen také nebo jsou být byl byla bylo mě mi mám máme není ten ta tento když protože já ty my vy oni jsme jste než ještě více velmi",
+    "hu": "a az és hogy nem is egy meg de van ez el azt csak mint még már ki be fel le sem ha ami aki mi te ő én ti ők vagy volt lesz lett majd nagyon minden nincs itt ott most mert pedig után kell lehet igen köszönöm",
+    "fi": "ja on ei se että oli hän mutta kun niin kuin myös tai ole olen olet olla ovat mitä minä sinä me te he tämä tuo joka jos vain nyt sitten vielä jo kaikki paljon hyvä kiitos tänään aina missä miten miksi mikä siitä sen sitä siis",
+    "ru": "и в не на я что с он а как это по но они к у же вы за бы ты мы так от его все она мне был для о из есть да уже только или если еще ещё меня когда нет до вот может очень тебя сегодня где чтобы этот эта мой моя",
+    "uk": "і в не на що з я та а це як до у й по але ми ви ти він вона вони за для від про мене мені так все вже ще є був була тільки або якщо коли ні де щоб цей ця мій моя дуже сьогодні також тому його її їх бо",
+    "bg": "и в на е се да за от с не са по това че като той тя ние вие те аз ти съм си беше бъде ще или но още много днес тук там който която което които всички също така само след преди защото",
+    "sr": "и у на је да се за од са не као то што али из по ја ти он она ми ви они сам си смо бити био била ће или још много данас овде где који која које све такође само после пре јер мој моја моје мом свој свако сваки сваког ово овај ова оно ономе нас вас њих њега њој",
+    "mk": "и во на е се да за од со не како тоа што но по јас ти тој таа ние вие тие сум си ќе или уште многу денес тука каде кој која кое сите исто така само пред бидејќи",
+    "af": "die en van in is nie dat met vir op te was wat ek jy hy sy ons julle hulle om aan by as ook maar sal kan nog nou baie hier daar wie my jou graag lekker n oor wees word weer mense gaan sê"
+  },
+  "distinctiveCharacters": {
+    "es": "ñ¿¡",
+    "pt": "ãõ",
+    "de": "ß",
+    "fr": "œ",
+    "tr": "ğış",
+    "pl": "ąęłńśźż",
+    "ro": "ășț",
+    "cs": "řůě",
+    "hu": "őű",
+    "sv": "å",
+    "vi": "đơư",
+    "ru": "ыэё",
+    "uk": "іїєґ",
+    "bg": "ъ",
+    "sr": "ђћџ",
+    "mk": "ѓќѕ"
+  }
+}
