@@ -65,7 +65,11 @@ function noteRequest(target: PageWindow, readUrl: () => string): GraphqlOperatio
     if (operation === undefined) {
       return undefined;
     }
-    postRelay(X_GRAPHQL_REQUEST_RELAY_KIND, { ...operation, body: null }, target);
+    postRelay(
+      X_GRAPHQL_REQUEST_RELAY_KIND,
+      { op: operation.op, queryId: operation.queryId, body: null },
+      target,
+    );
     return X_GRAPHQL_OPERATIONS.has(operation.op) ? operation : undefined;
   } catch {
     return undefined;

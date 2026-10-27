@@ -18,12 +18,15 @@ export interface RelayEnvelope {
   kind: string;
   op?: string;
   queryId?: string;
+  /** The request's query string when the interceptor passes it on (untrusted, like the body). */
+  query?: string;
   body: unknown;
 }
 
 export interface RelayPayload {
   op?: string;
   queryId?: string;
+  query?: string;
   body: unknown;
 }
 
@@ -43,6 +46,7 @@ export function isRelayEnvelope(value: unknown): value is RelayEnvelope {
     typeof value.kind === "string" &&
     isOptionalString(value.op) &&
     isOptionalString(value.queryId) &&
+    isOptionalString(value.query) &&
     "body" in value
   );
 }
@@ -64,6 +68,7 @@ export function postRelay(kind: string, payload: RelayPayload, target: Window = 
     kind,
     ...(payload.op !== undefined ? { op: payload.op } : {}),
     ...(payload.queryId !== undefined ? { queryId: payload.queryId } : {}),
+    ...(payload.query !== undefined ? { query: payload.query } : {}),
     body: payload.body,
   };
   try {

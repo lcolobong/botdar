@@ -6,6 +6,8 @@ import {
   parseGraphqlBody,
   parseXTimestamp,
   postTextByHandle,
+  profileTimelineUserIdOf,
+  timelineOwnerPosts,
   toSignals,
   type ParsedXPost,
   type ParsedXUser,
@@ -375,5 +377,86 @@ describe("postTextByHandle", () => {
       Array.from({ length: 10 }, (_, index) => post("alice", `${index}`.repeat(500))),
     );
     expect(texts.get("alice")).toHaveLength(2000);
+  });
+});
+
+describe("post times", () => {
+  const author = (handle: string, id: string) => ({ rest_id: id, core: { screen_name: handle } });
+  const postBy = (handle: string, id: string, createdAt?: string) => ({
+    rest_id: `post-${handle}-${createdAt ?? "none"}`,
+    core: { user_results: { result: author(handle, id) } },
+    legacy: { full_text: "text", ...(createdAt === undefined ? {} : { created_at: createdAt }) },
+  });
+
+  it("reads a post's legacy.created_at", () => {
+    const [post] = parseGraphqlBody(postBy("owner", "1", "Wed Oct 21 18:44:18 +0000 2026")).posts;
+    expect(post?.createdAt).toBe(Date.UTC(2026, 9, 21, 18, 44, 18));
+    const [undated] = parseGraphqlBody(postBy("owner", "1")).posts;
+    expect(undated?.createdAt).toBeUndefined();
+  });
+
+  it("without a named owner, takes the author with the most posts", () => {
+    const posts: ParsedXPost[] = parseGraphqlBody([
+      postBy("owner", "1", "Wed Oct 21 10:00:00 +0000 2026"),
+      postBy("parent", "2", "Wed Oct 21 09:00:00 +0000 2026"),
+      postBy("owner", "1", "Wed Oct 21 12:00:00 +0000 2026"),
+    ]).posts;
+    expect(timelineOwnerPosts(posts)).toEqual({
+      handle: "owner",
+      timestamps: [Date.UTC(2026, 9, 21, 10), Date.UTC(2026, 9, 21, 12)],
+    });
+  });
+
+  /** The owner reposts three posts by one author and posts one of their own: four posts each. */
+  const repostHeavy = (): ParsedXPost[] =>
+    parseGraphqlBody([
+      ...["10", "11", "12"].map((hour): unknown => ({
+        ...postBy("owner", "1", `Wed Oct 21 ${hour}:00:00 +0000 2026`),
+        legacy: {
+          created_at: `Wed Oct 21 ${hour}:00:00 +0000 2026`,
+          retweeted_status_result: {
+            result: postBy("loud_author", "2", `Tue Oct 20 ${hour}:30:00 +0000 2026`),
+          },
+        },
+      })),
+      postBy("owner", "1", "Wed Oct 21 13:00:00 +0000 2026"),
+      postBy("loud_author", "2", "Tue Oct 20 08:00:00 +0000 2026"),
+    ]).posts;
+
+  it("takes the owner the request named, even on a repost-heavy page", () => {
+    expect(timelineOwnerPosts(repostHeavy())).toBeUndefined();
+    const owner = timelineOwnerPosts(repostHeavy(), "1");
+    expect(owner?.handle).toBe("owner");
+    expect(owner?.timestamps).toHaveLength(4);
+    expect(timelineOwnerPosts(repostHeavy(), "3")).toBeUndefined();
+  });
+
+  it("reads the profile's user id from a UserTweets request query", () => {
+    const query = (variables: unknown): string =>
+      `?${new URLSearchParams({ variables: JSON.stringify(variables), features: "{}" })}`;
+    expect(profileTimelineUserIdOf(query({ userId: "1234567890", count: 20 }))).toBe("1234567890");
+    expect(profileTimelineUserIdOf(query({ userId: 12 }))).toBeUndefined();
+    expect(profileTimelineUserIdOf(query({ userId: "abc" }))).toBeUndefined();
+    expect(profileTimelineUserIdOf("?variables=%7Bnot%20json")).toBeUndefined();
+    expect(profileTimelineUserIdOf("")).toBeUndefined();
+    expect(profileTimelineUserIdOf(undefined)).toBeUndefined();
+  });
+
+  it("names no owner on a tie or without dated posts", () => {
+    const tied: ParsedXPost[] = parseGraphqlBody([
+      postBy("one", "1", "Wed Oct 21 10:00:00 +0000 2026"),
+      postBy("two", "2", "Wed Oct 21 11:00:00 +0000 2026"),
+    ]).posts;
+    expect(timelineOwnerPosts(tied)).toBeUndefined();
+    expect(timelineOwnerPosts(parseGraphqlBody(postBy("owner", "1")).posts)).toBeUndefined();
+  });
+
+  it("reads the smoke harness's hand-written UserTweets body", () => {
+    const body: unknown = JSON.parse(
+      readFileSync(new URL("../../../fixtures/smoke/x-user-tweets.json", import.meta.url), "utf8"),
+    );
+    const owner = timelineOwnerPosts(parseGraphqlBody(body).posts);
+    expect(owner?.handle).toBe("maria_dev");
+    expect(owner?.timestamps).toHaveLength(100);
   });
 });

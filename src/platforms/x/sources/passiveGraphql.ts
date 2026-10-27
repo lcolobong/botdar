@@ -6,12 +6,18 @@
  */
 import { onRelay } from "@/src/core/relay";
 import type { PartialSignals, SignalSource } from "@/src/core/types";
-import { ABOUT_ACCOUNT_OPERATION, X_GRAPHQL_RELAY_KIND } from "../graphqlRoutes";
-import type { ParsedAboutAccount, ParsedXBody } from "../parsers/graphqlUsers";
+import {
+  ABOUT_ACCOUNT_OPERATION,
+  PROFILE_TIMELINE_OPERATION,
+  X_GRAPHQL_RELAY_KIND,
+} from "../graphqlRoutes";
+import type { ParsedAboutAccount, ParsedXBody, TimelineOwnerPosts } from "../parsers/graphqlUsers";
 import {
   parseAboutAccount,
   parseGraphqlBody,
   postTextByHandle,
+  profileTimelineUserIdOf,
+  timelineOwnerPosts,
   toAboutSignals,
   toSignals,
 } from "../parsers/graphqlUsers";
@@ -29,6 +35,34 @@ function withoutDeclaredOverride(signals: PartialSignals): PartialSignals {
   return relayed;
 }
 
+/**
+ * What a body's posts say about their authors: each author's post text, and on the profile's posts
+ * tab (`UserTweets`) the owner's post times, the owner being the user the request named. Post times
+ * from any other operation are a feed's, a thread's or the replies tab's sample, a different
+ * population from the one the cadence features read, and are left out.
+ */
+function postSignalsByHandle(
+  parsed: ParsedXBody,
+  op: string | undefined,
+  query: string | undefined,
+): Map<string, PartialSignals> {
+  const signalsByHandle = new Map<string, PartialSignals>();
+  for (const [handle, postText] of postTextByHandle(parsed.posts)) {
+    signalsByHandle.set(handle, { postText });
+  }
+  const owner: TimelineOwnerPosts | undefined =
+    op === PROFILE_TIMELINE_OPERATION
+      ? timelineOwnerPosts(parsed.posts, profileTimelineUserIdOf(query))
+      : undefined;
+  if (owner !== undefined) {
+    signalsByHandle.set(owner.handle, {
+      ...signalsByHandle.get(owner.handle),
+      postTimestamps: owner.timestamps,
+    });
+  }
+  return signalsByHandle;
+}
+
 export function createPassiveGraphqlSource(target: Window = window): SignalSource {
   return {
     id: PASSIVE_GRAPHQL_SOURCE_ID,
@@ -40,11 +74,16 @@ export function createPassiveGraphqlSource(target: Window = window): SignalSourc
         X_GRAPHQL_RELAY_KIND,
         (envelope) => {
           const parsed: ParsedXBody = parseGraphqlBody(envelope.body);
-          const postTexts: Map<string, string> = postTextByHandle(parsed.posts);
+          const postSignals: Map<string, PartialSignals> = postSignalsByHandle(
+            parsed,
+            envelope.op,
+            envelope.query,
+          );
           for (const user of parsed.users) {
-            const signals: PartialSignals = withoutDeclaredOverride(toSignals(user));
-            const postText: string | undefined = postTexts.get(user.ref.handle);
-            emit(user.ref, postText === undefined ? signals : { ...signals, postText });
+            emit(user.ref, {
+              ...withoutDeclaredOverride(toSignals(user)),
+              ...postSignals.get(user.ref.handle),
+            });
           }
           if (envelope.op !== ABOUT_ACCOUNT_OPERATION) {
             return;

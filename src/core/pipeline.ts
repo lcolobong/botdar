@@ -12,6 +12,7 @@ import type { PersistedLookup, PersistedLookupStore } from "./persistedLookups";
 import type { RateLimiter } from "./ratelimit";
 import { recordLookup } from "./diagnostics.ts";
 import { RateLimitedError } from "./ratelimit";
+import { normalisePostTimestamps } from "./scoring/cadence";
 import { MAX_POST_TEXT_LENGTH } from "./types";
 import type {
   AccountRef,
@@ -121,7 +122,10 @@ const RESERVED_FIELDS: ReadonlySet<string> = new Set([
   "observedAt",
 ]);
 
-/** Field values are primitives or one flat object (`replyShare`), so a shallow comparison is exact. */
+/**
+ * Field values are primitives, one flat object (`replyShare`) or one array of numbers
+ * (`postTimestamps`), so a shallow comparison is exact.
+ */
 function sameSignalValue(left: unknown, right: unknown): boolean {
   if (Object.is(left, right)) {
     return true;
@@ -159,10 +163,42 @@ function gatheredPostText(existing: string | undefined, incoming: string): strin
 }
 
 /**
+ * Post timestamps follow the tier-merge rule with one difference: within a tier they add up instead
+ * of the newer observation winning, because a profile timeline arrives a page at a time. A higher
+ * tier's set replaces a lower tier's (Tier 1 bodies are page-controlled, a Tier 2 lookup is not),
+ * and a lower tier never adds to a higher one, so the provenance is always the tier whose set is in
+ * use. The result is normalised once here; the cadence statistics trust it. Returns whether the
+ * set was taken and whether it changed.
+ */
+function mergePostTimestamps(
+  target: MergeableSignals,
+  incoming: number[],
+  tier: SourceTier,
+  observedAt: number,
+): { accepted: boolean; changed: boolean } {
+  const existingTier: SourceTier | undefined = target.signals.provenance.postTimestamps;
+  if (existingTier !== undefined && tier < existingTier) {
+    return { accepted: false, changed: false };
+  }
+  const base: number[] = existingTier === tier ? (target.signals.postTimestamps ?? []) : [];
+  const merged: number[] = normalisePostTimestamps([...base, ...incoming], observedAt);
+  const changed: boolean =
+    existingTier !== tier || !sameSignalValue(target.signals.postTimestamps, merged);
+  target.signals.postTimestamps = merged;
+  target.signals.provenance.postTimestamps = tier;
+  target.fieldObservedAt.postTimestamps = Math.max(
+    target.fieldObservedAt.postTimestamps ?? 0,
+    observedAt,
+  );
+  return { accepted: true, changed };
+}
+
+/**
  * Tier-merge rule: a higher tier overwrites a lower tier's value for the same field; within the same
  * tier the newer observation wins (post text gathers, `gatheredPostText`); a lower tier never
- * overwrites. Returns whether a value or its tier changed, which is all scoring reads: re-observing
- * the same value only refreshes the times.
+ * overwrites. Post timestamps accumulate within a tier too (`mergePostTimestamps`). Returns whether a
+ * value or its tier changed, which is all scoring reads: re-observing the same value only refreshes
+ * the times.
  */
 export function mergeSignals(
   target: MergeableSignals,
@@ -170,9 +206,14 @@ export function mergeSignals(
   tier: SourceTier,
   observedAt: number,
 ): boolean {
-  let accepted = false;
-  let changed = false;
-  for (const [key, observed] of Object.entries(incoming)) {
+  const { postTimestamps, ...replacing } = incoming;
+  const timestamps: { accepted: boolean; changed: boolean } =
+    postTimestamps === undefined
+      ? { accepted: false, changed: false }
+      : mergePostTimestamps(target, postTimestamps, tier, observedAt);
+  let accepted: boolean = timestamps.accepted;
+  let changed: boolean = timestamps.changed;
+  for (const [key, observed] of Object.entries(replacing)) {
     if (observed === undefined || RESERVED_FIELDS.has(key)) {
       continue;
     }

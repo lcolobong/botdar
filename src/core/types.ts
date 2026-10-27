@@ -60,6 +60,11 @@ export interface AccountSignals {
    * only for the language the account writes in, and kept in memory like every other field.
    */
   postText?: string;
+  /**
+   * Epoch milliseconds of the account's own posts, newest first, at most 100. Unlike every other
+   * field these add up: each response and each tier contributes the posts it carried (pipeline.ts).
+   */
+  postTimestamps?: number[];
   /** Which tier last supplied each field; drives the source dots, not which tiers delivered. */
   provenance: Partial<Record<SignalField, SourceTier>>;
   /**
