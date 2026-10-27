@@ -8,13 +8,18 @@
  * records what that allows. Every selector here is a GUESS, like those in dom.ts, until a thread
  * page has been recorded.
  */
-import type { ThreadReply } from "../../core/thread/threadIndex";
+import type { ReplyReading, ThreadRootLinks } from "../../core/thread/replyText";
+import { NOT_YET_READABLE, linksField, webLinksIn } from "../../core/thread/replyText";
 import { authorHandleOf } from "./dom";
 
 const POST_PATH_PATTERN = /^\/profile\/([^/]+)\/post\/([^/?#]+)/;
 /** GUESS: every link to a post, the timestamp link included, is `/profile/<actor>/post/<rkey>`. */
 const POST_LINK_SELECTOR = 'a[href^="/profile/"][href*="/post/"]';
 /**
+ * GUESS: a link in the post's text and the card of a linked page both render as an anchor whose
+ * `href` is the absolute URL, so every absolute link in the item is the post's. A quoted post's
+ * links would be read as the reply's too; no thread page has been recorded to tell them apart.
+ *
  * GUESS: the post's own text carries this test id; a quoted post's text renders without it, and a
  * quoted post follows the author's own text, so the first match is the reply's.
  */
@@ -56,8 +61,12 @@ function recordKeyOf(item: Element, author: string): string | undefined {
   return undefined;
 }
 
-/** The thread item as a reply, or undefined for the root, an ancestor or any other page. */
-export function threadReplyOf(item: Element, pageUrl: URL): ThreadReply | undefined {
+/**
+ * The thread item as a reply, or undefined for the root, an ancestor or any other page. A reply
+ * with no text (a link card alone) is still one, for the links it carries; one with neither text
+ * nor a link has not finished rendering and is NOT_YET_READABLE, read again on a later pass.
+ */
+export function threadReplyOf(item: Element, pageUrl: URL): ReplyReading {
   const rootKey: string | undefined = threadKeyOf(pageUrl);
   const author: string | undefined = authorHandleOf(item);
   const rootMillis: number | undefined = rootKey === undefined ? undefined : tidMillis(rootKey);
@@ -66,11 +75,30 @@ export function threadReplyOf(item: Element, pageUrl: URL): ThreadReply | undefi
   }
   const replyKey: string | undefined = recordKeyOf(item, author);
   const postedAt: number | undefined = replyKey === undefined ? undefined : tidMillis(replyKey);
-  const text: string | undefined = item.querySelector(POST_TEXT_SELECTOR)?.textContent ?? undefined;
   if (replyKey === undefined || postedAt === undefined || postedAt <= rootMillis) {
     return undefined;
   }
-  return text === undefined
-    ? undefined
-    : { threadKey: rootKey, replyId: `${author}/${replyKey}`, author, text, postedAt };
+  const text: string | undefined = item.querySelector(POST_TEXT_SELECTOR)?.textContent ?? undefined;
+  const links: string[] = webLinksIn(item);
+  if (text === undefined && links.length === 0) {
+    return NOT_YET_READABLE;
+  }
+  return {
+    threadKey: rootKey,
+    replyId: `${author}/${replyKey}`,
+    author,
+    text: text ?? "",
+    postedAt,
+    ...linksField(links),
+  };
+}
+
+/** The thread's root item, read for its links; undefined for every other item and page. */
+export function threadRootLinksOf(item: Element, pageUrl: URL): ThreadRootLinks | undefined {
+  const rootKey: string | undefined = threadKeyOf(pageUrl);
+  const author: string | undefined = authorHandleOf(item);
+  if (rootKey === undefined || author === undefined || recordKeyOf(item, author) !== rootKey) {
+    return undefined;
+  }
+  return { threadKey: rootKey, links: webLinksIn(item) };
 }

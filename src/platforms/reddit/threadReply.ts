@@ -6,9 +6,15 @@
  *
  * Every selector not confirmed against a live recording is marked GUESS, as in dom.ts.
  */
-import type { ReplyReading } from "../../core/thread/replyText";
-import { NOT_YET_READABLE, pageTimestampMillis, textOutside } from "../../core/thread/replyText";
-import { COMMENT_SELECTOR, authorNameOf } from "./dom";
+import type { ReplyReading, ThreadRootLinks } from "../../core/thread/replyText";
+import {
+  NOT_YET_READABLE,
+  linksField,
+  pageTimestampMillis,
+  textOutside,
+  webLinksIn,
+} from "../../core/thread/replyText";
+import { COMMENT_SELECTOR, POST_SELECTOR, authorNameOf } from "./dom";
 
 /**
  * GUESS: the comment body is light DOM slotted as "comment", after the meta row. Both Reddit
@@ -24,6 +30,13 @@ const COMMENT_TIME_TAG = "faceplate-timeago";
 const COMMENT_TIME_ATTRIBUTE = "ts";
 /** Reddit's Markdown quote ("> …"): someone else's words, quoted to answer them. */
 const QUOTE_SELECTOR = "blockquote";
+/** A post page's path names the post: `/r/<sub>/comments/<id>/<slug>/`. */
+const POST_PAGE_PATTERN = /\/comments\/([a-z0-9]+)/i;
+const POST_FULLNAME_PREFIX = "t3_";
+/** GUESS: a link post's target URL, as an attribute of `shreddit-post`. Not on a recording yet. */
+const POST_LINK_ATTRIBUTE = "content-href";
+/** GUESS: a text post's body, slotted into `shreddit-post` as light DOM. Not on a recording yet. */
+const POST_BODY_SELECTOR = '[slot="text-body"]';
 
 interface OwnParts {
   body: Element | undefined;
@@ -99,5 +112,35 @@ export function threadReplyOf(element: Element): ReplyReading {
     text: textOutside(body, QUOTE_SELECTOR),
     postedAt,
     ...(parentId === undefined ? {} : { parentId }),
+    ...linksField(webLinksIn(body, QUOTE_SELECTOR)),
+  };
+}
+
+/**
+ * The post the page is about, read for the links it carries: a link post's target and the links
+ * in a text post's body. Undefined for every other element, and for a post in a feed;
+ * NOT_YET_READABLE while neither the target nor the body is in the DOM, so the post's own site is
+ * not settled as linking nothing (an image post, which has neither, is read again on later passes).
+ */
+export function threadRootLinksOf(
+  element: Element,
+  pageUrl: URL,
+): ThreadRootLinks | undefined | typeof NOT_YET_READABLE {
+  const postId: string | undefined = POST_PAGE_PATTERN.exec(pageUrl.pathname)?.[1];
+  if (
+    element.localName !== POST_SELECTOR ||
+    postId === undefined ||
+    element.id !== `${POST_FULLNAME_PREFIX}${postId}`
+  ) {
+    return undefined;
+  }
+  const target: string | undefined = nonEmptyAttribute(element, POST_LINK_ATTRIBUTE);
+  const body: Element | null = element.querySelector(POST_BODY_SELECTOR);
+  if (target === undefined && body === null) {
+    return NOT_YET_READABLE;
+  }
+  return {
+    threadKey: element.id,
+    links: [...(target === undefined ? [] : [target]), ...(body === null ? [] : webLinksIn(body))],
   };
 }

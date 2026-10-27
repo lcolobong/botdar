@@ -1,0 +1,293 @@
+<!doctype html>
+<!--
+  Hand-written, in the shape of comments.html: a link post to citytribune.example whose comments
+  share links. Six accounts link the same small site, harbourlight-report.example, between 15:20
+  and 16:40: Amber_Wren_4471 first, Tidal_Quill_5530 last (five other accounts linked it earlier).
+  Rusty_Kettle links the post's own site, which never counts, and Fern_Garden a YouTube video, a
+  top domain. Every text differs, so no reply is a near copy of another. The page lists the last
+  linker first, as a "best" sort can. Times are each comment's faceplate-timeago[ts].
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>reddit</title>
+  </head>
+  <body>
+    <shreddit-app>
+      <shreddit-post
+        id="t3_1kb4c7d"
+        author="Calm_Harbor_3310"
+        created-timestamp="2026-10-26T14:40:00.000+0000"
+        subreddit-prefixed-name="r/harbourcity"
+        post-title="Council votes to close the Harbour Street bridge for two years"
+        permalink="/r/harbourcity/comments/1kb4c7d/council_votes_to_close_the_harbour_street_bridge/"
+        post-type="link"
+        content-href="https://www.citytribune.example/news/harbour-bridge-closure"
+      >
+        <template shadowrootmode="open">
+          <div class="post-container">
+            <slot name="credit-bar"></slot><slot name="title"></slot>
+          </div>
+        </template>
+        <div slot="credit-bar">
+          <a href="/r/harbourcity/">r/harbourcity</a>
+          <a href="/user/Calm_Harbor_3310/">u/Calm_Harbor_3310</a>
+        </div>
+        <a slot="title" href="/r/harbourcity/comments/1kb4c7d/"
+          >Council votes to close the Harbour Street bridge for two years</a
+        >
+      </shreddit-post>
+      <shreddit-comment-tree id="comment-tree">
+        <shreddit-comment
+          author="Tidal_Quill_5530"
+          thingid="t1_my7cc07"
+          postid="t3_1kb4c7d"
+          parentid=""
+          depth="0"
+          score="12"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Tidal_Quill_5530/" class="author-name flex items-center">
+                <img
+                  src="https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png"
+                  alt="u/Tidal_Quill_5530 avatar"
+                />
+                Tidal_Quill_5530
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T16:40:00.000+0000">17 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              Nobody is talking about who owns the land next to the bridge. Read this before you
+              decide:
+              <a href="https://www.harbourlight-report.example/2026/10/bridge-land-deal"
+                >the land deal</a
+              >
+            </p>
+          </div>
+        </shreddit-comment>
+        <shreddit-comment
+          author="Rusty_Kettle"
+          thingid="t1_my7cc01"
+          postid="t3_1kb4c7d"
+          parentid=""
+          depth="0"
+          score="12"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Rusty_Kettle/" class="author-name flex items-center">
+                <img
+                  src="https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png"
+                  alt="u/Rusty_Kettle avatar"
+                />
+                Rusty_Kettle
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T15:00:00.000+0000">17 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              The live blog on the same site has the full vote breakdown:
+              <a href="https://www.citytribune.example/news/bridge-vote-live">live updates</a>
+            </p>
+          </div>
+        </shreddit-comment>
+        <shreddit-comment
+          author="Amber_Wren_4471"
+          thingid="t1_my7cc02"
+          postid="t3_1kb4c7d"
+          parentid=""
+          depth="0"
+          score="12"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Amber_Wren_4471/" class="author-name flex items-center">
+                <img
+                  src="https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png"
+                  alt="u/Amber_Wren_4471 avatar"
+                />
+                Amber_Wren_4471
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T15:20:00.000+0000">17 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              They closed it for a reason the council will not say out loud.
+              <a href="https://www.harbourlight-report.example/2026/10/bridge-closure-truth"
+                >Here it is</a
+              >
+            </p>
+          </div>
+        </shreddit-comment>
+        <shreddit-comment
+          author="Fern_Garden"
+          thingid="t1_my7cc08"
+          postid="t3_1kb4c7d"
+          parentid=""
+          depth="0"
+          score="12"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Fern_Garden/" class="author-name flex items-center">
+                <img
+                  src="https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png"
+                  alt="u/Fern_Garden avatar"
+                />
+                Fern_Garden
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T16:05:00.000+0000">17 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              My commute just went from 20 minutes to 50. Here is the detour, filmed this morning:
+              <a href="https://www.youtube.com/watch?v=h4rb0urD3t0">video</a>
+            </p>
+          </div>
+        </shreddit-comment>
+        <shreddit-comment
+          author="Silent_Oak_9024"
+          thingid="t1_my7cc03"
+          postid="t3_1kb4c7d"
+          parentid=""
+          depth="0"
+          score="12"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Silent_Oak_9024/" class="author-name flex items-center">
+                <img
+                  src="https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png"
+                  alt="u/Silent_Oak_9024 avatar"
+                />
+                Silent_Oak_9024
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T15:31:00.000+0000">17 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              Follow the money on this one.
+              <a href="https://www.harbourlight-report.example/2026/10/contractor-donations"
+                >Donations</a
+              >
+            </p>
+          </div>
+        </shreddit-comment>
+        <shreddit-comment
+          author="Pale_Comet_6612"
+          thingid="t1_my7cc04"
+          postid="t3_1kb4c7d"
+          parentid=""
+          depth="0"
+          score="12"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Pale_Comet_6612/" class="author-name flex items-center">
+                <img
+                  src="https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png"
+                  alt="u/Pale_Comet_6612 avatar"
+                />
+                Pale_Comet_6612
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T15:47:00.000+0000">17 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              Funny how the inspection report came out the same week.
+              <a href="https://harbourlight-report.example/inspection">Report</a>
+            </p>
+          </div>
+        </shreddit-comment>
+        <shreddit-comment
+          author="Brisk_Moth_7180"
+          thingid="t1_my7cc05"
+          postid="t3_1kb4c7d"
+          parentid=""
+          depth="0"
+          score="12"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Brisk_Moth_7180/" class="author-name flex items-center">
+                <img
+                  src="https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png"
+                  alt="u/Brisk_Moth_7180 avatar"
+                />
+                Brisk_Moth_7180
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T16:02:00.000+0000">17 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              The mayor knew in August.
+              <a href="https://www.harbourlight-report.example/2026/10/mayor-august-emails"
+                >Emails</a
+              >
+            </p>
+          </div>
+        </shreddit-comment>
+        <shreddit-comment
+          author="Dusty_Lark_3395"
+          thingid="t1_my7cc06"
+          postid="t3_1kb4c7d"
+          parentid=""
+          depth="0"
+          score="12"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Dusty_Lark_3395/" class="author-name flex items-center">
+                <img
+                  src="https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png"
+                  alt="u/Dusty_Lark_3395 avatar"
+                />
+                Dusty_Lark_3395
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T16:15:00.000+0000">17 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              Ask yourself why this was rushed through on a Tuesday night.
+              <a href="https://www.harbourlight-report.example/2026/10/tuesday-vote">Timeline</a>
+            </p>
+          </div>
+        </shreddit-comment>
+      </shreddit-comment-tree>
+    </shreddit-app>
+  </body>
+</html>

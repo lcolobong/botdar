@@ -4,8 +4,9 @@
  * other comment row on the page is a reply in it. /newcomments mixes comments from many threads,
  * a few each, and is not read. Recorded on 2026-10-27 (tests/fixtures/hackernews/html/thread.html).
  */
+import type { ThreadRootLinks } from "../../core/thread/replyText";
+import { linksField, pageTimestampMillis, webLinksIn } from "../../core/thread/replyText";
 import type { ThreadReply } from "../../core/thread/threadIndex";
-import { pageTimestampMillis } from "../../core/thread/replyText";
 import type { HackerNewsRow } from "./dom";
 import { classify } from "./dom";
 
@@ -16,6 +17,12 @@ const COMMENT_AGE_SELECTOR = ".comhead .age[title]";
 /** Hacker News has no quote markup: a quoted line is a paragraph that starts with ">". */
 const QUOTE_MARKER = ">";
 const PARAGRAPH_TAG = "P";
+/**
+ * The head item's links: a story's title link, a comment's own links when a comment is the head,
+ * and the text of an Ask or Show story, which renders in the head table below the item's row.
+ */
+const ROOT_ROW_LINKS_SELECTOR = ".titleline > a, .commtext";
+const ROOT_TEXT_SELECTOR = ".fatitem .toptext";
 
 /** The root item's id, or undefined on any page that is not a thread. */
 export function threadKeyOf(pageUrl: URL): string | undefined {
@@ -83,5 +90,24 @@ export function threadReplyOf(
     text: unquotedTextOf(commentText),
     postedAt,
     ...(parentId === undefined ? {} : { parentId }),
+    ...linksField(webLinksIn(commentText)),
+  };
+}
+
+/** The head item of the page's thread, read for its links; undefined for every other row. */
+export function threadRootLinksOf(row: Element, pageUrl: URL): ThreadRootLinks | undefined {
+  const threadKey: string | undefined = threadKeyOf(pageUrl);
+  if (threadKey === undefined || row.id !== threadKey) {
+    return undefined;
+  }
+  const containers: Element[] = [
+    ...row.querySelectorAll(ROOT_ROW_LINKS_SELECTOR),
+    ...row.ownerDocument.querySelectorAll(ROOT_TEXT_SELECTOR),
+  ];
+  return {
+    threadKey,
+    links: containers.flatMap((container) =>
+      container.matches("a") ? [container.getAttribute("href") ?? ""] : webLinksIn(container),
+    ),
   };
 }

@@ -4,7 +4,11 @@
 import type { ThreadReply } from "@/src/core/thread/threadIndex";
 import { ThreadIndex } from "@/src/core/thread/threadIndex";
 import { FEED_ITEM_SELECTOR, parentItemIdOf } from "@/src/platforms/hackernews/dom";
-import { threadKeyOf, threadReplyOf } from "@/src/platforms/hackernews/threadReply";
+import {
+  threadKeyOf,
+  threadReplyOf,
+  threadRootLinksOf,
+} from "@/src/platforms/hackernews/threadReply";
 import { loadHackerNewsFixture, loadRows } from "./fixtures";
 
 const THREAD_URL = new URL("https://news.ycombinator.com/item?id=36386524");
@@ -55,6 +59,34 @@ describe("Hacker News thread replies on the recorded thread", () => {
 
   it("never records the story at the head of the thread", () => {
     expect(threadReplyOf(row("36386524"), THREAD_URL)).toBeUndefined();
+  });
+
+  it("reads the absolute links in a comment's text", () => {
+    expect(threadReplyOf(row("39633249"), THREAD_URL)?.links).toEqual([
+      "https://bun.com/blog/bun-in-rust",
+      "https://learn.chatgpt.com/docs/agent-configuration/subagents?surface=app",
+    ]);
+    expect(threadReplyOf(row("32157534"), THREAD_URL)).not.toHaveProperty("links");
+  });
+
+  it("reads the story's title link as the root's links, and no other row's", () => {
+    expect(threadRootLinksOf(row("36386524"), THREAD_URL)).toEqual({
+      threadKey: "36386524",
+      links: ["https://magazine.sebastianraschka.com/p/building-reasoning-models"],
+    });
+    expect(threadRootLinksOf(row("39633249"), THREAD_URL)).toBeUndefined();
+    expect(
+      threadRootLinksOf(row("36386524"), new URL("https://news.ycombinator.com/news")),
+    ).toBeUndefined();
+  });
+
+  it("reads the links in an Ask story's text as the root's too", () => {
+    document
+      .querySelector(".fatitem .toptext")
+      ?.insertAdjacentHTML("beforeend", '<p><a href="https://example-lab.org/paper">paper</a></p>');
+    expect(threadRootLinksOf(row("36386524"), THREAD_URL)?.links).toContain(
+      "https://example-lab.org/paper",
+    );
   });
 
   it("leaves a quoted paragraph out of a comment", () => {
