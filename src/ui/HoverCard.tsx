@@ -1,4 +1,6 @@
+import { useEffect, useState } from "preact/hooks";
 import type { SourceTier } from "@/src/core/types";
+import { whyToggleLabel } from "./cardCopy";
 import { FeedbackButton } from "./FeedbackButton";
 import { Glyph } from "./Glyph";
 import { accessibleLabel, glyphFor, visibleLabel, type BadgeTier, type LabelStyle } from "./labels";
@@ -6,6 +8,12 @@ import { ReasonRow, type CardReason } from "./ReasonRow";
 
 export interface HoverCardProps {
   id: string;
+  /**
+   * Which opening of the card this is (the hover controller's count). The card host is mounted
+   * once and only hidden between openings, so the body is keyed on it and its open why clauses
+   * reset each time the card opens (ADR-0023).
+   */
+  opening: number;
   tier: BadgeTier;
   labelStyle: LabelStyle;
   /** Display form with the platform prefix, e.g. "@handle" or "u/handle". */
@@ -55,7 +63,11 @@ export function HoverCard(props: HoverCardProps) {
           {visibleLabel(props.tier, props.labelStyle, props.loading)}
         </span>
       </div>
-      {noRead ? <NoReadBody explanation={props.explanation} /> : <ReadBody {...props} />}
+      {noRead ? (
+        <NoReadBody explanation={props.explanation} />
+      ) : (
+        <ReadBody key={props.opening} {...props} />
+      )}
       <div class="bd-card__foot">
         {noRead ? (
           <span />
@@ -90,20 +102,58 @@ function caveatLabel(tier: BadgeTier): string {
 }
 
 /**
+ * A row the why toggle (ADR-0023) explains: weighed evidence with a clause. A disclosure carries
+ * no contribution, so the declared reason never counts, and its clause ("self-declared") never
+ * repeats the "What this means" block below it.
+ */
+function isExplained(reason: CardReason): boolean {
+  return reason.contribution !== undefined && reason.why !== "";
+}
+
+/**
  * The reasons and the caveat sit under their own labels, so the caveat reads as the case against
  * the read rather than as part of its reasoning (ADR-0022).
  */
 function ReadBody(props: HoverCardProps) {
+  // Held here, not persisted: the card keys this body on its opening, so it starts closed.
+  const [whyShown, setWhyShown] = useState<boolean>(false);
+  const reasonsId: string = `${props.id}-reasons`;
+  // The toggle is drawn only above zero and says "these" or "this" by it.
+  const explainedCount: number = props.reasons.filter(isExplained).length;
+  // A rescore while the card is open can take away every clause, and the toggle with them: the
+  // list closes then, and a clause that comes back later starts hidden.
+  useEffect(() => {
+    if (explainedCount === 0) setWhyShown(false);
+  }, [explainedCount]);
+  const whyOpen: boolean = whyShown && explainedCount > 0;
   return (
     <>
       {props.reasons.length > 0 ? (
         <>
           <h3 class="bd-card__label">Why it leans this way</h3>
-          <ul class="bd-card__reasons">
+          <ul id={reasonsId} class={`bd-card__reasons${whyOpen ? " bd-card__reasons--open" : ""}`}>
             {props.reasons.map((reason: CardReason) => (
-              <ReasonRow key={reason.text} reason={reason} />
+              <ReasonRow
+                key={reason.text}
+                reason={reason}
+                whyShown={whyOpen && isExplained(reason)}
+              />
             ))}
           </ul>
+          {explainedCount > 0 ? (
+            <button
+              type="button"
+              class="bd-card__why-toggle"
+              aria-expanded={whyOpen}
+              aria-controls={reasonsId}
+              onClick={() => setWhyShown(!whyOpen)}
+            >
+              {whyToggleLabel(explainedCount, whyOpen)}
+              <svg class="bd-card__chevron" viewBox="0 0 10 6" aria-hidden="true">
+                <path d="M1 1l4 4 4-4" />
+              </svg>
+            </button>
+          ) : null}
         </>
       ) : null}
       {props.showLegend ? (

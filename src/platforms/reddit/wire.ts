@@ -215,6 +215,7 @@ export async function wireReddit(
     render(
       h(HoverCard, {
         id: CARD_ID,
+        opening: controller.openings(),
         tier: verdict.tier,
         labelStyle: runtime.settings.labelStyle,
         handle: `u/${slot.post.ref.handle}`,

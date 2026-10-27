@@ -28,10 +28,28 @@ export function markerLabel(
   return `${STRENGTH_LABELS[strength]}, points ${LEAN_TARGETS[direction]}`;
 }
 
+/**
+ * The one control under the reasons that shows or hides every why clause (ADR-0023), worded by
+ * how many clauses it reveals, not how many rows the card lists.
+ */
+export function whyToggleLabel(explainedCount: number, whyShown: boolean): string {
+  const plural: boolean = explainedCount > 1;
+  if (whyShown) {
+    return plural ? "Hide explanations" : "Hide explanation";
+  }
+  return plural ? "What these mean" : "What this means";
+}
+
 export function cardFixedStrings(): string[] {
   const directions: ReasonDirection[] = ["automated", "ordinary"];
   const strengths: (ReasonStrength | undefined)[] = [undefined, "weak", "moderate", "strong"];
-  return directions.flatMap((direction: ReasonDirection) =>
-    strengths.map((strength: ReasonStrength | undefined) => markerLabel(direction, strength)),
-  );
+  return [
+    ...directions.flatMap((direction: ReasonDirection) =>
+      strengths.map((strength: ReasonStrength | undefined) => markerLabel(direction, strength)),
+    ),
+    ...[1, 2].flatMap((explainedCount: number) => [
+      whyToggleLabel(explainedCount, false),
+      whyToggleLabel(explainedCount, true),
+    ]),
+  ];
 }

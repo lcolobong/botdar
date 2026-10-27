@@ -14,10 +14,20 @@ const LEAN_ARROWS: Readonly<Record<ReasonDirection, string>> = {
 };
 
 /**
- * One observation on the hover card: how strong a flag it is and which way it points, what was
- * seen, why it matters, and its source.
+ * The clause data stays a lowercase fragment (whyClauses.ts) so the docs and the wording rules read
+ * it as one; on its own line under the fact it reads as a sentence. A clause that already ends
+ * with its own mark keeps it rather than gaining a second.
  */
-export function ReasonRow({ reason }: { reason: CardReason }) {
+function whySentence(why: string): string {
+  const capitalised: string = `${why.charAt(0).toUpperCase()}${why.slice(1)}`;
+  return /[.!?]$/.test(capitalised) ? capitalised : `${capitalised}.`;
+}
+
+/**
+ * One observation on the hover card: how strong a flag it is and which way it points, what was
+ * seen, its source, and, once the reader asks (ADR-0023), why it matters.
+ */
+export function ReasonRow({ reason, whyShown }: { reason: CardReason; whyShown: boolean }) {
   const strength: ReasonStrength | undefined = reasonStrength(reason.contribution);
   // The marker shows no word, so this is its only text for screen readers and on hover.
   const label: string = markerLabel(reason.direction, strength);
@@ -34,7 +44,9 @@ export function ReasonRow({ reason }: { reason: CardReason }) {
       </span>
       <span class="bd-card__line">
         <span class="bd-card__fact">{reason.text}</span>
-        {reason.why === "" ? null : <span class="bd-card__why"> · {reason.why}</span>}
+        {whyShown && reason.why !== "" ? (
+          <span class="bd-card__why">{whySentence(reason.why)}</span>
+        ) : null}
       </span>
       <span class={`bd-dot bd-dot--${reason.tier}`} />
     </li>

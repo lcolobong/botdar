@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { render } from "preact";
+import { allWhyClauses } from "@/src/core/scoring/whyClauses";
 import { ReasonRow, type CardReason } from "@/src/ui/ReasonRow";
 
-function mountRow(reason: CardReason): HTMLElement {
+function mountRow(reason: CardReason, whyShown = false): HTMLElement {
   const list: HTMLUListElement = document.createElement("ul");
   document.body.append(list);
-  render(<ReasonRow reason={reason} />, list);
+  render(<ReasonRow reason={reason} whyShown={whyShown} />, list);
   return list;
 }
 
@@ -14,7 +15,7 @@ function markerName(row: HTMLElement): string | null {
 }
 
 describe("ReasonRow", () => {
-  it("shows the strength and direction, the observation, its why clause and its source", () => {
+  it("shows the strength and direction, the observation and its source", () => {
     const row: HTMLElement = mountRow({
       text: "Joined 3 weeks ago",
       why: "new accounts often replace banned ones",
@@ -30,10 +31,36 @@ describe("ReasonRow", () => {
     expect(lean?.querySelector(".bd-card__strength-fill")).not.toBeNull();
     expect(row.querySelector(".bd-card__reason--automated.bd-card__reason--strong")).not.toBeNull();
     expect(row.querySelector(".bd-card__fact")?.textContent).toBe("Joined 3 weeks ago");
-    expect(row.querySelector(".bd-card__why")?.textContent).toBe(
-      " · new accounts often replace banned ones",
-    );
     expect(row.querySelector(".bd-dot--1")).not.toBeNull();
+  });
+
+  it("keeps the why clause out of the row until the reader asks for it", () => {
+    const reason: CardReason = {
+      text: "Joined 3 weeks ago",
+      why: "new accounts often replace banned ones",
+      direction: "automated",
+      contribution: 1.2,
+      tier: 1,
+    };
+    expect(mountRow(reason).querySelector(".bd-card__why")).toBeNull();
+    expect(mountRow(reason).querySelector(".bd-card__line")?.textContent).toBe(
+      "Joined 3 weeks ago",
+    );
+  });
+
+  it("shows the why clause as a sentence on its own line once asked", () => {
+    const row: HTMLElement = mountRow(
+      {
+        text: "~102 posts/day since joining",
+        why: "prolonged hyperactivity",
+        direction: "automated",
+        contribution: 2,
+        tier: 1,
+      },
+      true,
+    );
+    expect(row.querySelector(".bd-card__fact")?.textContent).toBe("~102 posts/day since joining");
+    expect(row.querySelector(".bd-card__why")?.textContent).toBe("Prolonged hyperactivity.");
   });
 
   it("marks evidence that points towards an ordinary account with its own shape and label", () => {
@@ -82,14 +109,29 @@ describe("ReasonRow", () => {
     expect(row.querySelector(".bd-card__reason--strong")).toBeNull();
   });
 
-  it("leaves out the separator when there is no why clause", () => {
-    const row: HTMLElement = mountRow({
-      text: "x.somethingNew",
-      why: "",
-      direction: "automated",
-      contribution: 0.2,
-      tier: 0,
-    });
+  it("renders every clause as a sentence with a capital and exactly one terminal mark", () => {
+    const clauses: string[] = [...allWhyClauses(), "already a sentence.", "is it?"];
+    for (const why of clauses) {
+      const sentence: string | null | undefined = mountRow(
+        { text: "Fact", why, direction: "automated", contribution: 1, tier: 0 },
+        true,
+      ).querySelector(".bd-card__why")?.textContent;
+      expect(sentence).toMatch(/^[A-Z]/);
+      expect(sentence).toMatch(/[^.!?][.!?]$/);
+    }
+  });
+
+  it("shows no why line for a reason without a clause, even when asked", () => {
+    const row: HTMLElement = mountRow(
+      {
+        text: "x.somethingNew",
+        why: "",
+        direction: "automated",
+        contribution: 0.2,
+        tier: 0,
+      },
+      true,
+    );
     expect(row.querySelector(".bd-card__why")).toBeNull();
     expect(row.querySelector(".bd-card__line")?.textContent).toBe("x.somethingNew");
   });
