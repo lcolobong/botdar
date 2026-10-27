@@ -85,6 +85,12 @@ const WHY_CLAUSES: Readonly<Record<FeatureId, WhyClauses>> = {
   "bsky.noSleepWindow": NO_QUIET_HOURS,
   "thread.nearDuplicateReply": NEAR_DUPLICATE_REPLY,
   "reddit.karmaPerDay": KARMA_RATE,
+  "reddit.karmaSinceFirstActivity": {
+    ...KARMA_RATE,
+    caveat:
+      "Long-time readers who start posting in large communities can earn karma quickly. " +
+      "Accounts that delete their old posts keep their karma, so the rate can look inflated.",
+  },
   "reddit.postToCommentKarma": {
     automated: "reposts earn it without conversation",
     ordinary: "it joins conversations",

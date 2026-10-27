@@ -139,6 +139,19 @@ describe("reason templates", () => {
       "~300 karma/day on a 3-week-old account",
     );
     expect(render("reddit.karmaPerDay", 300)).toBe("~300 karma/day since joining");
+    const aged: AccountSignals = signalsWith({
+      values: { oldestItemAt: NOW - 90 * DAY_MS },
+    });
+    expect(render("reddit.karmaSinceFirstActivity", 120, { signals: aged })).toBe(
+      "~120 karma/day since first activity 3 months ago",
+    );
+    const today: AccountSignals = signalsWith({ values: { oldestItemAt: NOW - DAY_MS / 4 } });
+    expect(render("reddit.karmaSinceFirstActivity", 120, { signals: today })).toBe(
+      "~120 karma/day since first activity today",
+    );
+    expect(render("reddit.karmaSinceFirstActivity", 120)).toBe(
+      "~120 karma/day since first activity",
+    );
     expect(render("reddit.postToCommentKarma", 750, { signals })).toBe(
       "Post karma 12,000, comment karma 15",
     );
@@ -358,6 +371,18 @@ describe("caveatFor", () => {
       }),
     ).toBe("Popular phrases and memes get repeated by real people.");
     expect(allFixedStrings()).toContain("Popular phrases and memes get repeated by real people.");
+  });
+
+  it("tells long-time readers apart when the first-activity karma rate leads", () => {
+    expect(
+      caveatFor({
+        ...base,
+        evidenceByMagnitude: [evidence("reddit.karmaSinceFirstActivity", 0.75, "activity")],
+      }),
+    ).toBe(
+      "Long-time readers who start posting in large communities can earn karma quickly. " +
+        "Accounts that delete their old posts keep their karma, so the rate can look inflated.",
+    );
   });
 
   it("picks the group caveat from the largest positive contribution", () => {
