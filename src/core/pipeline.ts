@@ -25,7 +25,6 @@ import type {
 import type {
   AccountResolverOptions,
   BadgeHandle,
-  LookupStatus,
   Scorer,
   VerdictListener,
 } from "./pipeline/types";
@@ -34,6 +33,8 @@ import { TrackedAccounts } from "./pipeline/trackedAccounts";
 import { LookupStorage, hoverCacheKey } from "./pipeline/lookupStorage";
 import type { SourceCaller, SourceResult } from "./pipeline/lookupSources";
 import { LookupSourceSet, resolveSource } from "./pipeline/lookupSources";
+import type { LookupStatusContext } from "./pipeline/lookupStatus";
+import { lookupStatusOf } from "./pipeline/lookupStatus";
 import { markDelivered, mergeSignals } from "./pipeline/mergeSignals";
 
 export type {
@@ -67,6 +68,7 @@ export class AccountResolver {
   private readonly adapter: PlatformAdapter;
   private readonly scorer: Scorer;
   private readonly lookupSources: LookupSourceSet;
+  private readonly statusContext: LookupStatusContext;
   private readonly limiter: RateLimiter;
   private readonly cache: TtlLruCache<string, PartialSignals>;
   private readonly storage: LookupStorage;
@@ -86,6 +88,11 @@ export class AccountResolver {
     this.scorer = options.scorer;
     this.config = options.config;
     this.lookupSources = new LookupSourceSet(this.adapter);
+    this.statusContext = {
+      config: () => this.config,
+      sources: this.lookupSources,
+      isQueued: (handle) => this.onSightQueue.has(handle),
+    };
     this.limiter = options.limiter;
     this.cache = options.cache;
     this.storage = new LookupStorage({
@@ -157,7 +164,7 @@ export class AccountResolver {
       current: () => entry.verdict ?? this.recompute(entry),
       lookup: () => this.requestLookup(post.ref),
       lookupOnSight: () => this.requestLookupOnSight(post.ref),
-      lookupStatus: () => this.lookupStatusOf(entry),
+      lookupStatus: () => lookupStatusOf(entry, this.statusContext),
     };
     this.attachedPosts.set(post.element, { entry, handle, listeners });
     return handle;
@@ -446,26 +453,6 @@ export class AccountResolver {
     this.cache.set(cacheKey, partial);
     this.storage.write(handle, partial, source);
     return partial;
-  }
-
-  private lookupStatusOf(entry: AccountEntry): LookupStatus {
-    if (!this.config.tiers.t2) {
-      return "off";
-    }
-    if (
-      entry.lookupRunning ||
-      entry.hoverLookupActive ||
-      this.onSightQueue.has(entry.signals.ref.handle)
-    ) {
-      return "pending";
-    }
-    if (entry.signals.tiersDelivered.includes(2)) {
-      return "delivered";
-    }
-    if (this.lookupSources.needsLogin()) {
-      return "loginRequired";
-    }
-    return entry.lookupAttempted ? "empty" : "idle";
   }
 
   /** `config.changed`: rescore every mounted badge and start or stop passive sources to match. */
