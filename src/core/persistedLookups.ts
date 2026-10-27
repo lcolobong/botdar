@@ -4,7 +4,7 @@
  * lists no handles and cannot be matched against a known handle without the salt. The value is the
  * Tier 2 signal snapshot, the fetch time and the source tier: no display name, no raw handle, and no
  * bio text (only whether the bio is empty, which is all the scorers ask). Entries expire seven days
- * after the fetch; the feedback store is separate and untouched.
+ * after the fetch (a facet, below, on its own shorter clock); the feedback store is separate and untouched.
  *
  * A small index key (`lookups.index.v1`: entry key to fetch time) lets the sweep expire and cap
  * entries without loading all of storage. It is advisory: writes reach it only when the debounced
@@ -43,11 +43,27 @@ interface StoredLookup {
   signals: StoredSignals;
   fetchedAt: number;
   tier: SourceTier;
+  /** Only a facet's entry carries its own lifetime; the rest live `LOOKUP_TTL_MS`. */
+  ttlMs?: number;
 }
 
+/** Entry key to fetch time, and to lifetime for the entries (facets) that differ from the default. */
 interface LookupIndex {
   rebuiltAt: number;
   entries: Record<string, number>;
+  ttls: Record<string, number>;
+}
+
+/**
+ * A second, independently expiring snapshot kept for the same account: a source that runs apart
+ * from the account's main lookup (hover-only, `SignalSource.hoverOnly`) stores under its own key
+ * and lifetime, so neither overwrites or outlives the other. The lifetime is kept in the entry and
+ * the index, so the sweep drops a dead facet on time and it never takes capacity from a live
+ * profile snapshot.
+ */
+export interface LookupFacet {
+  id: string;
+  ttlMs: number;
 }
 
 /** What a read returns: the snapshot and how long it may still be trusted. */
@@ -88,6 +104,8 @@ const PERSISTED_FIELD_CHECKS: Record<string, FieldCheck> = {
   country: isShortString,
   usernameChanges: isNumber,
   appStore: isShortString,
+  oldestItemAt: isNumber,
+  visibleItemCount: isNumber,
   replyShare: (value) => isRecord(value) && isNumber(value.ratio) && isNumber(value.sampleSize),
 };
 
@@ -120,7 +138,13 @@ function fromStoredSignals(stored: StoredSignals): PartialSignals {
 function parseStoredLookup(raw: unknown): StoredLookup | null {
   if (!isRecord(raw) || typeof raw.fetchedAt !== "number" || raw.tier !== 2) return null;
   if (!Number.isFinite(raw.fetchedAt)) return null;
-  return { signals: sanitizeStored(raw.signals), fetchedAt: raw.fetchedAt, tier: 2 };
+  const lookup: StoredLookup = {
+    signals: sanitizeStored(raw.signals),
+    fetchedAt: raw.fetchedAt,
+    tier: 2,
+  };
+  if (isNumber(raw.ttlMs) && (raw.ttlMs as number) > 0) lookup.ttlMs = raw.ttlMs as number;
+  return lookup;
 }
 
 function parseIndex(raw: unknown): LookupIndex | null {
@@ -131,7 +155,13 @@ function parseIndex(raw: unknown): LookupIndex | null {
       entries[key] = fetchedAt;
     }
   }
-  return { rebuiltAt: raw.rebuiltAt as number, entries };
+  const ttls: Record<string, number> = {};
+  if (isRecord(raw.ttls)) {
+    for (const [key, ttlMs] of Object.entries(raw.ttls)) {
+      if (key in entries && isNumber(ttlMs)) ttls[key] = ttlMs as number;
+    }
+  }
+  return { rebuiltAt: raw.rebuiltAt as number, entries, ttls };
 }
 
 function toHex(bytes: Uint8Array): string {
@@ -143,6 +173,7 @@ export class PersistedLookupStore {
   /** The salt this instance wrote or read, so its own storage events do not look like a rotation. */
   private knownSalt: string | null = null;
   private unindexed: Record<string, number> = {};
+  private unindexedTtls: Record<string, number> = {};
   private sweepTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(private readonly now: () => number = Date.now) {
@@ -156,26 +187,38 @@ export class PersistedLookupStore {
   }
 
   /** The snapshot for this account, or undefined when absent or expired (and then deleted). */
-  async read(platform: PlatformId, handle: string): Promise<PersistedLookup | undefined> {
-    const key: string = await this.keyFor(platform, handle);
+  async read(
+    platform: PlatformId,
+    handle: string,
+    facet?: LookupFacet,
+  ): Promise<PersistedLookup | undefined> {
+    const key: string = await this.keyFor(platform, handle, facet);
+    const ttlMs: number = facet?.ttlMs ?? LOOKUP_TTL_MS;
     const stored: Record<string, unknown> = await browser.storage.local.get(key);
     const lookup: StoredLookup | null = parseStoredLookup(stored[key]);
-    if (lookup === null || this.isExpired(lookup.fetchedAt)) {
+    if (lookup === null || this.isExpired(lookup.fetchedAt, ttlMs)) {
       if (key in stored) await browser.storage.local.remove(key);
       return undefined;
     }
     return {
       signals: fromStoredSignals(lookup.signals),
-      remainingMs: LOOKUP_TTL_MS - (this.now() - lookup.fetchedAt),
+      remainingMs: ttlMs - (this.now() - lookup.fetchedAt),
     };
   }
 
-  async write(platform: PlatformId, handle: string, signals: PartialSignals): Promise<void> {
-    const key: string = await this.keyFor(platform, handle);
+  async write(
+    platform: PlatformId,
+    handle: string,
+    signals: PartialSignals,
+    facet?: LookupFacet,
+  ): Promise<void> {
+    const key: string = await this.keyFor(platform, handle, facet);
     const fetchedAt: number = this.now();
     const lookup: StoredLookup = { signals: toStoredSignals(signals), fetchedAt, tier: 2 };
+    if (facet !== undefined) lookup.ttlMs = facet.ttlMs;
     await browser.storage.local.set({ [key]: lookup });
     this.unindexed[key] = fetchedAt;
+    if (facet !== undefined) this.unindexedTtls[key] = facet.ttlMs;
     this.scheduleSweep();
   }
 
@@ -184,25 +227,36 @@ export class PersistedLookupStore {
     clearTimeout(this.sweepTimer);
     this.sweepTimer = undefined;
     const merged: Record<string, number> = { ...this.unindexed };
+    const mergedTtls: Record<string, number> = { ...this.unindexedTtls };
     this.unindexed = {};
+    this.unindexedTtls = {};
     const stored: Record<string, unknown> = await browser.storage.local.get(LOOKUP_INDEX_KEY);
     let index: LookupIndex | null = parseIndex(stored[LOOKUP_INDEX_KEY]);
     if (index === null || this.now() - index.rebuiltAt >= LOOKUP_TTL_MS) {
-      index = { rebuiltAt: this.now(), entries: await this.scanEntries() };
+      index = { rebuiltAt: this.now(), ...(await this.scanEntries()) };
     }
     const entries: Record<string, number> = { ...index.entries, ...merged };
+    const ttls: Record<string, number> = { ...index.ttls, ...mergedTtls };
     const doomed: string[] = [];
     const live: Array<[string, number]> = [];
     for (const [key, fetchedAt] of Object.entries(entries)) {
-      if (this.isExpired(fetchedAt)) doomed.push(key);
+      // A facet's entry is dead at its own lifetime, so it never takes capacity from a live snapshot.
+      if (this.isExpired(fetchedAt, ttls[key])) doomed.push(key);
       else live.push([key, fetchedAt]);
     }
     live.sort((first, second) => second[1] - first[1]);
     for (const [key] of live.slice(LOOKUP_MAX_ENTRIES)) doomed.push(key);
     const survivors: Record<string, number> = Object.fromEntries(live.slice(0, LOOKUP_MAX_ENTRIES));
+    const survivingTtls: Record<string, number> = Object.fromEntries(
+      Object.entries(ttls).filter(([key]) => key in survivors),
+    );
     if (doomed.length > 0) await browser.storage.local.remove(doomed);
     await browser.storage.local.set({
-      [LOOKUP_INDEX_KEY]: { rebuiltAt: index.rebuiltAt, entries: survivors },
+      [LOOKUP_INDEX_KEY]: {
+        rebuiltAt: index.rebuiltAt,
+        entries: survivors,
+        ...(Object.keys(survivingTtls).length === 0 ? {} : { ttls: survivingTtls }),
+      },
     });
   }
 
@@ -215,7 +269,8 @@ export class PersistedLookupStore {
     clearTimeout(this.sweepTimer);
     this.sweepTimer = undefined;
     this.unindexed = {};
-    const lookupKeys: string[] = Object.keys(await this.scanEntries());
+    this.unindexedTtls = {};
+    const lookupKeys: string[] = Object.keys((await this.scanEntries()).entries);
     await browser.storage.local.remove([...lookupKeys, LOOKUP_INDEX_KEY]);
     const salt: string = this.newSalt();
     this.knownSalt = salt;
@@ -229,20 +284,23 @@ export class PersistedLookupStore {
   }
 
   /** A full scan of storage.local: every lookup entry key with its fetch time (0 when unreadable). */
-  private async scanEntries(): Promise<Record<string, number>> {
+  private async scanEntries(): Promise<Pick<LookupIndex, "entries" | "ttls">> {
     const everything: Record<string, unknown> = await browser.storage.local.get(null);
     const entries: Record<string, number> = {};
+    const ttls: Record<string, number> = {};
     for (const [key, raw] of Object.entries(everything)) {
       if (!key.startsWith(LOOKUP_KEY_PREFIX)) continue;
-      entries[key] = parseStoredLookup(raw)?.fetchedAt ?? 0;
+      const lookup: StoredLookup | null = parseStoredLookup(raw);
+      entries[key] = lookup?.fetchedAt ?? 0;
+      if (lookup?.ttlMs !== undefined) ttls[key] = lookup.ttlMs;
     }
-    return entries;
+    return { entries, ttls };
   }
 
   /** A fetch time in the future is treated as expired, so a tampered entry cannot live forever. */
-  private isExpired(fetchedAt: number): boolean {
+  private isExpired(fetchedAt: number, ttlMs: number = LOOKUP_TTL_MS): boolean {
     const age: number = this.now() - fetchedAt;
-    return age < 0 || age >= LOOKUP_TTL_MS;
+    return age < 0 || age >= ttlMs;
   }
 
   private newSalt(): string {
@@ -268,9 +326,10 @@ export class PersistedLookupStore {
     return created;
   }
 
-  private async keyFor(platform: PlatformId, handle: string): Promise<string> {
+  private async keyFor(platform: PlatformId, handle: string, facet?: LookupFacet): Promise<string> {
     const canonical: string = CASE_SENSITIVE_HANDLES.has(platform) ? handle : handle.toLowerCase();
-    const material = `${await this.salt()}|${platform}|${canonical}`;
+    const facetSuffix: string = facet === undefined ? "" : `|${facet.id}`;
+    const material = `${await this.salt()}|${platform}|${canonical}${facetSuffix}`;
     const digest: ArrayBuffer = await crypto.subtle.digest(
       "SHA-256",
       new TextEncoder().encode(material),

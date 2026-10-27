@@ -222,6 +222,11 @@ export interface SignalSource {
   start?: (emit: SignalEmitter) => () => void;
   /** Active: resolve on demand. Rate limiting and caching are the pipeline's job, not the source's. */
   resolve?: (ref: AccountRef, context: ResolveContext) => Promise<PartialSignals | null>;
+  /**
+   * Active, with `hoverOnly`: whether a lookup would add anything given what is already known, so a
+   * hover that cannot use the answer does not pay for the request.
+   */
+  worthResolving?: (signals: AccountSignals) => boolean;
   /** Active: true while the source has paused itself after a logged-out answer. */
   loginRequired?: () => boolean;
   /**

@@ -1,8 +1,9 @@
 /**
  * The Reddit PlatformAdapter (docs/architecture.md, "Reddit"): feed discovery and Tier 0 from dom.ts
- * and observer.ts, the about.json lookup as the only source (Reddit has no Tier 1 because its feeds
- * arrive as HTML partials), and the feature table from features.ts. Posts and comments share one
- * feed at two densities, so each PostRef carries its own density over the adapter default.
+ * and observer.ts, the Tier 2 lookups as the only sources (about.json on sight, overview.json on
+ * hover; Reddit has no Tier 1 because its feeds arrive as HTML partials), and the feature table from
+ * features.ts. Posts and comments share one feed at two densities, so each PostRef carries its own
+ * density over the adapter default.
  */
 import { PageThreads } from "../../core/thread/pageThreads";
 import type { PlatformAdapter, PostRef, SignalSource } from "../../core/types";
@@ -12,6 +13,7 @@ import { toFeatures } from "./features";
 import { observeRedditFeed } from "./observer";
 import { aboutJsonSource } from "./sources/aboutJson";
 import { threadReplyOf } from "./threadReply";
+import { overviewJsonSource } from "./sources/overviewJson";
 
 export const REDDIT_HOSTS: ReadonlySet<string> = new Set(["www.reddit.com", "old.reddit.com"]);
 
@@ -43,7 +45,7 @@ export function createRedditAdapter(options: RedditAdapterOptions = {}): Platfor
         },
       }),
     extractDomSignals,
-    sources: options.sources ?? [aboutJsonSource],
+    sources: options.sources ?? [aboutJsonSource, overviewJsonSource],
     toFeatures: threads.withPageEvidence(toFeatures),
     onEvidenceChanged: threads.subscribe,
     badgeDensity: "reddit-post",

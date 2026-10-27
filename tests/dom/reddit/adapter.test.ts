@@ -5,6 +5,7 @@ import type { AccountSignals, PlatformAdapter, PostRef } from "@/src/core/types"
 import { createRedditAdapter, matchesReddit, redditAdapter } from "@/src/platforms/reddit/adapter";
 import { IDLE_TIMEOUT_MS } from "@/src/platforms/reddit/observer";
 import { ABOUT_JSON_SOURCE_ID } from "@/src/platforms/reddit/sources/aboutJson";
+import { OVERVIEW_JSON_SOURCE_ID } from "@/src/platforms/reddit/sources/overviewJson";
 import { loadRedditFixture } from "./fixtures";
 
 async function settle(): Promise<void> {
@@ -22,11 +23,12 @@ describe("redditAdapter", () => {
     expect(redditAdapter.matches).toBe(matchesReddit);
   });
 
-  it("declares the id, the post density default and the about.json source as the only source", () => {
+  it("declares the id, the post density default and the about.json and overview.json sources", () => {
     expect(redditAdapter.id).toBe("reddit");
     expect(redditAdapter.badgeDensity).toBe("reddit-post");
     expect(redditAdapter.sources.map((source) => [source.id, source.tier, source.kind])).toEqual([
       [ABOUT_JSON_SOURCE_ID, 2, "active"],
+      [OVERVIEW_JSON_SOURCE_ID, 2, "active"],
     ]);
   });
 

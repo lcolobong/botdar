@@ -8,7 +8,7 @@
 
 import type { TtlLruCache } from "./cache";
 import { LookupQueue } from "./lookupQueue";
-import type { PersistedLookup, PersistedLookupStore } from "./persistedLookups";
+import type { LookupFacet, PersistedLookup, PersistedLookupStore } from "./persistedLookups";
 import type { RateLimiter } from "./ratelimit";
 import { recordLookup } from "./diagnostics.ts";
 import { RateLimitedError } from "./ratelimit";
@@ -111,10 +111,22 @@ interface AccountEntry extends MergeableSignals {
   lookupRunning: boolean;
   /** A source got a rate-limit token and ran for this account at least once. */
   lookupAttempted: boolean;
+  /**
+   * Set from a hover that will run hover-only sources until they have settled, cleared before the
+   * closing rescore like `lookupRunning`; one hover run at a time per account.
+   */
+  hoverLookupActive: boolean;
+  hoverLookup: Promise<void> | null;
   /** Set by a hover while the on-sight lookup is still reading storage, before it can be queued. */
   promoteWhenQueued: boolean;
   /** Value of the resolver's touch counter when the entry was last looked up; orders eviction. */
   touchedAt: number;
+}
+
+/** What one call to a source came to: its signals, or how it failed. */
+interface SourceResult {
+  partial: PartialSignals | null;
+  failure: "rateLimited" | "failed" | null;
 }
 
 interface AttachedPost {
@@ -352,30 +364,72 @@ export class AccountResolver {
     }
   }
 
-  /** Tier 2 through the cache, then the limiter; skipped (and left missing) while the circuit is open. */
+  /**
+   * Tier 2 through the cache, then the limiter; skipped (and left missing) while the circuit is
+   * open. Hover-only sources run after the account's main lookup has settled.
+   */
   async requestLookup(ref: AccountRef): Promise<void> {
     if (!this.config.tiers.t2 || this.disposed) {
       return;
     }
     const entry: AccountEntry = this.entryFor(ref);
+    const mainLookupWasRunning: boolean = entry.pendingLookup !== null;
+    const mainLookup: Promise<void> = this.requestMainLookup(entry);
+    if (entry.hoverLookup !== null) {
+      return entry.hoverLookup;
+    }
+    // A running main lookup has not delivered the join date the sources judge by, so their filter
+    // waits for it; a settled one is judged now, and only once.
+    const settledCandidates: SignalSource[] | undefined =
+      entry.pendingLookup === null && !mainLookupWasRunning
+        ? this.hoverSourcesToRun(entry)
+        : undefined;
+    const anyWanted: boolean = (settledCandidates ?? this.hoverOnlySources()).length > 0;
+    if (!anyWanted) {
+      return mainLookup;
+    }
+    entry.hoverLookupActive = (settledCandidates ?? this.hoverOnlySources()).some(
+      (source) => this.cache.get(this.hoverCacheKey(ref.handle, source)) === undefined,
+    );
+    const hoverLookup: Promise<void> = mainLookup.then(() =>
+      this.runHoverSources(entry, settledCandidates),
+    );
+    entry.hoverLookup = hoverLookup;
+    void hoverLookup.then(
+      () => this.finishHoverLookup(entry, hoverLookup),
+      () => this.finishHoverLookup(entry, hoverLookup),
+    );
+    return hoverLookup;
+  }
+
+  private finishHoverLookup(entry: AccountEntry, hoverLookup: Promise<void>): void {
+    // The hover body clears this before its closing rescore; a chain that never reached it (the main
+    // lookup rejected) or threw would otherwise leave the account pending for good.
+    entry.hoverLookupActive = false;
+    if (entry.hoverLookup === hoverLookup) {
+      entry.hoverLookup = null;
+    }
+  }
+
+  private requestMainLookup(entry: AccountEntry): Promise<void> {
     if (entry.pendingLookup !== null) {
       entry.promoteWhenQueued = true;
-      this.onSightQueue.promote(ref.handle);
+      this.onSightQueue.promote(entry.signals.ref.handle);
       return entry.pendingLookup;
     }
-    const cached: PartialSignals | undefined = this.cache.get(ref.handle);
+    const cached: PartialSignals | undefined = this.cache.get(entry.signals.ref.handle);
     if (cached !== undefined) {
       recordLookup("cached");
       this.absorb(entry, cached, 2);
-      return;
+      return Promise.resolve();
     }
     if (this.persistenceActive()) {
       this.trackPending(entry, this.lookupPersistedThenFetch(entry));
-      return entry.pendingLookup ?? undefined;
+      return entry.pendingLookup ?? Promise.resolve();
     }
     recordLookup("started");
     this.trackPending(entry, this.runActiveSources(entry));
-    return entry.pendingLookup ?? undefined;
+    return entry.pendingLookup ?? Promise.resolve();
   }
 
   /** The on-sight variant of `requestLookup` (ADR-0020): queued behind the limiter, once per account. */
@@ -467,24 +521,32 @@ export class AccountResolver {
   }
 
   /** Memory first (the caller's miss), then storage; a storage hit repopulates the memory cache. */
-  private async readPersisted(entry: AccountEntry): Promise<PersistedLookup | undefined> {
+  private async readPersisted(
+    entry: AccountEntry,
+    source?: SignalSource,
+  ): Promise<PersistedLookup | undefined> {
     const persistence: LookupPersistence | undefined = this.persistence;
     if (persistence === undefined) {
       return undefined;
     }
     const handle: string = entry.signals.ref.handle;
-    entry.lookupRunning = true;
+    // A facet read runs beside the main lookup, whose own read owns this flag.
+    const ownsRunningFlag: boolean = source === undefined;
+    if (ownsRunningFlag) {
+      entry.lookupRunning = true;
+    }
     try {
       const persisted: PersistedLookup | undefined = await persistence.store.read(
         this.adapter.id,
         handle,
+        source === undefined ? undefined : this.facetOf(source),
       );
       if (persisted === undefined || !this.persistenceActive()) {
         return undefined;
       }
-      // The memory copy must not outlive the stored one's seven days, whatever its age.
+      // The memory copy must not outlive the stored one's expiry, whatever its age.
       this.cache.set(
-        handle,
+        source === undefined ? handle : this.hoverCacheKey(handle, source),
         persisted.signals,
         Math.min(TIER2_CACHE_TTL_MS, persisted.remainingMs),
       );
@@ -492,7 +554,9 @@ export class AccountResolver {
     } catch {
       return undefined;
     } finally {
-      entry.lookupRunning = false;
+      if (ownsRunningFlag) {
+        entry.lookupRunning = false;
+      }
     }
   }
 
@@ -506,12 +570,28 @@ export class AccountResolver {
     );
   }
 
-  private persist(handle: string, signals: PartialSignals): void {
+  private persist(handle: string, signals: PartialSignals, source?: SignalSource): void {
     if (this.persistence === undefined || !this.persistenceActive()) {
       return;
     }
     // A failed write only means the next lookup is a fetch; nothing waits on it.
-    void this.persistence.store.write(this.adapter.id, handle, signals).catch(() => undefined);
+    void this.persistence.store
+      .write(
+        this.adapter.id,
+        handle,
+        signals,
+        source === undefined ? undefined : this.facetOf(source),
+      )
+      .catch(() => undefined);
+  }
+
+  private facetOf(source: SignalSource): LookupFacet {
+    return { id: source.id, ttlMs: TIER2_CACHE_TTL_MS };
+  }
+
+  /** Reddit and Hacker News handles never contain ":", so a source id prefix cannot meet a plain handle. */
+  private hoverCacheKey(handle: string, source: SignalSource): string {
+    return `${source.id}:${handle}`;
   }
 
   private trackPending(entry: AccountEntry, lookup: Promise<unknown>): void {
@@ -558,18 +638,140 @@ export class AccountResolver {
     return this.activeLookupSources().length > 0;
   }
 
-  /** The Tier 2 sources a lookup runs; each call costs one limiter token. */
+  /** The Tier 2 sources a lookup runs on sight or hover; each call costs one limiter token. */
   private activeLookupSources(): SignalSource[] {
     return this.adapter.sources.filter(
-      (source) => source.kind === "active" && source.tier === 2 && source.resolve !== undefined,
+      (source) =>
+        source.kind === "active" &&
+        source.tier === 2 &&
+        source.resolve !== undefined &&
+        source.hoverOnly !== true,
     );
+  }
+
+  private hoverOnlySources(): SignalSource[] {
+    return this.adapter.sources.filter(
+      (source) =>
+        source.kind === "active" &&
+        source.tier === 2 &&
+        source.resolve !== undefined &&
+        source.hoverOnly === true,
+    );
+  }
+
+  /** The hover-only sources worth a request for this account, none while a login wall is up. */
+  private hoverSourcesToRun(entry: AccountEntry): SignalSource[] {
+    if (this.activeSourceNeedsLogin()) {
+      return [];
+    }
+    return this.hoverOnlySources().filter(
+      (source) => source.worthResolving?.(entry.signals) ?? true,
+    );
+  }
+
+  /**
+   * One call to a source, with its failure classified and the limiter told. The caller has paid for
+   * the token (all up front for a lookup, one at a time for a hover) and decides what to cache.
+   */
+  private async resolveSource(ref: AccountRef, source: SignalSource): Promise<SourceResult> {
+    try {
+      const partial: PartialSignals | null | undefined = await source.resolve?.(ref, {
+        signal: this.abortController.signal,
+        config: this.config,
+      });
+      this.limiter.reportSuccess();
+      return { partial: partial ?? null, failure: null };
+    } catch (error) {
+      if (error instanceof RateLimitedError) {
+        this.limiter.reportRateLimited(error.retryAfterMs);
+        return { partial: null, failure: "rateLimited" };
+      }
+      return { partial: null, failure: "failed" };
+    }
+  }
+
+  /**
+   * Hover-only sources settle one by one, each through its own cache entry, token and outcome: they
+   * are not part of the account's main snapshot, so a lookup missing one is still whole. What
+   * arrived scores in a single closing rescore, which also ends the loading state.
+   */
+  private async runHoverSources(
+    entry: AccountEntry,
+    judgedSources?: SignalSource[],
+  ): Promise<void> {
+    const collected: PartialSignals = {};
+    let delivered = false;
+    try {
+      for (const source of judgedSources ?? this.hoverSourcesToRun(entry)) {
+        if (this.disposed || !this.config.tiers.t2) {
+          break;
+        }
+        const partial: PartialSignals | null = await this.resolveHoverSource(entry, source);
+        if (partial !== null) {
+          Object.assign(collected, partial);
+          delivered = true;
+        }
+      }
+    } finally {
+      // Cleared before the closing rescore, so the badge sees the settled status in it.
+      entry.hoverLookupActive = false;
+    }
+    if (this.disposed) {
+      return;
+    }
+    this.absorb(entry, delivered ? collected : null, 2, true);
+  }
+
+  private async resolveHoverSource(
+    entry: AccountEntry,
+    source: SignalSource,
+  ): Promise<PartialSignals | null> {
+    const handle: string = entry.signals.ref.handle;
+    const cacheKey: string = this.hoverCacheKey(handle, source);
+    const cached: PartialSignals | undefined = this.cache.get(cacheKey);
+    if (cached !== undefined) {
+      recordLookup("cached");
+      return cached;
+    }
+    if (this.persistenceActive()) {
+      const persisted: PersistedLookup | undefined = await this.readPersisted(entry, source);
+      if (persisted !== undefined) {
+        recordLookup("cached");
+        return persisted.signals;
+      }
+      if (this.disposed || !this.config.tiers.t2) {
+        return null;
+      }
+    }
+    if (!this.limiter.tryAcquire()) {
+      recordLookup("rateLimited");
+      return null;
+    }
+    recordLookup("started");
+    const { partial, failure }: SourceResult = await this.resolveSource(entry.signals.ref, source);
+    if (failure !== null) {
+      recordLookup(failure);
+      return null;
+    }
+    if (partial === null || this.disposed) {
+      recordLookup("empty");
+      return null;
+    }
+    recordLookup("delivered");
+    this.cache.set(cacheKey, partial);
+    this.persist(handle, partial, source);
+    return partial;
   }
 
   private lookupStatusOf(entry: AccountEntry): LookupStatus {
     if (!this.config.tiers.t2) {
       return "off";
     }
-    if (entry.lookupRunning || this.onSightQueue.has(entry.signals.ref.handle)) {
+    if (
+      entry.lookupRunning ||
+      entry.hoverLookupActive ||
+      this.onSightQueue.has(entry.signals.ref.handle)
+    ) {
       return "pending";
     }
     if (entry.signals.tiersDelivered.includes(2)) {
@@ -683,23 +885,12 @@ export class AccountResolver {
     entry.lookupRunning = true;
     entry.lookupAttempted ||= ran;
     for (const source of ran ? sources : []) {
-      try {
-        const partial: PartialSignals | null | undefined = await source.resolve?.(ref, {
-          signal: this.abortController.signal,
-          config: this.config,
-        });
-        this.limiter.reportSuccess();
-        if (partial !== null && partial !== undefined) {
-          Object.assign(collected, partial);
-          delivered = true;
-        }
-      } catch (error) {
-        if (error instanceof RateLimitedError) {
-          this.limiter.reportRateLimited(error.retryAfterMs);
-          outcome = "rateLimited";
-        } else {
-          outcome = "failed";
-        }
+      const result: SourceResult = await this.resolveSource(ref, source);
+      if (result.failure !== null) {
+        outcome = result.failure;
+      } else if (result.partial !== null) {
+        Object.assign(collected, result.partial);
+        delivered = true;
       }
     }
     entry.lookupRunning = false;
@@ -775,6 +966,8 @@ export class AccountResolver {
         pendingLookup: null,
         lookupRunning: false,
         lookupAttempted: false,
+        hoverLookupActive: false,
+        hoverLookup: null,
         promoteWhenQueued: false,
         touchedAt: 0,
       };
