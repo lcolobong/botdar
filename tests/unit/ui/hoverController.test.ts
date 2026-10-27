@@ -1,5 +1,9 @@
 // @vitest-environment happy-dom
-import { computePlacement, createHoverController } from "@/src/ui/hoverController";
+import {
+  computePlacement,
+  createHoverController,
+  type HoverController,
+} from "@/src/ui/hoverController";
 
 describe("computePlacement", () => {
   const viewport = { width: 1200, height: 800 };
@@ -164,6 +168,28 @@ describe("createHoverController", () => {
     rect.mockReturnValue(new DOMRect(140, 100, 80, 16));
     controller.reposition(180);
     expect(place).toHaveBeenLastCalledWith({ top: 120, left: 140, above: false });
+  });
+
+  it("counts each opening before it renders, so the card can be keyed on it", () => {
+    const anchor: HTMLButtonElement = document.createElement("button");
+    const second: HTMLButtonElement = document.createElement("button");
+    const seenAtRender: number[] = [];
+    const controller: HoverController = createHoverController({
+      render: () => {
+        seenAtRender.push(controller.openings());
+        return 180;
+      },
+      hide: () => {},
+      place: () => {},
+    });
+    controller.requestOpen(anchor);
+    vi.advanceTimersByTime(150);
+    controller.requestOpen(second);
+    controller.closeNow();
+    controller.requestOpen(anchor);
+    vi.advanceTimersByTime(150);
+    expect(seenAtRender).toEqual([1, 2, 3]);
+    controller.dispose();
   });
 
   it("ignores a close request while the pointer is in the card, until it leaves", () => {

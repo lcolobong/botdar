@@ -1,4 +1,4 @@
-import { cardFixedStrings, markerLabel } from "@/src/ui/cardCopy";
+import { cardFixedStrings, markerLabel, whyToggleLabel } from "@/src/ui/cardCopy";
 
 // The card's own fixed copy follows the same wording rules as the core templates
 // (tests/unit/core/scoring/reasons.test.ts); it is checked here so core tests never import the UI.
@@ -19,6 +19,23 @@ describe("cardFixedStrings", () => {
         "Weak, points towards ordinary",
         "Moderate, points towards automated",
         "Strong, points towards ordinary",
+      ]),
+    );
+  });
+});
+
+describe("whyToggleLabel", () => {
+  it("words the toggle by how many clauses it reveals, and registers every form", () => {
+    expect(whyToggleLabel(1, false)).toBe("What this means");
+    expect(whyToggleLabel(3, false)).toBe("What these mean");
+    expect(whyToggleLabel(1, true)).toBe("Hide explanation");
+    expect(whyToggleLabel(3, true)).toBe("Hide explanations");
+    expect(cardFixedStrings()).toEqual(
+      expect.arrayContaining([
+        "What this means",
+        "What these mean",
+        "Hide explanation",
+        "Hide explanations",
       ]),
     );
   });

@@ -164,6 +164,7 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
 
   const cardProps = (state: PostState, tier: BadgeTier): HoverCardProps => ({
     id: CARD_ID,
+    opening: hover.openings(),
     tier,
     labelStyle: options.settings().labelStyle,
     handle: `${options.handlePrefix}${state.post.ref.handle}`,

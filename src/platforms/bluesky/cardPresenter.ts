@@ -100,6 +100,7 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
     }
     const props: HoverCardProps = {
       id: CARD_ID,
+      opening: controller.openings(),
       tier: verdict.tier,
       labelStyle: options.labelStyle(),
       handle: `@${target.post.ref.handle}`,

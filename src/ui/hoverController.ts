@@ -36,6 +36,12 @@ export interface HoverController {
    * also unbinds every container still bound.
    */
   bindCard: (container: HTMLElement) => () => void;
+  /**
+   * How many times a card has opened, counted before each opening renders. The card host is
+   * mounted once and only hidden between openings, so the wires pass this to the card as its
+   * `opening`, and anything it holds (its open why clauses, ADR-0023) starts fresh each time.
+   */
+  openings: () => number;
   closeNow: () => void;
   isOpen: () => boolean;
   dispose: () => void;
@@ -111,6 +117,7 @@ export function createHoverController(options: HoverControllerOptions): HoverCon
   let openPlacement: HoverCardPlacement | undefined;
   let pointerInCard = false;
   let cardCoversAnchor = false;
+  let openingCount = 0;
 
   const clearTimers = (): void => {
     if (openTimer !== undefined) clearTimeout(openTimer);
@@ -145,6 +152,7 @@ export function createHoverController(options: HoverControllerOptions): HoverCon
   const show = (anchor: Element): void => {
     pointerInCard = false;
     openPlacement = undefined;
+    openingCount += 1;
     const cardHeight: number = options.render(anchor);
     place(anchor, cardHeight, undefined);
     openAnchor = anchor;
@@ -255,6 +263,7 @@ export function createHoverController(options: HoverControllerOptions): HoverCon
     holdOpen,
     reposition,
     bindCard,
+    openings: (): number => openingCount,
     closeNow,
     isOpen: (): boolean => openAnchor !== undefined,
     dispose(): void {

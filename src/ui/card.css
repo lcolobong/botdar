@@ -93,11 +93,10 @@
 }
 .bd-card__lean {
   flex: none;
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
+  align-self: stretch;
+  display: flex;
+  align-items: flex-start;
   gap: 3px;
-  height: 18px;
   font-weight: 700;
   color: var(--lean-color);
 }
@@ -108,6 +107,7 @@
 .bd-card__strength {
   width: 4px;
   height: 16px;
+  margin-top: 1px;
   border-radius: 2px;
   overflow: hidden;
   background: var(--hairline);
@@ -119,12 +119,57 @@
   height: var(--strength-fill);
   background: var(--strength-color);
 }
+/* Open, the track runs the row's full height and the fill keeps its share, so height still grades it. */
+.bd-card__reasons--open .bd-card__strength {
+  align-self: stretch;
+  height: auto;
+  margin-bottom: 1px;
+}
 .bd-card__line {
   flex: 1;
   min-width: 0;
 }
 .bd-card__why {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 16px;
   color: var(--ink-muted);
+}
+.bd-card__why-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bd-card__why-toggle:hover {
+  text-decoration: underline;
+}
+.bd-card__why-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+.bd-card__chevron {
+  width: 10px;
+  height: 6px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bd-card__why-toggle[aria-expanded="true"] .bd-card__chevron {
+  transform: rotate(180deg);
 }
 .bd-dot {
   width: 6px;

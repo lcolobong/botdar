@@ -297,6 +297,37 @@ describe("wirePlatform hover card", () => {
     }
   });
 
+  it("starts every opening with the why clauses hidden", async () => {
+    await badgesSettled(3);
+    await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());
+    const cardHost: HTMLElement | null = document.querySelector(CARD_ELEMENT_NAME);
+    const [, many] = badgeHosts();
+    if (cardHost === null || many === undefined) throw new Error("fixture missing");
+    const whyToggle = (): HTMLButtonElement | null | undefined =>
+      cardHost.shadowRoot?.querySelector(".bd-card__why-toggle");
+
+    vi.useFakeTimers();
+    try {
+      badgeButton(many).dispatchEvent(new Event("mouseenter"));
+      await vi.advanceTimersByTimeAsync(150);
+      expect(whyToggle()?.getAttribute("aria-expanded")).toBe("false");
+      whyToggle()?.click();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(whyToggle()?.getAttribute("aria-expanded")).toBe("true");
+      expect(cardHost.shadowRoot?.querySelectorAll(".bd-card__why")).toHaveLength(2);
+
+      badgeButton(many).dispatchEvent(new Event("mouseleave"));
+      await vi.advanceTimersByTimeAsync(200);
+      expect(cardHost.style.getPropertyValue("--botdar-display")).toBe("none");
+      badgeButton(many).dispatchEvent(new Event("mouseenter"));
+      await vi.advanceTimersByTimeAsync(150);
+      expect(whyToggle()?.getAttribute("aria-expanded")).toBe("false");
+      expect(cardHost.shadowRoot?.querySelector(".bd-card__why")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("reads Checking while an unknown account's lookup runs, then explains the No read", async () => {
     await badgesSettled(3);
     await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());
