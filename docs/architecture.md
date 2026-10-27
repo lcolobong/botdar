@@ -177,7 +177,7 @@ export interface VerdictReason {
   text: string;                       // the observation, e.g. "Joined 3 weeks ago"
   why: string;                        // why it points that way (scoring-spec.md "Why clause")
   direction: ReasonDirection;         // drives the card's arrow
-  contribution?: number;              // signed, for a strength scale; absent when declared
+  contribution?: number;              // signed; reasonStrength() buckets it for the card's bar; absent when declared
   tier: SourceTier;                   // the source dot
 }
 
