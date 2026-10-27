@@ -48,6 +48,8 @@ export interface AccountSignals {
   postCount?: number;
   linkKarma?: number;
   commentKarma?: number;
+  /** A single karma total, where the platform does not split it (Hacker News). */
+  karma?: number;
   displayName?: string;
   bio?: string;
   /** true = default or missing avatar; undefined = not observed. */

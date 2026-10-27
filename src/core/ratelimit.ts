@@ -5,6 +5,31 @@
  */
 
 const MILLISECONDS_PER_MINUTE = 60_000;
+const MILLISECONDS_PER_SECOND = 1_000;
+
+/**
+ * How long a 429 asks the sources to wait: `retry-after` (seconds or an HTTP date) or X's
+ * `x-rate-limit-reset` (epoch seconds), whichever is later; undefined when neither is readable, so
+ * the limiter falls back to its ladder.
+ */
+export function retryAfterMsFrom(headers: Headers, now: number = Date.now()): number | undefined {
+  const candidates: number[] = [];
+  const retryAfter: string | null = headers.get("retry-after");
+  if (retryAfter !== null) {
+    const seconds: number = Number(retryAfter);
+    const deadline: number = Number.isFinite(seconds)
+      ? now + seconds * MILLISECONDS_PER_SECOND
+      : Date.parse(retryAfter);
+    if (Number.isFinite(deadline) && deadline > now) {
+      candidates.push(deadline - now);
+    }
+  }
+  const reset: number = Number(headers.get("x-rate-limit-reset")) * MILLISECONDS_PER_SECOND;
+  if (Number.isFinite(reset) && reset > now) {
+    candidates.push(reset - now);
+  }
+  return candidates.length === 0 ? undefined : Math.max(...candidates);
+}
 
 /** Delay applied on the n-th consecutive rate-limit report; the last rung repeats. */
 export const BACKOFF_LADDER_MS: readonly number[] = [1_000, 4_000, 16_000, 64_000, 300_000];

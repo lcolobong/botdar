@@ -10,7 +10,7 @@
  * active lookups ship policy-off and Tier 2 falls back to the passive capture of the same response
  * when the user opens the dialog. A 404 means the query id rotated, not that the account is gone.
  */
-import { RateLimitedError } from "@/src/core/ratelimit";
+import { RateLimitedError, retryAfterMsFrom } from "@/src/core/ratelimit";
 import type { PartialSignals, SignalSource } from "@/src/core/types";
 import { ABOUT_ACCOUNT_OPERATION } from "../graphqlRoutes";
 import type { ParsedAboutAccount } from "../parsers/graphqlUsers";
@@ -27,7 +27,6 @@ const CSRF_COOKIE_NAME = "ct0";
 const DEFAULT_ORIGIN = "https://x.com";
 const HTTP_TOO_MANY_REQUESTS = 429;
 const HTTP_NOT_FOUND = 404;
-const SECOND_MS = 1_000;
 
 export type FetchFn = (input: string, init: RequestInit) => Promise<Response>;
 
@@ -46,26 +45,6 @@ export function readCookie(cookieHeader: string, name: string): string | undefin
     }
   }
   return undefined;
-}
-
-/** `retry-after` (seconds or HTTP date) or `x-rate-limit-reset` (epoch seconds), whichever is later. */
-export function retryAfterMsFrom(headers: Headers, now: number = Date.now()): number | undefined {
-  const candidates: number[] = [];
-  const retryAfter: string | null = headers.get("retry-after");
-  if (retryAfter !== null) {
-    const seconds: number = Number(retryAfter);
-    const deadline: number = Number.isFinite(seconds)
-      ? now + seconds * SECOND_MS
-      : Date.parse(retryAfter);
-    if (Number.isFinite(deadline) && deadline > now) {
-      candidates.push(deadline - now);
-    }
-  }
-  const reset: number = Number(headers.get("x-rate-limit-reset")) * SECOND_MS;
-  if (Number.isFinite(reset) && reset > now) {
-    candidates.push(reset - now);
-  }
-  return candidates.length === 0 ? undefined : Math.max(...candidates);
 }
 
 function aboutAccountUrl(origin: string, queryId: string, handle: string): string {

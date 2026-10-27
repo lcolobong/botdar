@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { RateLimitedError } from "@/src/core/ratelimit";
+import { RateLimitedError, retryAfterMsFrom } from "@/src/core/ratelimit";
 import type { EffectivePlatformConfig, ResolveContext, SignalSource } from "@/src/core/types";
 import { FALLBACK_ABOUT_ACCOUNT_QUERY_ID, QueryIdRegistry } from "@/src/platforms/x/queryIds";
 import type { FetchFn } from "@/src/platforms/x/sources/aboutAccount";
@@ -9,7 +9,6 @@ import {
   X_WEB_BEARER_TOKEN,
   createAboutAccountSource,
   readCookie,
-  retryAfterMsFrom,
 } from "@/src/platforms/x/sources/aboutAccount";
 
 const aboutFixture: string = readFileSync(

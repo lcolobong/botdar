@@ -64,6 +64,17 @@ describe("PersistedLookupStore", () => {
     expect(await lookupKeys()).toHaveLength(1);
   });
 
+  it("round-trips the fields a Hacker News lookup delivers", async () => {
+    const lookups: PersistedLookupStore = store();
+    const delivered: PartialSignals = { createdAt: 1_362_458_464_000, karma: 595, postCount: 147 };
+    await lookups.write("hackernews", "someone", { ...delivered, bio: "" });
+
+    expect((await lookups.read("hackernews", "someone"))?.signals).toEqual({
+      ...delivered,
+      bio: "",
+    });
+  });
+
   it("keeps whether the bio is empty, which is all the scorers read", async () => {
     const lookups: PersistedLookupStore = store();
     await lookups.write("x", "empty", { bio: "   " });
