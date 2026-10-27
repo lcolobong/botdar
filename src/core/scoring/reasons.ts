@@ -26,6 +26,8 @@ export interface ReasonContext {
   signals: AccountSignals;
   /** Epoch milliseconds. */
   now: number;
+  /** The feature's `detail`, when it carries one. */
+  detail?: string;
 }
 
 type ReasonTemplate = (context: ReasonContext) => string;
@@ -62,6 +64,7 @@ export function declaredReasonFor(signals: Pick<AccountSignals, "declaredBy">): 
 }
 
 const countFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const languageNames = new Intl.DisplayNames(["en"], { type: "language", fallback: "none" });
 const monthYearFormat = new Intl.DateTimeFormat("en-US", {
   month: "long",
   year: "numeric",
@@ -186,6 +189,21 @@ function karmaSplitReason({ signals }: ReasonContext): string {
   return `Post karma ${link}, comment karma ${comment}`;
 }
 
+/** "Based in Brazil, writes in Russian": both halves of the comparison the feature made. */
+function countryMismatchReason({ value, signals, detail }: ReasonContext): string {
+  if (value === false) {
+    return NO_REASON;
+  }
+  const languageName: string | undefined =
+    detail === undefined ? undefined : languageNames.of(detail);
+  if (signals.country === undefined) {
+    return "Listed country differs from the account's language";
+  }
+  return languageName === undefined
+    ? `Account based in ${signals.country}`
+    : `Based in ${signals.country}, writes in ${languageName}`;
+}
+
 const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "x.postsPerDay": postsPerDayReason,
   "bsky.postsPerDay": postsPerDayReason,
@@ -204,14 +222,7 @@ const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "x.newAndBlue": newAndBlueReason,
   "x.replyShare": ({ value }) => `${formatCount(Number(value) * 100)}% of recent posts are replies`,
   "x.usernameChanges": ({ value }) => `Username changed ${pluralize(Number(value), "time")}`,
-  "x.countryLocaleMismatch": ({ value, signals }) => {
-    if (value === false) {
-      return NO_REASON;
-    }
-    return signals.country === undefined
-      ? "Listed country differs from the bio's language"
-      : `Account based in ${signals.country}`;
-  },
+  "x.countryLocaleMismatch": countryMismatchReason,
   "reddit.karmaPerDay": karmaPerDayReason,
   "reddit.postToCommentKarma": karmaSplitReason,
   "reddit.generatedName": ({ value }) =>
@@ -283,7 +294,7 @@ const GROUP_CAVEATS: Readonly<Record<IndependenceGroup, string>> = {
   profile: "Privacy-minded people often leave profiles blank.",
   verification: "Paid verification is available to any new account.",
   content: "Some people only ever reply; that is a style, not automation.",
-  geo: "Location is inferred by the platform and is often wrong for travellers and VPN users.",
+  geo: "Expats, travellers, VPN users and people writing in a second language look the same.",
 };
 
 /**

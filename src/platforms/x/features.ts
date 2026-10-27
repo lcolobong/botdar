@@ -5,6 +5,8 @@
  */
 import { handleBigramLogLikelihood } from "../../core/handle/bigram";
 import { looksLikeNamePlusDigits, trailingDigitCount } from "../../core/handle/shape";
+import type { CountryLanguageComparison } from "../../core/text/accountLanguage";
+import { countryLanguageMismatch } from "../../core/text/accountLanguage";
 import type {
   AccountSignals,
   Feature,
@@ -37,50 +39,19 @@ function tierOf(signals: AccountSignals, fields: SignalField[]): SourceTier {
   return highest;
 }
 
-function regionFromNavigatorLanguage(): string | undefined {
-  const language: string | undefined = globalThis.navigator?.language;
-  if (language === undefined) {
-    return undefined;
-  }
-  try {
-    // Only an explicit region counts; "en" alone must not be inferred as "US".
-    return new Intl.Locale(language).region;
-  } catch {
-    return undefined;
-  }
-}
-
-function normaliseCountryName(name: string): string {
-  return name.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
-}
-
 /**
- * X's About dialog reports a country name ("United States"), not a code, and the wording follows the
- * viewer's X display language. The region code is rendered into a name in English and in the browser
- * language and compared with both, so a mismatch is only declared when neither spelling agrees.
+ * X prints the About dialog's country in the viewer's X display language, which normally follows the
+ * browser's; that language only helps read the name.
  */
-function countryMatchesRegion(country: string, region: string): boolean | undefined {
-  const locales: string[] = ["en", globalThis.navigator?.language ?? "en"];
-  try {
-    const renderedNames: string[] = locales.flatMap((locale) => {
-      const rendered: string | undefined = new Intl.DisplayNames([locale], {
-        type: "region",
-      }).of(region);
-      return rendered === undefined ? [] : [normaliseCountryName(rendered)];
-    });
-    if (renderedNames.length === 0) {
-      return undefined;
-    }
-    return renderedNames.includes(normaliseCountryName(country));
-  } catch {
-    return undefined;
-  }
+function countryNameLocales(): string[] {
+  const language: string | undefined = globalThis.navigator?.language;
+  return language === undefined ? [] : [language];
 }
 
 export function toFeatures(
   signals: AccountSignals,
   now: number = Date.now(),
-  localeRegion: string | undefined = regionFromNavigatorLanguage(),
+  countryLocales: readonly string[] = countryNameLocales(),
 ): Feature[] {
   const features: Feature[] = [];
   const add = (
@@ -88,8 +59,15 @@ export function toFeatures(
     value: number | boolean,
     group: IndependenceGroup,
     fields: SignalField[],
+    detail?: string,
   ): void => {
-    features.push({ id, value, group, tier: tierOf(signals, fields) });
+    features.push({
+      id,
+      value,
+      group,
+      tier: tierOf(signals, fields),
+      ...(detail === undefined ? {} : { detail }),
+    });
   };
   const ageDays: number | undefined =
     signals.createdAt === undefined
@@ -160,10 +138,20 @@ export function toFeatures(
   if (signals.usernameChanges !== undefined) {
     add("x.usernameChanges", signals.usernameChanges, "profile", ["usernameChanges"]);
   }
-  if (signals.country !== undefined && localeRegion !== undefined) {
-    const matches: boolean | undefined = countryMatchesRegion(signals.country, localeRegion);
-    if (matches !== undefined) {
-      add("x.countryLocaleMismatch", !matches, "geo", ["country"]);
+  if (signals.country !== undefined) {
+    const comparison: CountryLanguageComparison | undefined = countryLanguageMismatch(
+      signals.country,
+      signals,
+      countryLocales,
+    );
+    if (comparison !== undefined) {
+      add(
+        "x.countryLocaleMismatch",
+        comparison.mismatch,
+        "geo",
+        ["country", "bio", "postText"],
+        comparison.language,
+      );
     }
   }
   return features;

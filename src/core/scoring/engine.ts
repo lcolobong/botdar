@@ -90,14 +90,14 @@ function evidenceFor(
   weights: PlatformWeights,
   now: number,
 ): Evidence[] {
-  const valueByFeature = new Map<string, number | boolean>();
+  const featureById = new Map<string, Feature>();
   const uncapped: Evidence[] = [];
   for (const feature of features) {
     const spec: FeatureSpec | undefined = weights.features[feature.id];
     if (spec === undefined) {
       continue;
     }
-    valueByFeature.set(feature.id, feature.value);
+    featureById.set(feature.id, feature);
     uncapped.push({
       feature: feature.id,
       contribution: featureContribution(spec, feature.value),
@@ -111,12 +111,17 @@ function evidenceFor(
     .map((item) => ({
       ...item,
       reason: renderReason(item.feature, {
-        value: valueByFeature.get(item.feature) ?? false,
+        value: featureById.get(item.feature)?.value ?? false,
         contribution: item.contribution,
         signals,
         now,
+        ...detailOf(featureById.get(item.feature)),
       }),
     }));
+}
+
+function detailOf(feature: Feature | undefined): { detail?: string } {
+  return feature?.detail === undefined ? {} : { detail: feature.detail };
 }
 
 /** The independence rule: `many` needs two strong contributions from distinct groups (ADR-0003). */

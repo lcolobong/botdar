@@ -35,8 +35,8 @@ describe("defaultWeights", () => {
     expect(defaultWeights.bluesky.confidenceWeights).toEqual({ 0: 0.2, 1: 0.4, 2: 0.4 });
   });
 
-  it("caps handle and profile groups on X and Bluesky but not Reddit", () => {
-    expect(defaultWeights.x.groupCaps).toEqual({ handle: 1.2, profile: 1.2 });
+  it("caps handle and profile groups on X and Bluesky but not Reddit, and geo on X", () => {
+    expect(defaultWeights.x.groupCaps).toEqual({ handle: 1.2, profile: 1.2, geo: 0.4 });
     expect(defaultWeights.bluesky.groupCaps).toEqual({ handle: 1.2, profile: 1.2 });
     expect(defaultWeights.reddit.groupCaps).toEqual({});
   });
