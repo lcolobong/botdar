@@ -12,12 +12,14 @@ import type { NearViewportGate } from "../../core/nearViewport";
 import { createNearViewportGate } from "../../core/nearViewport";
 import type { PostRef } from "../../core/types";
 import { kindOfPost, recordAnchorMiss, recordSeen } from "../../core/diagnostics.ts";
-import { UNMARKED_POST_SELECTOR, toPostRef } from "./dom";
+import { POST_SELECTOR, UNMARKED_POST_SELECTOR, toPostRef } from "./dom";
 
 export interface ObserveFeedOptions {
   onPost: (post: PostRef) => void;
   onRemoved: (element: Element) => void;
   onRouteChange?: (href: string) => void;
+  /** Every post found by a discovery pass, near the viewport or not (the thread index, ADR-0027). */
+  onDiscovered?: (element: Element) => void;
   root?: Document;
   /** The idle callback's deadline, and the plain timer when the browser has no idle callback. */
   idleTimeoutMs?: number;
@@ -77,8 +79,11 @@ export function observeBlueskyFeed(options: ObserveFeedOptions): () => void {
       removalPending = false;
       sweepRemoved();
     }
-    for (const element of root.querySelectorAll(UNMARKED_POST_SELECTOR)) {
-      if (!tracked.has(element)) {
+    for (const element of root.querySelectorAll(POST_SELECTOR)) {
+      // Every post goes to the thread index, badged or not: the index forgets the page on navigation
+      // and a reinjected script starts empty, while the badge marks survive both.
+      options.onDiscovered?.(element);
+      if (!tracked.has(element) && element.matches(UNMARKED_POST_SELECTOR)) {
         watching.add(element);
         gate.watch(element);
       }

@@ -22,6 +22,8 @@ export interface RedditFeedObserverOptions {
   onRemoved: (element: Element) => void;
   /** The page navigated in place; per-page UI state can reset while account caches survive. */
   onRouteChange?: (href: string) => void;
+  /** Every item found by a discovery pass, near the viewport or not (the thread index, ADR-0027). */
+  onDiscovered?: (element: Element) => void;
 }
 
 export { IDLE_TIMEOUT_MS };
@@ -81,7 +83,12 @@ export function observeRedditFeed(options: RedditFeedObserverOptions): () => voi
     pendingSubtrees = [];
     for (const subtree of subtrees) {
       if (!subtree.isConnected) continue;
-      for (const element of feedItemsWithin(subtree, UNDISCOVERED_SELECTOR)) gate.watch(element);
+      for (const element of feedItemsWithin(subtree, FEED_ITEM_SELECTOR)) {
+        // Every post goes to the thread index, badged or not: the index forgets the page on navigation
+        // and a reinjected script starts empty, while the badge marks survive both.
+        options.onDiscovered?.(element);
+        if (element.matches(UNDISCOVERED_SELECTOR)) gate.watch(element);
+      }
     }
   };
 
