@@ -7,13 +7,13 @@ than one.
 
 | ID | Risk | Likelihood | Impact | Mitigation | Trigger to act | Owner |
 |---|---|---|---|---|---|---|
-| R-01 | Platform pressure or public backlash from X | M | H | Tiered sources (ADR-0006), signed restrict-only policy (ADR-0007), conservative mode, neutral wording, nothing leaves the browser | Press coverage naming Botdar, a cease-and-desist, or an X staff statement about third-party annotators | maintainer |
+| R-01 | Platform pressure or public backlash from X | M | H | Tiered sources (ADR-0006), signed restrict-only policy (ADR-0007), conservative mode, neutral wording, nothing sent to the developer | Press coverage naming Botdar, a cease-and-desist, or an X staff statement about third-party annotators | maintainer |
 | R-02 | ToS breach claims (X scraping clause, Reddit, Truth Social "scripts" wording) | M | M | Local-only processing, no data pooling or resale, Tier 2 rate-limited and hover-only on X and Bluesky (once per author on sight on Reddit, ADR-0020), platform-by-platform legal review before Threads | Any legal correspondence, or a platform publicly enforcing against a comparable extension | maintainer |
 | R-03 | False positives and defamation-adjacent harm | H | H | Three tiers not a percentage, two-independent-signal rule for the top tier, reasons and caveat on every card, "This looks wrong" feedback, never "bot" or "fake" (ADR-0003) | Feedback rate above 5% of verdicts in the top tier, a public complaint from a named account, or a journalist flagged in the top tier | maintainer |
 | R-04 | GraphQL or DOM schema rotation breaks parsers | H | M | Defensive parsers that yield partials and never throw, fixtures for `core` and `legacy` shapes, runtime queryId discovery, policy-supplied queryId fallback, confidence degrades visibly | CI fixture tests still pass but live verdicts turn mostly `unknown` on a platform; a user report of empty badges | maintainer |
 | R-05 | Rate limits and user account locks from Tier 2 lookups | M | H | Token bucket (X 20/min burst 3, Reddit 30/min burst 10, Bluesky 30/min burst 6), exponential backoff on `x-rate-limit-reset`, circuit breaker, 24h in-memory cache, hover-only trigger on X and Bluesky; on Reddit one queued lookup per author on sight (ADR-0020) | Any user report of an account lock or captcha loop, or 429 rate above 2% in dev telemetry | maintainer |
-| R-06 | Chrome Web Store review rejection (MAIN-world patching, Limited Use, single purpose) | M | M | Justification paragraph in the listing, data-use disclosure, explicit host permissions, no remote code, no `web_accessible_resources` (ADR-0013) | A rejection notice or a request for clarification from review | maintainer |
-| R-07 | Firefox data-collection disclosure mismatch | L | L | `data_collection_permissions: { required: ["none"] }` in the manifest, AMO listing text matches | AMO rejection, or any new source that transmits data | maintainer |
+| R-06 | Chrome Web Store review rejection (MAIN-world patching, Limited Use, single purpose) | M | M | Justification paragraph in the listing, data-use disclosure that declares Website content for the Tier 2 lookups and names each host (store/README.md), explicit host permissions, no remote code, no `web_accessible_resources` (ADR-0013) | A rejection notice or a request for clarification from review | maintainer |
+| R-07 | Firefox data-collection disclosure mismatch | L | L | `data_collection_permissions: { required: ["none"] }` in the manifest, AMO listing text matches; the Tier 2 lookups fired the trigger, and store/README.md asks for `websiteContent` before the next submission | AMO rejection, or any new source that transmits data | maintainer |
 | R-08 | Signing-key compromise or loss | L | H | Key only in the password manager, Pages deploy verifies and never signs, `kid` rotation path, last-known-good means loss is not an outage (ADR-0009) | Key material seen anywhere outside the password manager; a policy signed by an unknown `kid` observed | maintainer |
 | R-09 | Policy file hosting outage (GitHub Pages) | L | L | Baked defaults, last-known-good cache, daily fetch with jitter, popup shows policy age | Policy age over 14 days on the maintainer's own install | maintainer |
 | R-10 | Reddit access changes (`.json` lockdown, March 2027 API shutdown trajectory) | H | M | Reddit Tier 2 is logged-in same-origin only; Tier 0 from the DOM stays; policy switch to drop Tier 2 | `about.json` returns non-JSON or 403 logged-in; Reddit announces web-client changes | maintainer |
@@ -71,13 +71,20 @@ user reports a captcha, a 429 streak or a lock. X stays hover-only for the reaso
 ## R-06 Chrome Web Store review
 
 Reviewers will see a `fetch` patch in a MAIN-world script. The listing explains that it reads only
-responses the page already requested, for an allowlist of operations, and that nothing is transmitted.
-Everything else about the manifest is deliberately boring.
+responses the page already requested, for an allowlist of operations, and that nothing it reads is
+transmitted. Everything else about the manifest is deliberately boring.
+The Tier 2 lookups do send author names to each platform's site or public API, so the data-use
+disclosure declares Website content; a disclosure that says nothing leaves the browser would be a
+misrepresentation finding waiting to happen.
 
 ## R-07 Firefox disclosure
 
 Since November 2025 new Firefox extensions must declare data collection in the manifest. Botdar
 declares none. Any future source that transmits data must update the declaration and the listing.
+That trigger has fired: the Tier 2 lookups send author names to public.api.bsky.app and
+hacker-news.firebaseio.com as well as to x.com and reddit.com, which Mozilla's definition of
+transmission covers, so store/README.md asks for `required: ["websiteContent"]` before the next AMO
+submission.
 
 ## R-08 Signing key
 

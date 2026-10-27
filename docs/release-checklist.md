@@ -39,7 +39,8 @@ Copy this list into the release PR and check every item.
 ## Store
 
 - [ ] Chrome Web Store listing: description, screenshots per platform, promo tiles, category, single-purpose
-  statement, data-use disclosure ("nothing leaves the browser except a daily signed policy fetch").
+  statement, data-use disclosure (the "Data-use disclosure" table and the note under it in
+  [store/README.md](../store/README.md), which say which lookups leave the browser).
 - [ ] Justification paragraph for MAIN-world fetch interception ready for a reviewer question.
 - [ ] Firefox AMO submission with pre-minified source archive.
 - [ ] GitHub Release created from the tag with both zips attached.
