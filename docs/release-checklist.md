@@ -44,6 +44,17 @@ Copy this list into the release PR and check every item.
 - [ ] Firefox AMO submission with pre-minified source archive.
 - [ ] GitHub Release created from the tag with both zips attached.
 
+### Chrome Web Store submission
+
+- [ ] Manifest `description` is at most 132 characters and matches the store listing's short description
+  ([store/README.md](../store/README.md)).
+- [ ] Manifest `name` matches the store listing name (`Botdar`) exactly.
+- [ ] The developer-contact email in the store dashboard is monitored.
+- [ ] The uploaded ZIP is built from a clean checkout: `git status` clean, `pnpm build`, zip of
+      `.output/chrome-mv3` only, no source maps or fixtures.
+- [ ] A clean uninstall leaves nothing behind: removing the extension clears `storage.local`; confirm by
+      reinstalling and checking that onboarding shows again.
+
 ## After publishing
 
 - [ ] Install from the store on a clean profile; run the manual checklist once more.

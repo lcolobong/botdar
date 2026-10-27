@@ -7,6 +7,11 @@ store icon is `icon-512.png` beside this file; screenshots are described in
 
 ## Chrome Web Store
 
+### Listing name
+
+`Botdar`, identical to the manifest `name`. The manifest `description` must also stay within 132
+characters and match the short description below.
+
 ### Short description (132 characters max)
 
 ```
