@@ -9,6 +9,7 @@
  */
 
 import type { PlatformId } from "../types";
+import { PLATFORM_IDS } from "../types";
 import type {
   Bin,
   ConfidenceWeights,
@@ -20,7 +21,6 @@ import type {
 } from "./types";
 import weightsJson from "./weights.default.json";
 
-const PLATFORM_IDS: readonly PlatformId[] = ["x", "reddit", "bluesky", "hackernews"];
 const GROUPS: ReadonlySet<string> = new Set([
   "age",
   "activity",

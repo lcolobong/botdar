@@ -11,6 +11,7 @@ import { browser } from "wxt/browser";
 import type { DiagnosticsStats } from "./diagnostics.ts";
 import { DIAGNOSTICS_KINDS, LOOKUP_OUTCOMES } from "./diagnostics.ts";
 import type { EffectivePlatformConfig, PlatformId } from "./types";
+import { PLATFORM_IDS } from "./types";
 
 export type EffectiveConfigByPlatform = Record<PlatformId, EffectivePlatformConfig>;
 
@@ -82,8 +83,6 @@ export type RequestHandler<T extends RuntimeMessageType> = (
   message: MessageOf<T>,
   sender: Browser.runtime.MessageSender,
 ) => ResponseByType[T] | Promise<ResponseByType[T]>;
-
-const PLATFORM_IDS: readonly PlatformId[] = ["x", "reddit", "bluesky", "hackernews"];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;

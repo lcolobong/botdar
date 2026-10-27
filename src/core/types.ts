@@ -3,7 +3,10 @@
  * See docs/architecture.md ("Core type contracts") and docs/scoring-spec.md.
  */
 
-export type PlatformId = "x" | "reddit" | "bluesky" | "hackernews";
+/** Every supported platform; the one list the union, settings, policy, weights and snapshots derive from. */
+export const PLATFORM_IDS = Object.freeze(["x", "reddit", "bluesky", "hackernews"] as const);
+
+export type PlatformId = (typeof PLATFORM_IDS)[number];
 
 /** 0 = rendered DOM only, 1 = passive interception of the page's own responses, 2 = active lookups. */
 export type SourceTier = 0 | 1 | 2;
