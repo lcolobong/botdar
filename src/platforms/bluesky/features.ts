@@ -5,6 +5,8 @@
  * `signals.declaredAutomated` directly.
  */
 import { isBskySocialHandleWithDigits } from "../../core/handle/shape";
+import type { Cadence } from "../../core/scoring/cadence";
+import { cadenceOf } from "../../core/scoring/cadence";
 import type {
   AccountSignals,
   Feature,
@@ -74,6 +76,13 @@ export function toFeatures(signals: AccountSignals, now: number = Date.now()): F
     const emptyProfileCount: number =
       (signals.hasDefaultAvatar ? 1 : 0) + (signals.bio.trim().length === 0 ? 1 : 0);
     add("bsky.noAvatarEmptyBio", emptyProfileCount, "profile", ["hasDefaultAvatar", "bio"]);
+  }
+  const cadence: Cadence = cadenceOf(signals);
+  if (cadence.gapCoefficientOfVariation !== undefined) {
+    add("bsky.gapRegularity", cadence.gapCoefficientOfVariation, "timing", ["postTimestamps"]);
+  }
+  if (cadence.longestEmptyHourRun !== undefined) {
+    add("bsky.noSleepWindow", cadence.longestEmptyHourRun, "timing", ["postTimestamps"]);
   }
   return features;
 }

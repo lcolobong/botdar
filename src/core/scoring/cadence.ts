@@ -8,6 +8,8 @@
  * day has hours without posts; schedulers and throttles post on a clock, round the clock.
  */
 
+import type { AccountSignals } from "../types";
+
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 const HOURS_PER_DAY = 24;
@@ -38,6 +40,40 @@ export function normalisePostTimestamps(timestamps: readonly number[], now: numb
     (timestamp) => Number.isFinite(timestamp) && timestamp <= now + MAX_CLOCK_SKEW_MS,
   );
   return [...new Set(believable)].sort((newer, older) => older - newer).slice(0, MAX_CADENCE_POSTS);
+}
+
+export interface Cadence {
+  gapCoefficientOfVariation?: number;
+  longestEmptyHourRun?: number;
+}
+
+/**
+ * Both statistics for an account, each only when its gate is met. Accounts verified as an
+ * organisation or a government are left out entirely (adversarial-evasion.md 4.2): newsrooms and
+ * agencies publish on a schedule and round the clock by design. So is an account that declared
+ * itself automated: the declaration already decided its verdict, and its card should not argue it.
+ */
+export function cadenceOf(
+  signals: Pick<AccountSignals, "postTimestamps" | "verified" | "declaredAutomated">,
+): Cadence {
+  if (
+    signals.postTimestamps === undefined ||
+    signals.verified === "org" ||
+    signals.verified === "gov" ||
+    signals.declaredAutomated === true
+  ) {
+    return {};
+  }
+  const cadence: Cadence = {};
+  const variation: number | undefined = gapCoefficientOfVariation(signals.postTimestamps);
+  if (variation !== undefined) {
+    cadence.gapCoefficientOfVariation = variation;
+  }
+  const emptyHours: number | undefined = longestEmptyHourRun(signals.postTimestamps);
+  if (emptyHours !== undefined) {
+    cadence.longestEmptyHourRun = emptyHours;
+  }
+  return cadence;
 }
 
 /**

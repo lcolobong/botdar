@@ -354,3 +354,65 @@ describe("x toFeatures", () => {
     });
   });
 });
+
+describe("x cadence", () => {
+  const roundTheClock: number[] = Array.from(
+    { length: 100 },
+    (_, index) => NOW - index * 110 * 60_000,
+  );
+
+  it("emits both timing features at the tier that supplied the post times", () => {
+    const features: Feature[] = toFeatures(
+      signalsFor("a", { postTimestamps: roundTheClock, provenance: { postTimestamps: 1 } }),
+      NOW,
+      [],
+    );
+    expect(featureById(features, "x.gapRegularity")).toEqual({
+      id: "x.gapRegularity",
+      value: 0,
+      group: "timing",
+      tier: 1,
+    });
+    expect(featureById(features, "x.noSleepWindow")).toEqual({
+      id: "x.noSleepWindow",
+      value: 0,
+      group: "timing",
+      tier: 1,
+    });
+  });
+
+  it("emits gap regularity alone when the posts span under a week", () => {
+    const threeDays: number[] = roundTheClock.map((timestamp) => NOW - (NOW - timestamp) / 2.5);
+    const features: Feature[] = toFeatures(signalsFor("a", { postTimestamps: threeDays }), NOW, []);
+    expect(ids(features)).toContain("x.gapRegularity");
+    expect(ids(features)).not.toContain("x.noSleepWindow");
+  });
+
+  it("leaves a declared account out of timing", () => {
+    const features: Feature[] = toFeatures(
+      signalsFor("a", { postTimestamps: roundTheClock, declaredAutomated: true }),
+      NOW,
+      [],
+    );
+    expect(ids(features)).not.toContain("x.gapRegularity");
+    expect(ids(features)).not.toContain("x.noSleepWindow");
+  });
+
+  it("leaves accounts verified as an organisation or a government out of timing", () => {
+    for (const verified of ["org", "gov"] as const) {
+      const features: Feature[] = toFeatures(
+        signalsFor("a", { postTimestamps: roundTheClock, verified }),
+        NOW,
+        [],
+      );
+      expect(ids(features)).not.toContain("x.gapRegularity");
+      expect(ids(features)).not.toContain("x.noSleepWindow");
+    }
+    const blue: Feature[] = toFeatures(
+      signalsFor("a", { postTimestamps: roundTheClock, verified: "blue" }),
+      NOW,
+      [],
+    );
+    expect(ids(blue)).toContain("x.gapRegularity");
+  });
+});

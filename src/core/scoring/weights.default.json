@@ -10,7 +10,8 @@
       "groupCaps": {
         "handle": 1.2,
         "profile": 1.2,
-        "geo": 0.4
+        "geo": 0.4,
+        "timing": 1.5
       },
       "confidenceWeights": {
         "0": 0.25,
@@ -117,6 +118,26 @@
           "cap": 0.4,
           "kind": "bool",
           "weight": 0.4
+        },
+        "x.gapRegularity": {
+          "group": "timing",
+          "cap": 1.0,
+          "kind": "bins",
+          "bins": [
+            [0, 0.5, 1.0],
+            [0.5, 0.8, 0.5],
+            [0.8, null, 0]
+          ]
+        },
+        "x.noSleepWindow": {
+          "group": "timing",
+          "cap": 1.0,
+          "kind": "bins",
+          "bins": [
+            [0, 2, 1.0],
+            [2, 4, 0.5],
+            [4, null, 0]
+          ]
         }
       }
     },
@@ -193,7 +214,8 @@
       },
       "groupCaps": {
         "handle": 1.2,
-        "profile": 1.2
+        "profile": 1.2,
+        "timing": 1.5
       },
       "confidenceWeights": {
         "0": 0.2,
@@ -250,6 +272,26 @@
             [0, 1, 0],
             [1, 2, 0.3],
             [2, 3, 1.0]
+          ]
+        },
+        "bsky.gapRegularity": {
+          "group": "timing",
+          "cap": 1.0,
+          "kind": "bins",
+          "bins": [
+            [0, 0.5, 1.0],
+            [0.5, 0.8, 0.5],
+            [0.8, null, 0]
+          ]
+        },
+        "bsky.noSleepWindow": {
+          "group": "timing",
+          "cap": 1.0,
+          "kind": "bins",
+          "bins": [
+            [0, 2, 1.0],
+            [2, 4, 0.5],
+            [4, null, 0]
           ]
         }
       }
