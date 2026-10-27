@@ -5,10 +5,10 @@
  * distinguished from a usable profile so the source can cache the outcome rather than retry.
  */
 import { bioDeclaresAutomation } from "../../../core/handle/selfDescription";
+import type { UnknownRecord } from "../../../core/json/untrusted";
+import { isRecord, readBoolean, readRecord, readString } from "../../../core/json/untrusted";
 import type { PartialSignals } from "../../../core/types";
 import { isDefaultAvatarUrl, isPlausibleUsername } from "../conventions";
-
-type UnknownRecord = Record<string, unknown>;
 
 export type AboutParseResult =
   | { status: "ok"; handle: string; signals: PartialSignals }
@@ -20,25 +20,6 @@ const MAX_BIO_LENGTH = 500;
 const MAX_DISPLAY_NAME_LENGTH = 100;
 
 // MARK: - Type guards
-
-function isRecord(value: unknown): value is UnknownRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readRecord(parent: UnknownRecord | undefined, key: string): UnknownRecord | undefined {
-  const value = parent?.[key];
-  return isRecord(value) ? value : undefined;
-}
-
-function readString(parent: UnknownRecord | undefined, key: string): string | undefined {
-  const value = parent?.[key];
-  return typeof value === "string" ? value : undefined;
-}
-
-function readBoolean(parent: UnknownRecord | undefined, key: string): boolean | undefined {
-  const value = parent?.[key];
-  return typeof value === "boolean" ? value : undefined;
-}
 
 /** Karma can be negative on Reddit, so only finiteness and integrality are required. */
 function readInteger(parent: UnknownRecord | undefined, key: string): number | undefined {

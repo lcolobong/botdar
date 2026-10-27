@@ -4,9 +4,15 @@
  * (Tier 1: identity, join date, labels and verification, but no counts). Bodies are untrusted page
  * data: every read is type-guarded, strings are capped, the walk is bounded, and nothing here throws.
  */
+import type { UnknownRecord } from "../../../core/json/untrusted";
+import {
+  isRecord,
+  isoTimestampMillis,
+  readCount,
+  readRecord,
+  readString,
+} from "../../../core/json/untrusted";
 import type { AccountRef, PartialSignals, VerifiedKind } from "../../../core/types";
-
-type UnknownRecord = Record<string, unknown>;
 
 export interface ParsedBlueskyProfile {
   ref: AccountRef;
@@ -20,38 +26,11 @@ const MAX_DISPLAY_NAME_LENGTH = 100;
 const MAX_HANDLE_LENGTH = 253;
 const DID_PREFIX = "did:";
 const BOT_LABEL_VALUE = "bot";
-const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T/;
-
-// MARK: - Type guards
-
-function isRecord(value: unknown): value is UnknownRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readRecord(parent: UnknownRecord | undefined, key: string): UnknownRecord | undefined {
-  const value = parent?.[key];
-  return isRecord(value) ? value : undefined;
-}
-
-function readString(parent: UnknownRecord | undefined, key: string): string | undefined {
-  const value = parent?.[key];
-  return typeof value === "string" ? value : undefined;
-}
-
-function readCount(parent: UnknownRecord | undefined, key: string): number | undefined {
-  const value = parent?.[key];
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
-}
 
 // MARK: - Field readers
 
 function createdAtOf(node: UnknownRecord): number | undefined {
-  const createdAt: string | undefined = readString(node, "createdAt");
-  if (createdAt === undefined || !ISO_TIMESTAMP_PATTERN.test(createdAt)) {
-    return undefined;
-  }
-  const millis: number = Date.parse(createdAt);
-  return Number.isFinite(millis) && millis > 0 ? millis : undefined;
+  return isoTimestampMillis(readString(node, "createdAt"));
 }
 
 /** A `bot` label is a self-label only when the account itself (`src === did`) applied it. */
