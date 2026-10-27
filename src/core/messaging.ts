@@ -83,7 +83,7 @@ export type RequestHandler<T extends RuntimeMessageType> = (
   sender: Browser.runtime.MessageSender,
 ) => ResponseByType[T] | Promise<ResponseByType[T]>;
 
-const PLATFORM_IDS: readonly PlatformId[] = ["x", "reddit", "bluesky"];
+const PLATFORM_IDS: readonly PlatformId[] = ["x", "reddit", "bluesky", "hackernews"];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;

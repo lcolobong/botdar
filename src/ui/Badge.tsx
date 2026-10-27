@@ -38,6 +38,7 @@ const DENSITY_CLASS: Record<BadgeDensity, string> = {
   bluesky: "",
   "reddit-post": "bd-badge--reddit-post",
   "reddit-comment": "bd-badge--reddit-comment",
+  hackernews: "bd-badge--hackernews",
 };
 
 export function Badge(props: BadgeProps) {

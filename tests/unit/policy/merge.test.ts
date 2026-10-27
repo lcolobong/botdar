@@ -73,7 +73,7 @@ describe("applyPolicy", () => {
         expect(effective.platforms[platform]).toEqual({
           platform,
           enabled: true,
-          tiers: { t1: true, t2: true },
+          tiers: buildDefaults[platform].tiers,
           rateLimitPerMinute: buildDefaults[platform].rateLimitPerMinute,
           policyVersion: 0,
         });

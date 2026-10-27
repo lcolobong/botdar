@@ -15,7 +15,12 @@ export interface BuildPlatformDefaults {
 
 export type BuildDefaults = Record<PlatformId, BuildPlatformDefaults>;
 
-export const platformIds: readonly PlatformId[] = Object.freeze(["x", "reddit", "bluesky"]);
+export const platformIds: readonly PlatformId[] = Object.freeze([
+  "x",
+  "reddit",
+  "bluesky",
+  "hackernews",
+]);
 
 export function isPlatformId(value: string): value is PlatformId {
   return (platformIds as readonly string[]).includes(value);

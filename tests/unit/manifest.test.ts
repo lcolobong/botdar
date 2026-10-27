@@ -15,6 +15,7 @@ const DOCUMENTED_HOST_PERMISSIONS: readonly string[] = [
   "https://www.reddit.com/*",
   "https://old.reddit.com/*",
   "https://bsky.app/*",
+  "https://news.ycombinator.com/*",
 ];
 
 const builtManifestMissing: boolean = !existsSync(MANIFEST_PATH);
@@ -27,6 +28,20 @@ describe("built manifest", () => {
       expect(manifest).not.toHaveProperty("web_accessible_resources");
       expect(manifest.host_permissions).toEqual(DOCUMENTED_HOST_PERMISSIONS);
       expect(manifest.permissions).toEqual(["storage", "alarms"]);
+    },
+  );
+
+  it.skipIf(builtManifestMissing)(
+    "runs a content script on Hacker News and asks no permission for its Firebase API (ADR-0026)",
+    () => {
+      const manifest: { content_scripts?: Array<{ matches?: string[] }> } = JSON.parse(
+        readFileSync(MANIFEST_PATH, "utf8"),
+      );
+      const matches: string[] = (manifest.content_scripts ?? []).flatMap(
+        (script) => script.matches ?? [],
+      );
+      expect(matches).toContain("https://news.ycombinator.com/*");
+      expect(JSON.stringify(manifest)).not.toContain("firebaseio.com");
     },
   );
 });

@@ -15,6 +15,12 @@ missing page or badge is logged and skipped rather than failing the run.
 | `reddit`  | `comments` | thread URL ← `comments.html`             | Likely human on the OP (served profile), No read on the rest | 600×820    |
 | `bluesky` | `feed`     | `https://bsky.app/` ← `feed.html`        | Declared bot (kai) and Likely bot (mila) badges       | 600×820           |
 | `bluesky` | `profile`  | `https://bsky.app/profile/alice.example.com` ← `feed.html` | As `feed`, plus alice's author feed; the hover opens her card | 600×820 |
+| `hackernews` | `thread` | `https://news.ycombinator.com/item` ← `thread.html` | Likely human on the OP, Unsure on the first commenter, No read on the rest | 600×820 |
+| `hackernews` | `front`  | `https://news.ycombinator.com/` ← `front.html` | Unsure on story 1, Likely human on story 3, No read or Checking on the rest | 600×820 |
+
+Hacker News has a single light theme, so its scenes are worth capturing with `--theme light`; a
+dark capture shows the same light badges. Its recordings keep no stylesheet, so the server adds a
+short approximation of news.css to the served page.
 
 Every feed scene also has a hover capture (`hover` for the `feed` scene, `<scene>-hover` for the
 others) with a badge hovered and the card open. Every scene is captured at 2x in light and dark.
@@ -24,7 +30,8 @@ badge theme. The scene table lives in `fixtureServer.ts` (`smokeFeedScenes`); a 
 expected to draw nothing carries a `note` that the manifest repeats.
 
 Feed fixtures are served over HTTPS under the real hostnames (`x.com`, `www.reddit.com`,
-`bsky.app`) by `fixtureServer.ts`, because the extension's host permissions allow nothing else.
+`bsky.app`, `news.ycombinator.com`) by `fixtureServer.ts`, because the extension's host
+permissions allow nothing else; `hacker-news.firebaseio.com` is mapped to the same server.
 Any `.html` under `tests/fixtures/<platform>/html/` can be served, so a page recorded with
 `pnpm capture` (see `scripts/capture/run.ts`) becomes a smoke scene by adding a row to
 `smokeFeedScenes` with its `fixtureFile`.
@@ -49,10 +56,17 @@ returns 404 for every other API path:
 | `https://bsky.app/xrpc/app.bsky.actor.getProfiles`             | `tests/fixtures/bluesky/get-profiles.json`      |
 | `https://bsky.app/xrpc/app.bsky.feed.getAuthorFeed`            | `tests/fixtures/smoke/bluesky-author-feed.json` (hand-written) |
 | `https://www.reddit.com/user/quiet_lantern_4821/about.json`    | `tests/fixtures/reddit/about/normal.json`       |
+| `https://hacker-news.firebaseio.com/v0/user/<name>.json` for `tomas_bakes28`, `jonas_draws01`, `priya_draws51` | `tests/fixtures/hackernews/firebase/smoke/<name>.json` |
 
 The Reddit route answers the extension's own Tier 2 lookup for the recorded thread's OP, matched
 on the path alone (the `?raw_json=1` query is ignored); every other author's lookup gets the 404,
 so the comments scene shows a profile that was read next to ones that returned nothing.
+
+The Hacker News routes answer the Firebase lookup cross-origin, with the
+`access-control-allow-origin` the real API sends, from hand-written bodies in the recorded shape:
+an account from 2012 with an about text, and two that joined on 2026-10-12 with 700 submissions,
+which read Unsure until about 2026-11-11 and drift towards No read after. Every other name gets a
+JSON `null`, as an unknown id does on Firebase.
 
 The recorded X and Bluesky pages end with a short script that fetches exactly these URLs on
 load (repeated a few times, since the content script subscribes after `document_idle`), so the

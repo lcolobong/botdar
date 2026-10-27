@@ -32,6 +32,9 @@ export default defineConfig({
       "https://www.reddit.com/*",
       "https://old.reddit.com/*",
       "https://bsky.app/*",
+      // The Hacker News Firebase API (hacker-news.firebaseio.com) needs no entry: it answers the
+      // page's origin with access-control-allow-origin, so the content script reaches it as is.
+      "https://news.ycombinator.com/*",
     ],
     browser_specific_settings: {
       gecko: {

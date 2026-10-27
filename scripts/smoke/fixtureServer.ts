@@ -1,8 +1,9 @@
 /**
  * Local HTTPS server that serves saved platform markup under the real hostnames so the extension's
- * content scripts, whose host permissions are limited to x.com, www.reddit.com and bsky.app, run
- * against it. Chrome is pointed at it with --host-resolver-rules (see hostResolverRules) and
- * --ignore-certificate-errors; the certificate under cert/ is self-signed and test-only.
+ * content scripts, whose host permissions are limited to x.com, www.reddit.com, bsky.app and
+ * news.ycombinator.com, run against it. Chrome is pointed at it with --host-resolver-rules (see
+ * hostResolverRules) and --ignore-certificate-errors; the certificate under cert/ is self-signed
+ * and test-only.
  *
  * One-time setup: `pnpm smoke:setup` (installs Playwright's Chromium).
  * Standalone: `node --experimental-strip-types scripts/smoke/fixtureServer.ts` prints the port.
@@ -14,16 +15,25 @@ import type { AddressInfo } from "node:net";
 import { relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export type SmokePlatformId = "x" | "reddit" | "bluesky";
+export type SmokePlatformId = "x" | "reddit" | "bluesky" | "hackernews";
 
-export const smokePlatformIds: readonly SmokePlatformId[] = ["x", "reddit", "bluesky"];
+export const smokePlatformIds: readonly SmokePlatformId[] = [
+  "x",
+  "reddit",
+  "bluesky",
+  "hackernews",
+];
 
-/** The hostnames the content scripts are allowed to run on; the server answers for all three. */
+/** The hostnames the content scripts are allowed to run on; the server answers for all of them. */
 export const smokeHostnames: Readonly<Record<SmokePlatformId, string>> = {
   x: "x.com",
   reddit: "www.reddit.com",
   bluesky: "bsky.app",
+  hackernews: "news.ycombinator.com",
 };
+
+/** The Hacker News Firebase API, which the content script reaches cross-origin. */
+export const hackerNewsApiHostname = "hacker-news.firebaseio.com";
 
 export interface SmokeFeedScene {
   readonly platform: SmokePlatformId;
@@ -72,6 +82,8 @@ export const smokeFeedScenes: readonly SmokeFeedScene[] = [
     fixtureFile: "feed.html",
     hoverAnchor: 'a[href="/profile/alice.example.com"]',
   },
+  { platform: "hackernews", scene: "thread", path: "/item", fixtureFile: "thread.html" },
+  { platform: "hackernews", scene: "front", path: "/", fixtureFile: "front.html" },
 ];
 
 export interface FixtureSource {
@@ -151,6 +163,11 @@ export interface ApiFixtureRoute {
   readonly path: string;
   /** The recorded response body, relative to the repository root. */
   readonly file: string;
+  /**
+   * An API on a host of its own, answered with the CORS header that admits the platform's page,
+   * as the real API does; without it the route is on the platform's own host.
+   */
+  readonly hostname?: string;
 }
 
 /**
@@ -196,6 +213,14 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
     path: "/user/quiet_lantern_4821/about.json",
     file: "tests/fixtures/reddit/about/normal.json",
   },
+  // Three authors on the first screens of the recorded thread and front page, with bodies
+  // hand-written in the recorded shape; every other author answers null, as an unknown id does.
+  ...["tomas_bakes28", "jonas_draws01", "priya_draws51"].map((handle): ApiFixtureRoute => ({
+    platform: "hackernews",
+    hostname: hackerNewsApiHostname,
+    path: `/v0/user/${handle}.json`,
+    file: `tests/fixtures/hackernews/firebase/smoke/${handle}.json`,
+  })),
 ];
 
 /**
@@ -203,10 +228,32 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
  * recorded page's leftover asset URLs fail fast instead of waiting on real DNS and networks.
  */
 export function hostResolverRules(port: number): string {
-  const mappings: string[] = Object.values(smokeHostnames).map(
+  const mappings: string[] = [...Object.values(smokeHostnames), hackerNewsApiHostname].map(
     (hostname) => `MAP ${hostname} 127.0.0.1:${port}`,
   );
   return [...mappings, "MAP * ~NOTFOUND"].join(", ");
+}
+
+/**
+ * A recording keeps no stylesheet (scripts/capture drops them), so a served Hacker News page would
+ * render in browser defaults at twice the site's type size. This approximates news.css closely
+ * enough for a capture to show the badge at the size it has on the site.
+ */
+const recordedPageStyles: Partial<Record<SmokePlatformId, string>> = {
+  hackernews: [
+    "body, td, input, textarea { font-family: Verdana, Geneva, sans-serif; font-size: 10pt; color: #828282; }",
+    "#hnmain { background-color: #f6f6ef; width: 100%; }",
+    "a { color: #000; text-decoration: none; }",
+    ".pagetop, .pagetop a { color: #000; } .subtext, .subline, .subtext a { font-size: 7pt; color: #828282; }",
+    ".comhead, .comhead a { font-size: 8pt; color: #828282; } .commtext { font-size: 9pt; color: #000; }",
+    ".titleline { font-size: 10pt; } .rank { color: #828282; } .votearrow { width: 10px; height: 10px; }",
+  ].join("\n"),
+};
+
+function corsHeaders(route: ApiFixtureRoute): Record<string, string> {
+  return route.hostname === undefined
+    ? {}
+    : { "access-control-allow-origin": `https://${smokeHostnames[route.platform]}` };
 }
 
 /** What a server answers: the smoke routes by default; the perf runner passes its own. */
@@ -233,16 +280,30 @@ function handleRequest(
   const hostname: string = (request.headers.host ?? "").split(":")[0] ?? "";
   const [requestPath = "/", requestQuery = ""] = (request.url ?? "/").split("?");
   const preferStore: boolean = requestQuery === storeFixtureQuery;
-  const servesRequest = (route: { platform: SmokePlatformId; path: string }): boolean =>
-    smokeHostnames[route.platform] === hostname && route.path === requestPath;
+  const servesRequest = (route: {
+    platform: SmokePlatformId;
+    path: string;
+    hostname?: string;
+  }): boolean =>
+    (route.hostname ?? smokeHostnames[route.platform]) === hostname && route.path === requestPath;
   // GET or POST alike: X posts some GraphQL operations and the interceptor relays both.
   const apiRoute: ApiFixtureRoute | undefined = routes.apiRoutes.find(servesRequest);
   if (apiRoute !== undefined) {
     response.writeHead(200, {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
+      ...corsHeaders(apiRoute),
     });
     response.end(readFileSync(new URL(apiRoute.file, repoRoot)));
+    return;
+  }
+  if (hostname === hackerNewsApiHostname) {
+    // Firebase answers an id with no account with a JSON null, not a 404.
+    response.writeHead(200, {
+      "content-type": "application/json; charset=utf-8",
+      "access-control-allow-origin": `https://${smokeHostnames.hackernews}`,
+    });
+    response.end("null");
     return;
   }
   const scene: SmokeFeedScene | undefined = routes.feedScenes.find(servesRequest);
@@ -251,7 +312,12 @@ function handleRequest(
     response.end("no smoke fixture at this route");
     return;
   }
-  const markup: string = readFileSync(resolveSceneFixture(scene, preferStore).path, "utf8");
+  const recorded: string = readFileSync(resolveSceneFixture(scene, preferStore).path, "utf8");
+  const pageStyle: string | undefined = recordedPageStyles[scene.platform];
+  const markup: string =
+    pageStyle === undefined
+      ? recorded
+      : recorded.replace("</head>", `<style>${pageStyle}</style></head>`);
   response.writeHead(200, {
     "content-type": "text/html; charset=utf-8",
     "cache-control": "no-store",
@@ -293,7 +359,7 @@ if (runAsScript) {
   }
   for (const route of apiFixtureRoutes) {
     process.stdout.write(
-      `  https://${smokeHostnames[route.platform]}${route.path} <- ${route.file}\n`,
+      `  https://${route.hostname ?? smokeHostnames[route.platform]}${route.path} <- ${route.file}\n`,
     );
   }
   process.stdout.write(`chrome flag: --host-resolver-rules="${hostResolverRules(server.port)}"\n`);

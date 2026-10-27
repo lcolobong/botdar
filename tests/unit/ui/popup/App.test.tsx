@@ -72,6 +72,7 @@ describe("popup App", () => {
       "Badges on · lookups on",
       "Badges on · lookups on",
       "Badges on · lookups on",
+      "Badges on · lookups on",
       "Never ask a platform for a profile",
       PRIVACY_SENTENCE,
     ]);
