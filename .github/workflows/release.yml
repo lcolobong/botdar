@@ -21,6 +21,10 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
+      # Both builds come first so tests/unit/manifest.test.ts checks the real built manifests;
+      # without them its cases skip silently.
+      - run: pnpm build
+      - run: pnpm build:firefox
       - run: pnpm test
       - run: pnpm zip
       - run: pnpm zip:firefox

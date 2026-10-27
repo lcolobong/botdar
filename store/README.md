@@ -220,13 +220,12 @@ Social & Communication; Privacy & Security.
 
 ### Data collection
 
-The manifest currently declares `browser_specific_settings.gecko.data_collection_permissions` with
-`required: ["none"]`, and that no longer holds. Mozilla's add-on policies count as data transmission any
-data "collected, used, transferred, shared, or handled outside of the add-on or the local browser",
-with no exception for the site the user is on, and two of the lookups go to API hosts that are not the
-page at all (public.api.bsky.app and hacker-news.firebaseio.com). Change the declaration to
-`required: ["websiteContent"]` before the next AMO submission; the text below assumes that change. In
-the submission form, state:
+The manifest declares `browser_specific_settings.gecko.data_collection_permissions` with
+`required: ["websiteContent"]`. Mozilla's add-on policies count as data transmission any data
+"collected, used, transferred, shared, or handled outside of the add-on or the local browser", with no
+exception for the site the user is on, and two of the lookups go to API hosts that are not the page at
+all (public.api.bsky.app and hacker-news.firebaseio.com), so `none` would understate them. In the
+submission form, state:
 
 ```
 This add-on sends nothing to its developer, who runs no server. To show a badge it sends the account

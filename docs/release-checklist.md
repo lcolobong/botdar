@@ -48,7 +48,9 @@ Copy this list into the release PR and check every item.
 ### Chrome Web Store submission
 
 - [ ] Manifest `description` is at most 132 characters and matches the store listing's short description
-  ([store/README.md](../store/README.md)).
+  ([store/README.md](../store/README.md)); `tests/unit/manifest.test.ts` checks both on the built
+  manifest. CI and the release workflow run `pnpm build` and `pnpm build:firefox` before
+  `pnpm test`, so a green release run covers this item; locally, build both first or the case skips.
 - [ ] Manifest `name` matches the store listing name (`Botdar`) exactly.
 - [ ] The developer-contact email in the store dashboard is monitored.
 - [ ] The uploaded ZIP is built from a clean checkout: `git status` clean, `pnpm build`, zip of

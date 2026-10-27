@@ -488,7 +488,8 @@ The result is frozen. Unit tests assert every "cannot enable" case. Settings the
   is ever needed, use `use_dynamic_url`.
 - The policy fetch, the Bluesky public AppView and the Hacker News Firebase API need no host
   permission: the first two send `access-control-allow-origin: *` and Firebase echoes the page's origin (ADR-0026).
-- Firefox: `browser_specific_settings.gecko.data_collection_permissions.required = ["none"]`.
+- Firefox: `browser_specific_settings.gecko.data_collection_permissions.required = ["websiteContent"]`,
+  because the Tier 2 lookups send author names to each platform's site or public API (store/README.md).
 - No remote code. The policy file is data; the logic that interprets it ships in the package.
 
 ## Data handling and storage

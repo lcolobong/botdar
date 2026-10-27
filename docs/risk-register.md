@@ -13,7 +13,7 @@ than one.
 | R-04 | GraphQL or DOM schema rotation breaks parsers | H | M | Defensive parsers that yield partials and never throw, fixtures for `core` and `legacy` shapes, runtime queryId discovery, policy-supplied queryId fallback, confidence degrades visibly | CI fixture tests still pass but live verdicts turn mostly `unknown` on a platform; a user report of empty badges | maintainer |
 | R-05 | Rate limits and user account locks from Tier 2 lookups | M | H | Token bucket (X 20/min burst 3, Reddit 30/min burst 10, Bluesky 30/min burst 6), exponential backoff on `x-rate-limit-reset`, circuit breaker, 24h in-memory cache, hover-only trigger on X and Bluesky; on Reddit one queued lookup per author on sight (ADR-0020) | Any user report of an account lock or captcha loop, or 429 rate above 2% in dev telemetry | maintainer |
 | R-06 | Chrome Web Store review rejection (MAIN-world patching, Limited Use, single purpose) | M | M | Justification paragraph in the listing, data-use disclosure that declares Website content for the Tier 2 lookups and names each host (store/README.md), explicit host permissions, no remote code, no `web_accessible_resources` (ADR-0013) | A rejection notice or a request for clarification from review | maintainer |
-| R-07 | Firefox data-collection disclosure mismatch | L | L | `data_collection_permissions: { required: ["none"] }` in the manifest, AMO listing text matches; the Tier 2 lookups fired the trigger, and store/README.md asks for `websiteContent` before the next submission | AMO rejection, or any new source that transmits data | maintainer |
+| R-07 | Firefox data-collection disclosure mismatch | L | L | `data_collection_permissions: { required: ["websiteContent"] }` in the manifest for the Tier 2 lookups, checked by `tests/unit/manifest.test.ts`; AMO listing text matches | AMO rejection, or any new source that transmits data | maintainer |
 | R-08 | Signing-key compromise or loss | L | H | Key only in the password manager, Pages deploy verifies and never signs, `kid` rotation path, last-known-good means loss is not an outage (ADR-0009) | Key material seen anywhere outside the password manager; a policy signed by an unknown `kid` observed | maintainer |
 | R-09 | Policy file hosting outage (GitHub Pages) | L | L | Baked defaults, last-known-good cache, daily fetch with jitter, popup shows policy age | Policy age over 14 days on the maintainer's own install | maintainer |
 | R-10 | Reddit access changes (`.json` lockdown, March 2027 API shutdown trajectory) | H | M | Reddit Tier 2 is logged-in same-origin only; Tier 0 from the DOM stays; policy switch to drop Tier 2 | `about.json` returns non-JSON or 403 logged-in; Reddit announces web-client changes | maintainer |
@@ -80,11 +80,10 @@ misrepresentation finding waiting to happen.
 ## R-07 Firefox disclosure
 
 Since November 2025 new Firefox extensions must declare data collection in the manifest. Botdar
-declares none. Any future source that transmits data must update the declaration and the listing.
-That trigger has fired: the Tier 2 lookups send author names to public.api.bsky.app and
+declares `websiteContent`: the Tier 2 lookups send author names to public.api.bsky.app and
 hacker-news.firebaseio.com as well as to x.com and reddit.com, which Mozilla's definition of
-transmission covers, so store/README.md asks for `required: ["websiteContent"]` before the next AMO
-submission.
+transmission covers. Any future source that transmits another kind of data must update the
+declaration and the listing.
 
 ## R-08 Signing key
 
