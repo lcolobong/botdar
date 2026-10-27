@@ -97,7 +97,10 @@ botdar/
 │  │  ├─ text/                   # language.ts + stopwords.json, languageRegions, countryNames, replySimilarity
 │  │  ├─ thread/                 # threadIndex, pageThreads, replyText: the page's thread replies (ADR-0027)
 │  │  ├─ policy/                 # schema, merge, verify, publicKey, loader
-│  │  ├─ pipeline.ts             # AccountResolver
+│  │  ├─ pipeline.ts             # AccountResolver: attach, passive sources, rescoring
+│  │  ├─ pipeline/               # types, mergeSignals (tier-merge rule), trackedAccounts (store,
+│  │  │                          #   eviction), mainLookups + hoverLookups (Tier 2), lookupSources,
+│  │  │                          #   lookupStorage (ADR-0025 bridge), lookupStatus
 │  │  ├─ cache.ts  ratelimit.ts  settings.ts  messaging.ts  feedback.ts  relay.ts
 │  ├─ platforms/
 │  │  ├─ x/        adapter, observer, dom, interceptor.main, parsers/, sources/, features, queryIds, threadReply
