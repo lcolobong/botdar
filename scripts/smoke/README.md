@@ -10,6 +10,7 @@ missing page or badge is logged and skipped rather than failing the run.
 | --------- | ---------- | ---------------------------------------- | ----------------------------------------------------- | ----------------- |
 | `pages`   | `popup`, `options`, `onboarding` | the extension's own pages (each only if in the build) | | 340×470, 720×1010, 640×540 |
 | `x`       | `feed`     | `https://x.com/home` ← `timeline.html`   | Declared bot (kai) and Likely bot (mila) badges       | 600×820           |
+| `x`       | `profile`  | `https://x.com/maria_dev` ← `timeline.html` | As `feed`, plus maria_dev's About country and profile timeline; the hover opens her card | 600×820 |
 | `reddit`  | `feed`     | `https://www.reddit.com/` ← `feed.html`  | Declared bot badge on the APP-tagged post             | 600×820           |
 | `reddit`  | `comments` | thread URL ← `comments.html`             | Likely human on the OP (served profile), No read on the rest | 600×820    |
 | `bluesky` | `feed`     | `https://bsky.app/` ← `feed.html`        | Declared bot (kai) and Likely bot (mila) badges       | 600×820           |
@@ -41,6 +42,8 @@ returns 404 for every other API path:
 | Request                                                        | Body                                            |
 | -------------------------------------------------------------- | ----------------------------------------------- |
 | `https://x.com/i/api/graphql/SMOKEQUERYID00000001/HomeTimeline` | `tests/fixtures/x/graphql/home-timeline-core.json` |
+| `https://x.com/i/api/graphql/SMOKEQUERYID00000002/AboutAccountQuery` | `tests/fixtures/smoke/x-about-account.json` (hand-written) |
+| `https://x.com/i/api/graphql/SMOKEQUERYID00000003/UserTweets` | `tests/fixtures/smoke/x-user-tweets.json` (hand-written) |
 | `https://bsky.app/xrpc/app.bsky.feed.getTimeline`              | `tests/fixtures/bluesky/get-timeline.json`      |
 | `https://bsky.app/xrpc/app.bsky.actor.getProfiles`             | `tests/fixtures/bluesky/get-profiles.json`      |
 | `https://www.reddit.com/user/quiet_lantern_4821/about.json`    | `tests/fixtures/reddit/about/normal.json`       |
@@ -56,9 +59,17 @@ The query id is made up; the interceptor matches any id of the right shape. Acco
 bodies are relative to the recording date (2026-10-22), so the Likely bot author drifts towards
 "Unsure" as the fixtures age.
 
+The two hand-written X bodies exist because no recording carries them yet: maria_dev's About
+lookup (country Brazil) and a profile timeline of 100 Russian-language posts, one about every 110
+minutes over seven and a half days. The recorded page fetches them only at the `profile` scene's
+path, so the `feed` scene is unchanged; they give her card the observations that need an About
+country and a timeline. Replace them with recordings when `pnpm capture` has recorded a profile
+visit.
+
 The hover scene hovers the badge's button inside its shadow root (the `botdar-badge` host itself
 lays out as a block, so hovering it would land on empty row space), preferring a badge named
-"Likely bot", then "Unsure", then whichever comes first, and waits up to a second for the
+"Likely bot", then "Unsure", then whichever comes first (a scene with a `hoverAnchor` hovers the
+badge after that element instead), and waits up to a second for the
 `botdar-card` host to be displayed before the screenshot. The manifest records which badge was
 hovered and whether the card opened.
 

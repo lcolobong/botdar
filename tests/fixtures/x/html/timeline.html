@@ -544,10 +544,21 @@
       // Served by scripts/smoke: fetching the recorded HomeTimeline body the way the web app does
       // lets the extension's MAIN-world interceptor relay it to Tier 1. The content script only
       // subscribes after document_idle, so the request is repeated a few times.
+      // At maria_dev's profile path it also fetches her About lookup and profile timeline, which
+      // are hand-written bodies under tests/fixtures/smoke/, not recordings.
+      const smokeBodies = ["/i/api/graphql/SMOKEQUERYID00000001/HomeTimeline"];
+      if (location.pathname === "/maria_dev") {
+        smokeBodies.push(
+          "/i/api/graphql/SMOKEQUERYID00000002/AboutAccountQuery",
+          "/i/api/graphql/SMOKEQUERYID00000003/UserTweets",
+        );
+      }
       window.addEventListener("load", () => {
         for (const delay of [0, 400, 1200, 2500]) {
           setTimeout(() => {
-            fetch("/i/api/graphql/SMOKEQUERYID00000001/HomeTimeline").catch(() => undefined);
+            for (const path of smokeBodies) {
+              fetch(path).catch(() => undefined);
+            }
           }, delay);
         }
       });

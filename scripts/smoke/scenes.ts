@@ -197,8 +197,22 @@ export async function waitForBadges(page: Page): Promise<boolean> {
   return badgeMounted;
 }
 
-/** The first badge control named Likely bot, else Unsure, else whichever badge comes first. */
-export async function findHoverTarget(page: Page): Promise<HoverTarget | undefined> {
+/**
+ * The badge after `hoverAnchor` when the scene names one; otherwise the first badge control named
+ * Likely bot, else Unsure, else whichever badge comes first.
+ */
+export async function findHoverTarget(
+  page: Page,
+  hoverAnchor?: string,
+): Promise<HoverTarget | undefined> {
+  if (hoverAnchor !== undefined) {
+    // The badge host mounts as the anchor's next sibling (src/ui/mount.ts, append: "after").
+    const control: Locator = page.locator(`${hoverAnchor} + ${badgeControlSelector}`).first();
+    if ((await control.count()) === 0) {
+      return undefined;
+    }
+    return { control, name: (await control.getAttribute("aria-label")) ?? "unnamed badge" };
+  }
   for (const name of preferredBadgeNames) {
     const control: Locator = badgeControlNamed(page, name);
     if ((await control.count()) > 0) {
@@ -277,7 +291,9 @@ export async function captureFeed(
       status: "captured",
       ...(badgeMounted ? {} : { reason: "no badge mounted within the wait; captured bare feed" }),
     };
-    const target: HoverTarget | undefined = badgeMounted ? await findHoverTarget(page) : undefined;
+    const target: HoverTarget | undefined = badgeMounted
+      ? await findHoverTarget(page, feedScene.hoverAnchor)
+      : undefined;
     if (target === undefined) {
       return [
         feedRecord,
