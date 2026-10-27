@@ -34,6 +34,10 @@ const FOLLOW_RATIO: WhyClauses = {
   automated: "mass-following nobody returned",
   ordinary: "others opted in",
 };
+const KARMA_RATE: WhyClauses = {
+  automated: "karma-farming pattern",
+  ordinary: "a pace ordinary use earns",
+};
 const SUGGESTED_HANDLE: WhyClauses = { automated: "unchanged suggested handle" };
 const PROFILE_EFFORT: WhyClauses = {
   automated: "left as created",
@@ -75,10 +79,7 @@ const WHY_CLAUSES: Readonly<Record<FeatureId, WhyClauses>> = {
   "bsky.gapRegularity": REGULAR_GAPS,
   "x.noSleepWindow": NO_QUIET_HOURS,
   "bsky.noSleepWindow": NO_QUIET_HOURS,
-  "reddit.karmaPerDay": {
-    automated: "karma-farming pattern",
-    ordinary: "a pace ordinary use earns",
-  },
+  "reddit.karmaPerDay": KARMA_RATE,
   "reddit.postToCommentKarma": {
     automated: "reposts earn it without conversation",
     ordinary: "it joins conversations",
@@ -89,6 +90,10 @@ const WHY_CLAUSES: Readonly<Record<FeatureId, WhyClauses>> = {
     automated: "verifying takes a mailbox per account",
     ordinary: "a mailbox sits behind this account",
   },
+  "hn.accountAgeDays": ACCOUNT_AGE,
+  "hn.karmaPerDay": KARMA_RATE,
+  "hn.submissionsPerDay": POSTING_RATE,
+  "hn.hasAbout": PROFILE_EFFORT,
 };
 
 export const DECLARED_WHY = "self-declared";

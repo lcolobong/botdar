@@ -114,6 +114,25 @@ Mirrors the X numbers where the signal is the same. All uncalibrated.
 Prior `-2.5`. Confidence weights `{0: 0.20, 1: 0.40, 2: 0.40}`. Group caps `handle` 1.2, `profile` 1.2,
 `timing` 1.5.
 
+### Hacker News
+
+Mirrors the Reddit numbers where the signal is the same, and weighs less where Hacker News makes it
+weaker ([ADR-0026](decisions/ADR-0026-hacker-news-adapter.md)). Every input comes from the Firebase
+`user/<id>.json` lookup: the page renders a username and nothing else, and Hacker News has no avatars,
+no follower graph and no suggested usernames. All uncalibrated.
+
+| Feature | Group | Cap | Input | Bins / weight | Gate |
+|---|---|---|---|---|---|
+| `hn.accountAgeDays` | age | 1.2 | days since `created` | same bins as `reddit.accountAgeDays` | `created` known |
+| `hn.karmaPerDay` | activity | 0.8 | `max(karma, 0) / max(ageDays, 1)` | `[0,50)→0` `[50,200)→0.3` `[200,1000)→0.5` `[1000,∞)→0.8` | `ageDays < 180` |
+| `hn.submissionsPerDay` | activity | 1.2 | `submitted.length / max(ageDays, 1)` | `[0,10)→0` `[10,25)→0.4` `[25,50)→0.8` `[50,∞)→1.2` | `submitted.length ≥ 10` |
+| `hn.hasAbout` | profile | 0.3 | the `about` field is non-empty | bool, −0.3 | Tier 2 delivered |
+| Declared (username, about) | — | — | a username whose last word is "bot", or a first-person "I am a … bot" in `about` | override → `declared` | always |
+
+Prior `-2.8`. Confidence weights `{0: 0.30, 1: 0.0, 2: 0.70}` (Hacker News has no Tier 1). No group caps.
+The green name Hacker News gives new accounts is not read until a recording shows one, and `[dead]` and
+`[flagged]` are moderation outcomes, not evidence about the account, so neither is a feature.
+
 ### Gating rules
 
 A feature is simply omitted from `toFeatures()` when its gate is not met. An omitted feature contributes
@@ -132,7 +151,7 @@ which is also what the hover-card caveat tells the user. The recurring theme: ev
 of **effort that was not spent per account**. Operators optimise for volume across many accounts, so
 anything that costs per-account time, money or patience is skipped, and the skip is visible.
 
-### Activity rate (`x.postsPerDay`, `bsky.postsPerDay`, `reddit.karmaPerDay`)
+### Activity rate (`x.postsPerDay`, `bsky.postsPerDay`, `reddit.karmaPerDay`, `hn.submissionsPerDay`, `hn.karmaPerDay`)
 
 - **Mechanism.** Software does not sleep, work or tire, and an operator's return scales with output
   per account, so automated accounts post at rates a person cannot sustain. Dividing by account age
@@ -145,8 +164,14 @@ anything that costs per-account time, money or patience is skipped, and the skip
   dilute the rate until it says nothing.
 - **Counter-case.** Newsrooms, brands, live-tweeters and a few compulsive humans post at these rates,
   which is why the cap is 2.0 and not enough on its own to reach `many`.
+- **On Hacker News.** `submitted` counts stories and comments together, and the site throttles new
+  accounts that post fast, so ten a day sustained is already rare for a person; the bins start there
+  and stop at 1.2. Karma is weaker than on Reddit: one Show HN that reaches the front page earns a
+  new account hundreds of points in a day, and launching a project is a common reason to sign up. The
+  karma rate therefore keeps Reddit's bin edges at about half the weight (cap 0.8), so a launch plus a
+  join date stays below `some`.
 
-### Account age (`x.accountAgeDays`, `reddit.accountAgeDays`, `bsky.accountAgeDays`)
+### Account age (`x.accountAgeDays`, `reddit.accountAgeDays`, `bsky.accountAgeDays`, `hn.accountAgeDays`)
 
 - **Mechanism.** Automated accounts get banned and are replaced, so a fleet skews young at any moment.
   Aged accounts exist but cost money on the resale market, so the cheap end of automation is new. The
@@ -184,7 +209,7 @@ anything that costs per-account time, money or patience is skipped, and the skip
   share one group cap of 1.2 (they all measure the same decision) and `reddit.generatedName` alone is
   worth 0.4. A Bluesky custom-domain handle never fires because setting one is itself an investment.
 
-### Profile completeness (`x.defaultAvatarEmptyBio`, `bsky.noAvatarEmptyBio`, `reddit.noAvatar`, `reddit.noVerifiedEmail`)
+### Profile completeness (`x.defaultAvatarEmptyBio`, `bsky.noAvatarEmptyBio`, `reddit.noAvatar`, `reddit.noVerifiedEmail`, `hn.hasAbout`)
 
 - **Mechanism.** A photo and a bio cost per-account effort, so a fleet skips them unless it is building
   a persona. Both missing weighs far more than one missing because the pair is the fleet default,
@@ -194,6 +219,9 @@ anything that costs per-account time, money or patience is skipped, and the skip
   appear in BotometerLite and BotArtist; "no profile picture" is a top Instagram fake-account feature.
 - **Counter-case.** Privacy-minded people leave profiles blank on purpose. The group cap (1.2) and the
   low Reddit weights keep this from deciding anything alone.
+- **On Hacker News.** The profile is a single free-text `about` field, and most people never fill it
+  in (22 of the 25 thread authors checked on 2026-10-27 had none), so an empty one is the norm and
+  weighs nothing. Only a filled one counts, towards ordinary, as effort spent on this one account.
 
 ### Verification timing (`x.newAndBlue`)
 
@@ -286,7 +314,7 @@ anything that costs per-account time, money or patience is skipped, and the skip
 
 ### Why the pieces combine the way they do
 
-- **The prior** (`-2.5` on X, `-2.8` on Reddit) encodes the base rate: most accounts are people, so an
+- **The prior** (`-2.5` on X, `-2.8` on Reddit and Hacker News) encodes the base rate: most accounts are people, so an
   account starts well below the thresholds and has to earn its way up.
 - **Independence groups** exist because features inside a group measure one decision (how the account
   was named, whether the profile was filled in), so two of them are one piece of evidence, not two.
@@ -393,7 +421,7 @@ such a line once, from the stronger item.
 | Feature | Reason template | Why clause: towards automated / towards ordinary | Caveat (by group) |
 |---|---|---|---|
 | `x.postsPerDay`, `bsky.postsPerDay` | "~{rate} posts/day since joining" | "prolonged hyperactivity" / "a pace a person keeps up" | activity: "High-volume human posters, news desks and brand accounts show the same pattern." |
-| `x.accountAgeDays`, `reddit.accountAgeDays`, `bsky.accountAgeDays` | "Joined {ago} ago" / negative: "Account is {age} old" | "new accounts often replace banned ones" / "outlasted platform enforcement" | age: "Every account was new once; a recent join date means little on its own." |
+| `x.accountAgeDays`, `reddit.accountAgeDays`, `bsky.accountAgeDays`, `hn.accountAgeDays` | "Joined {ago} ago" / negative: "Account is {age} old" | "new accounts often replace banned ones" / "outlasted platform enforcement" | age: "Every account was new once; a recent join date means little on its own." |
 | `x.followingRatio`, `bsky.followsRatio` | "Following {following}, followed by {followers}" / negative: "Followed by {followers}, following {following}" | "mass-following nobody returned" / "others opted in" | graph: "People who follow widely before anyone follows back look the same." |
 | `x.handleNameDigits`, `x.handleTrailingDigits`, `bsky.handleDigitsOnBskySocial` | "Handle is a name followed by {n} digits" / no contribution: nothing | "unchanged suggested handle" / none | handle: "Many people accept the platform's suggested handle and never change it." |
 | `x.handleBigramLL` | "Handle looks randomly generated" / no contribution: nothing | "letter pairs no language uses" / none | handle: as above |
@@ -404,7 +432,9 @@ such a line once, from the stronger item.
 | `x.countryLocaleMismatch` | "Based in {country}, writes in {language}" / false: nothing | "a persona run from abroad" / none | geo: "Expats, travellers, VPN users and people writing in a second language look the same." |
 | `x.gapRegularity`, `bsky.gapRegularity` | "Posts at regular intervals" / no contribution: nothing | "scheduling tools post on a clock" / none | timing: "Accounts that schedule posts with a publishing tool show the same regularity." |
 | `x.noSleepWindow`, `bsky.noSleepWindow` | "Posts around the clock" / no contribution: nothing | "no daily quiet window" / none | this feature's own: "Shared and team-run accounts post around the clock." |
-| `reddit.karmaPerDay` | "~{rate} karma/day on a {age}-old account" | "karma-farming pattern" / "a pace ordinary use earns" | activity: as above |
+| `reddit.karmaPerDay`, `hn.karmaPerDay` | "~{rate} karma/day on a {age}-old account" | "karma-farming pattern" / "a pace ordinary use earns" | activity: as above |
+| `hn.submissionsPerDay` | "{n} posts and comments in {age}" (a rate under one a day reads better as a count) | "prolonged hyperactivity" / "a pace a person keeps up" | activity: as above |
+| `hn.hasAbout` | "Has an about section" / false: nothing | "left as created" / "effort spent on this one account" | profile: as above |
 | `reddit.postToCommentKarma` | "Post karma {link}, comment karma {comment}" | "reposts earn it without conversation" / "it joins conversations" | content: as above |
 | `reddit.generatedName` | "Username matches Reddit's auto-generated pattern" / false: nothing | "kept as suggested" / none | handle: as above |
 | `reddit.noAvatar` | "Default avatar" / false: "Custom avatar" | "left as created" / "effort spent on this one account" | profile: as above |

@@ -7,7 +7,7 @@ import type { PlatformId, Verdict } from "@/src/core/types";
 import malformedWeights from "../../../fixtures/scoring/weights.malformed.json";
 import { ALL_TIERS, NOW, feature, signalsWith } from "./testWeights";
 
-const PLATFORMS: PlatformId[] = ["x", "reddit", "bluesky"];
+const PLATFORMS: PlatformId[] = ["x", "reddit", "bluesky", "hackernews"];
 
 function validFile(): Record<string, unknown> {
   return structuredClone({ schema: 1, platforms: defaultWeights });
@@ -33,6 +33,9 @@ describe("defaultWeights", () => {
     expect(defaultWeights.x.confidenceWeights).toEqual({ 0: 0.25, 1: 0.55, 2: 0.2 });
     expect(defaultWeights.reddit.confidenceWeights).toEqual({ 0: 0.3, 1: 0, 2: 0.7 });
     expect(defaultWeights.bluesky.confidenceWeights).toEqual({ 0: 0.2, 1: 0.4, 2: 0.4 });
+    // Hacker News mirrors Reddit: no Tier 1, and the lookup carries most of the confidence.
+    expect(defaultWeights.hackernews.prior).toBe(-2.8);
+    expect(defaultWeights.hackernews.confidenceWeights).toEqual({ 0: 0.3, 1: 0, 2: 0.7 });
   });
 
   it("caps handle, profile and timing on X and Bluesky, geo on X, and nothing on Reddit", () => {
