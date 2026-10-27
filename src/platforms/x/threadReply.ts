@@ -85,7 +85,8 @@ function ownTextOf(article: Element): string | undefined {
 
 /**
  * The article as a reply in the page's thread, or undefined for the root, an ancestor, a promoted
- * post, a post below the conversation's closing heading or any other page.
+ * post, a post below the conversation's closing heading or any other page. A reply with no text
+ * (X hides a lone link behind its card) is still one: its links arrive by status id from Tier 1.
  */
 export function threadReplyOf(
   article: Element,
@@ -108,11 +109,16 @@ export function threadReplyOf(
     return undefined;
   }
   const author: string | undefined = authorHandleOf(article);
-  const text: string | undefined = ownTextOf(article);
-  if (author === undefined || text === undefined) {
+  if (author === undefined) {
     return undefined;
   }
-  return { threadKey: rootId, replyId, author, text, postedAt: snowflakeMillis(replyId) };
+  return {
+    threadKey: rootId,
+    replyId,
+    author,
+    text: ownTextOf(article) ?? "",
+    postedAt: snowflakeMillis(replyId),
+  };
 }
 
 export interface XReplyReader {
