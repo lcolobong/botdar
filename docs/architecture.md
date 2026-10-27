@@ -299,6 +299,7 @@ on posts.
 | Tier 0 self-descriptions | Beyond the APP tag: a username whose last word is "bot" (or AutoModerator) and an author flair whose last word is "bot" both set `declaredAutomated` with `declaredBy` of `name` or `flair`; the flair selectors are a guess until live flair markup is recorded (`AUTHOR_FLAIR_SELECTOR` in `reddit/dom.ts`). Tier 2 adds the bio ("I am a bot") |
 | Tier 1 | Probably empty: new Reddit loads HTML partials, not JSON user objects. The switch exists; no interceptor ships unless day one shows otherwise |
 | Tier 2 | Same-origin `/user/<name>/about.json?raw_json=1` with the user's cookies: `created_utc`, `link_karma`, `comment_karma`, `icon_img`, maybe `has_verified_email`. Fired on sight (ADR-0020): once per author per page when a post is attached, which ADR-0019 limits to posts within a screen of the viewport; a hover retries and jumps the queue. Cached 24 h; limiter 30/min from the config, burst 10, with refused lookups waiting in a first-in, first-out queue (`src/core/lookupQueue.ts`); never while Tier 2 is off or after a logged-out answer |
+| Tier 2, hover only | Same-origin `/user/<name>/overview.json?limit=100` with the user's cookies, for accounts of 180 days or more (`SignalSource.hoverOnly`, `worthResolving`): only each item's `created_utc` and the item count are read, stored as `oldestItemAt` and `visibleItemCount` for `reddit.karmaSinceFirstActivity` (ADR-0028). One limiter token per request; a failed, empty or rate-limited answer is not cached. Cached 24 h in memory and as a persisted facet; never while Tier 2 is off |
 | Native label | Reddit's `[App]` tag → `declaredAutomated`. Selector unknown; day-one item |
 | old.reddit | `.thing[data-author]` + `a.author`; trivial adapter variant, may slip from v1 |
 
@@ -489,13 +490,13 @@ The result is frozen. Unit tests assert every "cannot enable" case. Settings the
 | Verdicts | Memory, per tab | Recomputed on config change |
 | Thread index: each reply's word set, author, id, parent id and time, never its text (ADR-0027) | Memory, per page | Cleared on in-place navigation and page load; at most 5,000 replies |
 | `policy.lkg`, `policy.lastAttempt` | `storage.local` | Until replaced |
-| `lookups.v1.<hash>` (Tier 2 snapshot, no display name, handle or bio text, fetch time, source tier), `lookups.salt.v1` and `lookups.index.v1` (entry key to fetch time) | `storage.local` | 7 days from the fetch; at most 5,000 entries; wiped by "Clear cache" (which rotates the salt) or by turning off `persistLookups` (ADR-0025) |
+| `lookups.v1.<hash>` (Tier 2 snapshot, no display name, handle or bio text, fetch time, source tier; a hover-only source stores a second entry under its own hash with a 24 h life), `lookups.salt.v1` and `lookups.index.v1` (entry key to fetch time) | `storage.local` | 7 days from the fetch (24 h for a hover-only entry); at most 5,000 entries; wiped by "Clear cache" (which rotates the salt) or by turning off `persistLookups` (ADR-0025) |
 | `settings.v1`, `onboarding.seen`, `notice.seenIds` | `storage.local` | Until changed |
 | `feedback.v1` ("This looks wrong") | `storage.local` | Until the user exports or clears it |
 
 The persisted lookup layer sits under the memory cache (`src/core/persistedLookups.ts`): a memory miss
 reads storage before the platform is called, a storage hit refills memory, and every successful Tier 2
-delivery is written back. It is skipped entirely while Tier 2 is off (conservative mode or policy) or
+delivery is written back. Hover-only sources (`SignalSource.hoverOnly`) run after the main lookup has settled, each with its own memory key and persisted facet, so a stored profile does not hide them and a failure of one does not make the main snapshot partial. It is skipped entirely while Tier 2 is off (conservative mode or policy) or
 `persistLookups` is off. A background sweep (install, browser start, daily alarm, and shortly after writes) drops expired and
 over-cap entries using the index, and wipes everything while `persistLookups` is off. Its keys are salted hashes, so it holds no readable account reference; feedback is the
 only store that does. Feedback is created only by the user clicking

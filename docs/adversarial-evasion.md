@@ -172,7 +172,7 @@ about 0.6. Accounts verified `org` or `gov` are excluded from the `timing` group
 
 | Feature (group, cap) | Detects | Input and bins | Tier, cost to us | False-positive risk; caveat copy | v1.1 |
 |---|---|---|---|---|---|
-| `reddit.karmaSinceFirstActivity` (activity, 1.5) | Aged accounts farmed fast once activated; closes the 180-day gate | `(linkKarma + commentKarma) / days since the oldest visible item`, bins as `reddit.karmaPerDay`; gate: age ≥ 180 d, listing returned < 100 items (so the oldest item is the first), profile not hidden | 2: one `overview.json?limit=100` on hover, cached 24 h | Medium: long-time lurkers who start posting in big subs. "Long-time readers who start posting in large communities can earn karma quickly." | **Yes** |
+| `reddit.karmaSinceFirstActivity` (activity, 1.0; shipped below the 1.5 first proposed) | Aged accounts farmed fast once activated; closes the 180-day gate | `(linkKarma + commentKarma) / days since the oldest visible item`, bins `[0,50)→0` `[50,200)→0.4` `[200,1000)→0.7` `[1000,∞)→1.0`; gate: age ≥ 180 d, listing returned < 100 items (so the oldest item is the first), oldest item at least 7 days old, profile not hidden | 2: one `overview.json?limit=100` on hover, cached 24 h | Medium: long-time lurkers who start posting in big subs, and accounts that wiped their history (Reddit keeps the karma, so the rate looks inflated and the data cannot tell the two apart; hence the 7-day span and the lower cap). "Long-time readers who start posting in large communities can earn karma quickly. Accounts that delete their old posts keep their karma, so the rate can look inflated." | **Shipped 2026-10-27** (ADR-0028) |
 | `reddit.dormancyGap` (age, 0.6) | "Aged then suddenly active" without a karma spike | `(first visible item − createdAt) / ageDays`: `[0,0.7)→0` `[0.7,0.95)→0.3` `[0.95,1]→0.6` | 2 (same request) | High: Reddit's large lurker population. | Reason line only |
 | `reddit.repostTitle` (content, 1.0) | Reposts of the subreddit's top posts | Bool: title Jaccard ≥ 0.9 with one of the subreddit's top 100 all-time posts by another author; gate ≥ 6 words | 2: one `top.json?t=all&limit=100` per subreddit per day | Low to medium: generic titles. "Popular titles get reused by people who never saw the original." | v1.2 (new request type) |
 | `reddit.copiedComment` | Copy of an earlier top comment | Same-thread copies are `thread.nearDuplicateReply`; copies from an earlier, reposted thread need that thread's comments | 0 same thread; 2 otherwise | As 4.1. | Same thread **yes** |
@@ -246,7 +246,7 @@ carry a `many` verdict.
    call on Bluesky.
 4. `x.noSleepWindow` with `bsky.noSleepWindow` (shipped 2026-10-26, ADR-0024): the most expensive timing property to fake.
 5. `x.agedRepurposed`: reads fields the About lookup already returns; aimed at the aged-account market.
-6. `reddit.karmaSinceFirstActivity`: closes the 180-day gate that lets every aged Reddit account skip
+6. `reddit.karmaSinceFirstActivity` (shipped 2026-10-27, ADR-0028): closes the 180-day gate that lets every aged Reddit account skip
    the rate check.
 
 Alongside, as fixes rather than features: produce `x.replyShare` from Tier 1, and set

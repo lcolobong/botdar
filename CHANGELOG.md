@@ -25,6 +25,9 @@ The first release, covering the MVP.
   cleared from the options page.
 - Three label styles: Plain (default), Sus scale and Icon only. Styles change the words only.
 - An optional "Likely human" badge, off by default.
+- On Reddit, a hover card for an account of six months or more also weighs its karma per day since its
+  first visible post or comment, using the account's public activity list, so an aged account is no
+  longer exempt from a rate check.
 - A popup with the policy status, per-platform switches and conservative mode.
 - An options page for platforms, lookups, badge settings, feedback and the policy file.
 - A three-panel onboarding page on first run.
