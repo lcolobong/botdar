@@ -21,7 +21,9 @@ export type IndependenceGroup =
   | "verification"
   | "content"
   | "geo"
-  | "timing";
+  | "timing"
+  /** Evidence read across accounts: replies several authors post in one thread. */
+  | "coordination";
 
 export interface AccountRef {
   platform: PlatformId;

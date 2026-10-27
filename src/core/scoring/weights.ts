@@ -31,6 +31,7 @@ const GROUPS: ReadonlySet<string> = new Set([
   "content",
   "geo",
   "timing",
+  "coordination",
 ]);
 
 export class WeightsFileError extends Error {

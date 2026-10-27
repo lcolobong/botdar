@@ -38,15 +38,50 @@ describe("defaultWeights", () => {
     expect(defaultWeights.hackernews.confidenceWeights).toEqual({ 0: 0.3, 1: 0, 2: 0.7 });
   });
 
-  it("caps handle, profile and timing on X and Bluesky, geo on X, and nothing on Reddit", () => {
+  it("caps handle, profile and timing on X and Bluesky, geo on X, and coordination everywhere", () => {
     expect(defaultWeights.x.groupCaps).toEqual({
       handle: 1.2,
       profile: 1.2,
       geo: 0.4,
       timing: 1.5,
+      coordination: 1.5,
     });
-    expect(defaultWeights.bluesky.groupCaps).toEqual({ handle: 1.2, profile: 1.2, timing: 1.5 });
-    expect(defaultWeights.reddit.groupCaps).toEqual({});
+    expect(defaultWeights.bluesky.groupCaps).toEqual({
+      handle: 1.2,
+      profile: 1.2,
+      timing: 1.5,
+      coordination: 1.5,
+    });
+    expect(defaultWeights.reddit.groupCaps).toEqual({ coordination: 1.5 });
+    expect(defaultWeights.hackernews.groupCaps).toEqual({ coordination: 1.5 });
+  });
+
+  it("weighs near-duplicate replies the same on every platform, capped at 1.5", () => {
+    for (const platform of PLATFORMS) {
+      expect(defaultWeights[platform].features["thread.nearDuplicateReply"]).toEqual({
+        group: "coordination",
+        cap: 1.5,
+        kind: "bins",
+        bins: [
+          [0, 1, 0],
+          [1, 2, 0.6],
+          [2, 4, 1.0],
+          [4, null, 1.5],
+        ],
+      });
+    }
+  });
+
+  it("keeps a thread of copied replies alone below Unsure", () => {
+    for (const platform of PLATFORMS) {
+      const verdict: Verdict = scoreAccount(
+        [feature("thread.nearDuplicateReply", 12, "coordination", 0)],
+        signalsWith({ tiersDelivered: ALL_TIERS }),
+        defaultWeights[platform],
+        { policyVersion: 0, now: NOW, sourcesAvailable: ALL_TIERS },
+      );
+      expect(verdict.probability, platform).toBeLessThan(defaultWeights[platform].thresholds.some);
+    }
   });
 
   it("weighs the two timing features as spec'd and caps them together below both", () => {
@@ -90,9 +125,11 @@ describe("defaultWeights", () => {
       "x.countryLocaleMismatch",
       "x.gapRegularity",
       "x.noSleepWindow",
+      "thread.nearDuplicateReply",
     ]);
-    expect(Object.keys(defaultWeights.reddit.features)).toHaveLength(6);
-    expect(Object.keys(defaultWeights.bluesky.features)).toHaveLength(7);
+    expect(Object.keys(defaultWeights.reddit.features)).toHaveLength(7);
+    expect(Object.keys(defaultWeights.bluesky.features)).toHaveLength(8);
+    expect(Object.keys(defaultWeights.hackernews.features)).toHaveLength(5);
   });
 
   it("has a reason template for every feature id it defines", () => {

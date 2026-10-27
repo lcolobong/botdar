@@ -11,7 +11,8 @@
         "handle": 1.2,
         "profile": 1.2,
         "geo": 0.4,
-        "timing": 1.5
+        "timing": 1.5,
+        "coordination": 1.5
       },
       "confidenceWeights": {
         "0": 0.25,
@@ -138,6 +139,17 @@
             [2, 4, 0.5],
             [4, null, 0]
           ]
+        },
+        "thread.nearDuplicateReply": {
+          "group": "coordination",
+          "cap": 1.5,
+          "kind": "bins",
+          "bins": [
+            [0, 1, 0],
+            [1, 2, 0.6],
+            [2, 4, 1.0],
+            [4, null, 1.5]
+          ]
         }
       }
     },
@@ -147,7 +159,9 @@
         "some": 0.3,
         "many": 0.6
       },
-      "groupCaps": {},
+      "groupCaps": {
+        "coordination": 1.5
+      },
       "confidenceWeights": {
         "0": 0.3,
         "1": 0.0,
@@ -203,6 +217,17 @@
           "cap": 0.3,
           "kind": "bool",
           "weight": 0.3
+        },
+        "thread.nearDuplicateReply": {
+          "group": "coordination",
+          "cap": 1.5,
+          "kind": "bins",
+          "bins": [
+            [0, 1, 0],
+            [1, 2, 0.6],
+            [2, 4, 1.0],
+            [4, null, 1.5]
+          ]
         }
       }
     },
@@ -215,7 +240,8 @@
       "groupCaps": {
         "handle": 1.2,
         "profile": 1.2,
-        "timing": 1.5
+        "timing": 1.5,
+        "coordination": 1.5
       },
       "confidenceWeights": {
         "0": 0.2,
@@ -293,6 +319,17 @@
             [2, 4, 0.5],
             [4, null, 0]
           ]
+        },
+        "thread.nearDuplicateReply": {
+          "group": "coordination",
+          "cap": 1.5,
+          "kind": "bins",
+          "bins": [
+            [0, 1, 0],
+            [1, 2, 0.6],
+            [2, 4, 1.0],
+            [4, null, 1.5]
+          ]
         }
       }
     },
@@ -302,7 +339,9 @@
         "some": 0.3,
         "many": 0.6
       },
-      "groupCaps": {},
+      "groupCaps": {
+        "coordination": 1.5
+      },
       "confidenceWeights": {
         "0": 0.3,
         "1": 0.0,
@@ -347,6 +386,17 @@
           "cap": 0.3,
           "kind": "bool",
           "weight": -0.3
+        },
+        "thread.nearDuplicateReply": {
+          "group": "coordination",
+          "cap": 1.5,
+          "kind": "bins",
+          "bins": [
+            [0, 1, 0],
+            [1, 2, 0.6],
+            [2, 4, 1.0],
+            [4, null, 1.5]
+          ]
         }
       }
     }
