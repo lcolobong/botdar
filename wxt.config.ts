@@ -10,7 +10,7 @@ export default defineConfig({
   manifest: {
     name: "Botdar",
     description:
-      "In-feed badges that show when a post's author displays patterns common in automated accounts, with reasons. Nothing about the accounts you see leaves your browser.",
+      "A badge on every author on X, Reddit and Bluesky for patterns common in automated accounts. Nothing leaves your browser.",
     icons: {
       16: "icon/16.png",
       32: "icon/32.png",
