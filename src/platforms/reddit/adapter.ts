@@ -12,7 +12,7 @@ import { densityFor, extractDomSignals } from "./dom";
 import { toFeatures } from "./features";
 import { observeRedditFeed } from "./observer";
 import { aboutJsonSource } from "./sources/aboutJson";
-import { threadReplyOf } from "./threadReply";
+import { threadReplyOf, threadRootLinksOf } from "./threadReply";
 import { overviewJsonSource } from "./sources/overviewJson";
 
 export const REDDIT_HOSTS: ReadonlySet<string> = new Set(["www.reddit.com", "old.reddit.com"]);
@@ -27,7 +27,10 @@ export function matchesReddit(url: URL): boolean {
 }
 
 export function createRedditAdapter(options: RedditAdapterOptions = {}): PlatformAdapter {
-  const threads = new PageThreads(threadReplyOf);
+  const threads = new PageThreads(
+    (element) =>
+      threadReplyOf(element) ?? threadRootLinksOf(element, new URL(window.location.href)),
+  );
   const adapter: PlatformAdapter = {
     id: "reddit",
     matches: matchesReddit,

@@ -24,6 +24,13 @@ export interface ThreadRootLinks {
   links: readonly string[];
 }
 
+/** What the page's thread indexes make of one post element: a reply, its thread's root, or neither. */
+export type ThreadPostReading = ReplyReading | ThreadRootLinks;
+
+export function isThreadRoot(reading: ThreadReply | ThreadRootLinks): reading is ThreadRootLinks {
+  return !("replyId" in reading);
+}
+
 const EXPLICIT_ZONE_PATTERN = /(?:Z|[+-]\d\d:?\d\d)$/i;
 const COLONLESS_OFFSET_PATTERN = /([+-]\d\d)(\d\d)$/;
 

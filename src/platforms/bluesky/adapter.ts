@@ -12,12 +12,15 @@ import { observeBlueskyFeed } from "./observer";
 import { createGetAuthorFeedSource } from "./sources/getAuthorFeed";
 import { createGetProfilesSource } from "./sources/getProfiles";
 import { createPassiveXrpcSource } from "./sources/passiveXrpc";
-import { threadReplyOf } from "./threadReply";
+import { threadReplyOf, threadRootLinksOf } from "./threadReply";
 
 const BLUESKY_HOST = "bsky.app";
 
 export function createBlueskyAdapter(): PlatformAdapter {
-  const threads = new PageThreads((item) => threadReplyOf(item, new URL(window.location.href)));
+  const threads = new PageThreads((item) => {
+    const pageUrl: URL = new URL(window.location.href);
+    return threadReplyOf(item, pageUrl) ?? threadRootLinksOf(item, pageUrl);
+  });
   return {
     id: "bluesky",
     matches: (url: URL): boolean => url.hostname === BLUESKY_HOST,

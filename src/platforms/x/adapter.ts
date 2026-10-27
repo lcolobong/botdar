@@ -11,7 +11,7 @@ import type { QueryIdRegistry } from "./queryIds";
 import { createAboutAccountSource } from "./sources/aboutAccount";
 import { createPassiveGraphqlSource } from "./sources/passiveGraphql";
 import type { XReplyReader } from "./threadReply";
-import { createXReplyReader } from "./threadReply";
+import { createXReplyReader, threadKeyOf } from "./threadReply";
 
 export interface XAdapterOptions {
   registry: QueryIdRegistry;
@@ -25,7 +25,8 @@ const X_HOSTNAME_PATTERN = /^(www\.|mobile\.)?(x|twitter)\.com$/;
 export function createXAdapter(options: XAdapterOptions): PlatformAdapter {
   const target: Window & typeof globalThis = options.target ?? window;
   const replyReader: XReplyReader = createXReplyReader(target);
-  const threads = new PageThreads(replyReader.read);
+  // X's page shows links only as t.co: their targets come from Tier 1 bodies, by status id.
+  const threads = new PageThreads(replyReader.read, 1);
   return {
     id: "x",
     matches: (url) => X_HOSTNAME_PATTERN.test(url.hostname),
@@ -43,7 +44,13 @@ export function createXAdapter(options: XAdapterOptions): PlatformAdapter {
       }),
     extractDomSignals,
     sources: [
-      createPassiveGraphqlSource(target),
+      // The root's status id is the thread key the page's URL names; X changes the URL before
+      // it fetches the conversation, so the body always arrives under the page it belongs to.
+      createPassiveGraphqlSource(target, (statusId, links) =>
+        statusId === threadKeyOf(new URL(target.location.href))
+          ? threads.recordRootLinks(statusId, links)
+          : threads.recordPostLinks(statusId, links),
+      ),
       createAboutAccountSource({ registry: options.registry }),
     ],
     toFeatures: threads.withPageEvidence(toFeatures),
