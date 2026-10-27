@@ -189,6 +189,15 @@ function karmaPerDayReason({ value, signals, now }: ReasonContext): string {
     : `${rate} on a ${formatDurationAdjective(days)}-old account`;
 }
 
+/** "1,530 posts and comments in 3 years": a rate under one a day reads better as a count. */
+function submissionsReason({ signals, now }: ReasonContext): string {
+  const count: string = formatCount(signals.postCount ?? 0);
+  const days: number | undefined = accountAgeDays(signals, now);
+  return days === undefined
+    ? `${count} posts and comments`
+    : `${count} posts and comments in ${formatDuration(days)}`;
+}
+
 function karmaSplitReason({ signals }: ReasonContext): string {
   const link: string = formatCount(signals.linkKarma ?? 0);
   const comment: string = formatCount(signals.commentKarma ?? 0);
@@ -249,6 +258,10 @@ const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "reddit.noAvatar": ({ value }) => (value === false ? "Custom avatar" : "Default avatar"),
   "reddit.noVerifiedEmail": ({ value }) =>
     value === false ? "Verified email" : "No verified email",
+  "hn.accountAgeDays": joinedReason,
+  "hn.karmaPerDay": karmaPerDayReason,
+  "hn.submissionsPerDay": submissionsReason,
+  "hn.hasAbout": ({ value }) => (value === true ? "Has an about section" : NO_REASON),
 };
 
 export function templatedFeatureIds(): FeatureId[] {

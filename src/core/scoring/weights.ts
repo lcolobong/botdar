@@ -20,7 +20,7 @@ import type {
 } from "./types";
 import weightsJson from "./weights.default.json";
 
-const PLATFORM_IDS: readonly PlatformId[] = ["x", "reddit", "bluesky"];
+const PLATFORM_IDS: readonly PlatformId[] = ["x", "reddit", "bluesky", "hackernews"];
 const GROUPS: ReadonlySet<string> = new Set([
   "age",
   "activity",

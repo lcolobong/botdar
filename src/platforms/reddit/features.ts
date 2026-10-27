@@ -4,6 +4,7 @@
  * the engine never sees it.
  */
 import { isRedditGeneratedName } from "../../core/handle/shape";
+import { DAY_MILLIS, KARMA_RATE_MAX_AGE_DAYS, tierOf } from "../../core/scoring/featureSupport";
 import type {
   AccountSignals,
   Feature,
@@ -12,8 +13,6 @@ import type {
   SourceTier,
 } from "../../core/types";
 
-const DAY_MILLIS = 86_400_000;
-const KARMA_PER_DAY_MAX_AGE_DAYS = 180;
 const POST_TO_COMMENT_MIN_LINK_KARMA = 500;
 /** The username is rendered on every post, so the name feature is always Tier 0 evidence. */
 const HANDLE_TIER: SourceTier = 0;
@@ -25,18 +24,6 @@ const HANDLE_TIER: SourceTier = 0;
  */
 function matchesGeneratedName(signals: AccountSignals): boolean {
   return isRedditGeneratedName(signals.displayName ?? signals.ref.handle);
-}
-
-/** The most expensive tier among the fields a feature reads; fields with no record count as DOM. */
-function tierOf(signals: AccountSignals, fields: SignalField[]): SourceTier {
-  let highest: SourceTier = 0;
-  for (const field of fields) {
-    const tier: SourceTier | undefined = signals.provenance[field];
-    if (tier !== undefined && tier > highest) {
-      highest = tier;
-    }
-  }
-  return highest;
 }
 
 export function toFeatures(signals: AccountSignals, now: number = Date.now()): Feature[] {
@@ -57,7 +44,7 @@ export function toFeatures(signals: AccountSignals, now: number = Date.now()): F
 
   if (
     ageDays !== undefined &&
-    ageDays < KARMA_PER_DAY_MAX_AGE_DAYS &&
+    ageDays < KARMA_RATE_MAX_AGE_DAYS &&
     linkKarma !== undefined &&
     commentKarma !== undefined
   ) {

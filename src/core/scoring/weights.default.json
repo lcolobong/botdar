@@ -295,6 +295,60 @@
           ]
         }
       }
+    },
+    "hackernews": {
+      "prior": -2.8,
+      "thresholds": {
+        "some": 0.3,
+        "many": 0.6
+      },
+      "groupCaps": {},
+      "confidenceWeights": {
+        "0": 0.3,
+        "1": 0.0,
+        "2": 0.7
+      },
+      "features": {
+        "hn.accountAgeDays": {
+          "group": "age",
+          "cap": 1.2,
+          "kind": "bins",
+          "bins": [
+            [0, 30, 1.2],
+            [30, 180, 0.6],
+            [180, 730, 0],
+            [730, null, -0.6]
+          ]
+        },
+        "hn.karmaPerDay": {
+          "group": "activity",
+          "cap": 0.8,
+          "kind": "bins",
+          "bins": [
+            [0, 50, 0],
+            [50, 200, 0.3],
+            [200, 1000, 0.5],
+            [1000, null, 0.8]
+          ]
+        },
+        "hn.submissionsPerDay": {
+          "group": "activity",
+          "cap": 1.2,
+          "kind": "bins",
+          "bins": [
+            [0, 10, 0],
+            [10, 25, 0.4],
+            [25, 50, 0.8],
+            [50, null, 1.2]
+          ]
+        },
+        "hn.hasAbout": {
+          "group": "profile",
+          "cap": 0.3,
+          "kind": "bool",
+          "weight": -0.3
+        }
+      }
     }
   }
 }

@@ -9,6 +9,7 @@ import type { Cadence } from "../../core/scoring/cadence";
 import { cadenceOf } from "../../core/scoring/cadence";
 import type { CountryLanguageComparison } from "../../core/text/accountLanguage";
 import { countryLanguageMismatch } from "../../core/text/accountLanguage";
+import { DAY_MILLIS, tierOf } from "../../core/scoring/featureSupport";
 import type {
   AccountSignals,
   Feature,
@@ -17,7 +18,6 @@ import type {
   SourceTier,
 } from "../../core/types";
 
-const DAY_MILLIS = 86_400_000;
 const FOLLOWING_RATIO_MIN_FOLLOWING = 100;
 const REPLY_SHARE_MIN_SAMPLE_SIZE = 20;
 const NEW_ACCOUNT_MAX_AGE_DAYS = 90;
@@ -28,18 +28,6 @@ const NAME_PLUS_DIGITS_MIN_DIGITS = 5;
 /** The bigram likelihood is meaningless on a handle that is mostly digits or punctuation. */
 const BIGRAM_MIN_LETTERS = 4;
 const LETTER_PATTERN = /[a-z]/g;
-
-/** The most expensive tier among the fields a feature reads; fields with no record count as DOM. */
-function tierOf(signals: AccountSignals, fields: SignalField[]): SourceTier {
-  let highest: SourceTier = 0;
-  for (const field of fields) {
-    const tier: SourceTier | undefined = signals.provenance[field];
-    if (tier !== undefined && tier > highest) {
-      highest = tier;
-    }
-  }
-  return highest;
-}
 
 /**
  * X prints the About dialog's country in the viewer's X display language, which normally follows the

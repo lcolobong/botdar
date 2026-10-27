@@ -7,6 +7,7 @@
 import { isBskySocialHandleWithDigits } from "../../core/handle/shape";
 import type { Cadence } from "../../core/scoring/cadence";
 import { cadenceOf } from "../../core/scoring/cadence";
+import { DAY_MILLIS, tierOf } from "../../core/scoring/featureSupport";
 import type {
   AccountSignals,
   Feature,
@@ -15,22 +16,9 @@ import type {
   SourceTier,
 } from "../../core/types";
 
-const DAY_MILLIS = 86_400_000;
 const FOLLOWS_RATIO_MIN_FOLLOWING = 100;
 /** The handle comes from the rendered profile link, which every tier can see. */
 const HANDLE_TIER: SourceTier = 0;
-
-/** The most expensive tier among the fields a feature reads; fields with no record count as DOM. */
-function tierOf(signals: AccountSignals, fields: SignalField[]): SourceTier {
-  let highest: SourceTier = 0;
-  for (const field of fields) {
-    const tier: SourceTier | undefined = signals.provenance[field];
-    if (tier !== undefined && tier > highest) {
-      highest = tier;
-    }
-  }
-  return highest;
-}
 
 export function toFeatures(signals: AccountSignals, now: number = Date.now()): Feature[] {
   const features: Feature[] = [];
