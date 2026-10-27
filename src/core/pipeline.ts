@@ -11,7 +11,6 @@ import { LookupQueue } from "./lookupQueue";
 import type { PersistedLookup } from "./persistedLookups";
 import type { RateLimiter } from "./ratelimit";
 import { recordLookup } from "./diagnostics.ts";
-import { RateLimitedError } from "./ratelimit";
 import type {
   AccountRef,
   EffectivePlatformConfig,
@@ -33,6 +32,8 @@ import type {
 import type { AccountEntry } from "./pipeline/trackedAccounts";
 import { TrackedAccounts } from "./pipeline/trackedAccounts";
 import { LookupStorage, hoverCacheKey } from "./pipeline/lookupStorage";
+import type { SourceCaller, SourceResult } from "./pipeline/lookupSources";
+import { LookupSourceSet, resolveSource } from "./pipeline/lookupSources";
 import { markDelivered, mergeSignals } from "./pipeline/mergeSignals";
 
 export type {
@@ -56,12 +57,6 @@ interface ActiveRunOptions {
   topUp?: boolean;
 }
 
-/** What one call to a source came to: its signals, or how it failed. */
-interface SourceResult {
-  partial: PartialSignals | null;
-  failure: "rateLimited" | "failed" | null;
-}
-
 interface AttachedPost {
   entry: AccountEntry;
   handle: BadgeHandle;
@@ -71,9 +66,11 @@ interface AttachedPost {
 export class AccountResolver {
   private readonly adapter: PlatformAdapter;
   private readonly scorer: Scorer;
+  private readonly lookupSources: LookupSourceSet;
   private readonly limiter: RateLimiter;
   private readonly cache: TtlLruCache<string, PartialSignals>;
   private readonly storage: LookupStorage;
+  private readonly sourceCaller: SourceCaller;
   private readonly now: () => number;
   private readonly accounts = new TrackedAccounts();
   private readonly attachedPosts = new Map<Element, AttachedPost>();
@@ -88,6 +85,7 @@ export class AccountResolver {
     this.adapter = options.adapter;
     this.scorer = options.scorer;
     this.config = options.config;
+    this.lookupSources = new LookupSourceSet(this.adapter);
     this.limiter = options.limiter;
     this.cache = options.cache;
     this.storage = new LookupStorage({
@@ -96,11 +94,16 @@ export class AccountResolver {
       cache: this.cache,
       lookupsLive: () => !this.disposed && this.config.tiers.t2,
     });
+    this.sourceCaller = {
+      limiter: this.limiter,
+      signal: this.abortController.signal,
+      config: () => this.config,
+    };
     this.now = options.now ?? Date.now;
     this.onSightQueue = new LookupQueue({
       // A queued lookup is ready only when every call it makes can be paid for.
       limiter: {
-        nextAllowedAt: () => this.limiter.nextAllowedAt(this.activeLookupSources().length),
+        nextAllowedAt: () => this.limiter.nextAllowedAt(this.lookupSources.main().length),
       },
       now: this.now,
       run: (handle) => this.runQueuedLookup(handle),
@@ -190,13 +193,13 @@ export class AccountResolver {
     // waits for it; a settled one is judged now, and only once.
     const settledCandidates: SignalSource[] | undefined =
       entry.pendingLookup === null && !mainLookupWasRunning
-        ? this.hoverSourcesToRun(entry)
+        ? this.lookupSources.hoverSourcesToRun(entry.signals)
         : undefined;
-    const anyWanted: boolean = (settledCandidates ?? this.hoverOnlySources()).length > 0;
+    const anyWanted: boolean = (settledCandidates ?? this.lookupSources.hoverOnly()).length > 0;
     if (!anyWanted) {
       return mainLookup;
     }
-    entry.hoverLookupActive = (settledCandidates ?? this.hoverOnlySources()).some(
+    entry.hoverLookupActive = (settledCandidates ?? this.lookupSources.hoverOnly()).some(
       (source) => this.cache.get(hoverCacheKey(ref.handle, source)) === undefined,
     );
     const hoverLookup: Promise<void> = mainLookup.then(() =>
@@ -242,7 +245,7 @@ export class AccountResolver {
 
   /** The on-sight variant of `requestLookup` (ADR-0020): queued behind the limiter, once per account. */
   requestLookupOnSight(ref: AccountRef): Promise<void> {
-    if (!this.config.tiers.t2 || this.disposed || !this.hasActiveLookupSource()) {
+    if (!this.config.tiers.t2 || this.disposed || !this.lookupSources.hasMain()) {
       return Promise.resolve();
     }
     const entry: AccountEntry = this.accounts.entryFor(ref);
@@ -250,7 +253,7 @@ export class AccountResolver {
       return entry.pendingLookup;
     }
     const alreadyTried: boolean = entry.lookupAttempted || entry.signals.tiersDelivered.includes(2);
-    if (alreadyTried || this.activeSourceNeedsLogin()) {
+    if (alreadyTried || this.lookupSources.needsLogin()) {
       return Promise.resolve();
     }
     const cached: PartialSignals | undefined = this.cache.get(ref.handle);
@@ -278,8 +281,8 @@ export class AccountResolver {
       return;
     }
     const sources: SignalSource[] = settled
-      ? this.activeLookupSources().filter((source) => source.memoryOnly === true)
-      : this.activeLookupSources();
+      ? this.lookupSources.main().filter((source) => source.memoryOnly === true)
+      : this.lookupSources.main();
     if (sources.length === 0) {
       return;
     }
@@ -353,8 +356,8 @@ export class AccountResolver {
       return Promise.resolve(true);
     }
     const stillWanted: boolean =
-      this.config.tiers.t2 && entry.posts.size > 0 && this.hasActiveLookupSource();
-    if (!stillWanted || this.activeSourceNeedsLogin()) {
+      this.config.tiers.t2 && entry.posts.size > 0 && this.lookupSources.hasMain();
+    if (!stillWanted || this.lookupSources.needsLogin()) {
       this.absorb(entry, null, 2);
       return Promise.resolve(true);
     }
@@ -366,62 +369,6 @@ export class AccountResolver {
     }
     recordLookup("started");
     return this.runActiveSources(entry, { settleWhenTurnedAway: false });
-  }
-
-  private hasActiveLookupSource(): boolean {
-    return this.activeLookupSources().length > 0;
-  }
-
-  /** The Tier 2 sources a lookup runs on sight or hover; each call costs one limiter token. */
-  private activeLookupSources(): SignalSource[] {
-    return this.adapter.sources.filter(
-      (source) =>
-        source.kind === "active" &&
-        source.tier === 2 &&
-        source.resolve !== undefined &&
-        source.hoverOnly !== true,
-    );
-  }
-
-  private hoverOnlySources(): SignalSource[] {
-    return this.adapter.sources.filter(
-      (source) =>
-        source.kind === "active" &&
-        source.tier === 2 &&
-        source.resolve !== undefined &&
-        source.hoverOnly === true,
-    );
-  }
-
-  /** The hover-only sources worth a request for this account, none while a login wall is up. */
-  private hoverSourcesToRun(entry: AccountEntry): SignalSource[] {
-    if (this.activeSourceNeedsLogin()) {
-      return [];
-    }
-    return this.hoverOnlySources().filter(
-      (source) => source.worthResolving?.(entry.signals) ?? true,
-    );
-  }
-
-  /**
-   * One call to a source, with its failure classified and the limiter told. The caller has paid for
-   * the token (all up front for a lookup, one at a time for a hover) and decides what to cache.
-   */
-  private async resolveSource(ref: AccountRef, source: SignalSource): Promise<SourceResult> {
-    try {
-      const partial: PartialSignals | null | undefined = await source.resolve?.(ref, {
-        signal: this.abortController.signal,
-        config: this.config,
-      });
-      this.limiter.reportSuccess();
-      return { partial: partial ?? null, failure: null };
-    } catch (error) {
-      if (error instanceof RateLimitedError) {
-        this.limiter.reportRateLimited(error.retryAfterMs);
-        return { partial: null, failure: "rateLimited" };
-      }
-      return { partial: null, failure: "failed" };
-    }
   }
 
   /**
@@ -436,7 +383,7 @@ export class AccountResolver {
     const collected: PartialSignals = {};
     let delivered = false;
     try {
-      for (const source of judgedSources ?? this.hoverSourcesToRun(entry)) {
+      for (const source of judgedSources ?? this.lookupSources.hoverSourcesToRun(entry.signals)) {
         if (this.disposed || !this.config.tiers.t2) {
           break;
         }
@@ -482,7 +429,11 @@ export class AccountResolver {
       return null;
     }
     recordLookup("started");
-    const { partial, failure }: SourceResult = await this.resolveSource(entry.signals.ref, source);
+    const { partial, failure }: SourceResult = await resolveSource(
+      this.sourceCaller,
+      entry.signals.ref,
+      source,
+    );
     if (failure !== null) {
       recordLookup(failure);
       return null;
@@ -511,16 +462,10 @@ export class AccountResolver {
     if (entry.signals.tiersDelivered.includes(2)) {
       return "delivered";
     }
-    if (this.activeSourceNeedsLogin()) {
+    if (this.lookupSources.needsLogin()) {
       return "loginRequired";
     }
     return entry.lookupAttempted ? "empty" : "idle";
-  }
-
-  private activeSourceNeedsLogin(): boolean {
-    return this.adapter.sources.some(
-      (source) => source.kind === "active" && source.loginRequired?.() === true,
-    );
   }
 
   /** `config.changed`: rescore every mounted badge and start or stop passive sources to match. */
@@ -601,7 +546,7 @@ export class AccountResolver {
     entry: AccountEntry,
     {
       settleWhenTurnedAway,
-      sources = this.activeLookupSources(),
+      sources = this.lookupSources.main(),
       topUp = false,
     }: ActiveRunOptions = { settleWhenTurnedAway: true },
   ): Promise<boolean> {
@@ -619,7 +564,7 @@ export class AccountResolver {
     entry.lookupRunning = true;
     entry.lookupAttempted ||= ran;
     for (const source of ran ? sources : []) {
-      const result: SourceResult = await this.resolveSource(ref, source);
+      const result: SourceResult = await resolveSource(this.sourceCaller, ref, source);
       if (result.failure !== null) {
         outcome = result.failure;
       } else if (result.partial !== null) {
