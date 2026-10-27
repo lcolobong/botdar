@@ -8,6 +8,7 @@ import {
   postTextByHandle,
   profileTimelineUserIdOf,
   timelineOwnerPosts,
+  repliesTabOwnerTweets,
   toSignals,
   type ParsedXPost,
   type ParsedXUser,
@@ -359,6 +360,7 @@ describe("postTextByHandle", () => {
   const post = (handle: string, text?: string): ParsedXPost => ({
     id: `${handle}-${text ?? ""}`,
     author: { platform: "x", handle },
+    isReply: false,
     ...(text === undefined ? {} : { text }),
   });
 
@@ -458,5 +460,57 @@ describe("post times", () => {
     const owner = timelineOwnerPosts(parseGraphqlBody(body).posts);
     expect(owner?.handle).toBe("maria_dev");
     expect(owner?.timestamps).toHaveLength(100);
+  });
+});
+
+describe("repliesTabOwnerTweets", () => {
+  const OWNER_ID = "1000000000000000007";
+  const posts = (): ParsedXPost[] =>
+    parseGraphqlBody(loadFixture("user-tweets-and-replies.json")).posts;
+  const repliesIn = (tweets: ParsedXPost[]): number =>
+    tweets.filter((tweet) => tweet.isReply).length;
+
+  it("gives the owner's tweets, reposts included as posts and never as replies", () => {
+    const owner = repliesTabOwnerTweets(posts(), OWNER_ID);
+    expect(owner?.handle).toBe("reply_guy_01");
+    expect(owner?.posts).toHaveLength(24);
+    expect(repliesIn(owner?.posts ?? [])).toBe(20);
+  });
+
+  it("leaves another author's tweets out, and reads an empty reply field as no reply", () => {
+    const parsed: ParsedXPost[] = posts();
+    expect(parsed.find((post) => post.text === "Empty reply field")?.isReply).toBe(false);
+    expect(repliesTabOwnerTweets(parsed, "1000000000000000008")?.posts).toHaveLength(1);
+    expect(repliesTabOwnerTweets(parsed, "1000000000000000008")?.posts[0]?.isReply).toBe(true);
+  });
+
+  it("counts nothing without a named owner, or for an unknown one", () => {
+    expect(repliesTabOwnerTweets(posts(), undefined)).toBeUndefined();
+    expect(repliesTabOwnerTweets(posts(), "42")).toBeUndefined();
+    expect(repliesTabOwnerTweets([], OWNER_ID)).toBeUndefined();
+  });
+
+  it("reads a thread continuation as no reply, by user id or by screen name", () => {
+    const tweet = (id: string, legacy: unknown): unknown => ({
+      rest_id: id,
+      core: { user_results: { result: { rest_id: "7", core: { screen_name: "Thread_Guy" } } } },
+      legacy,
+    });
+    const parsed: ParsedXPost[] = parseGraphqlBody([
+      tweet("1", { full_text: "start" }),
+      ...Array.from({ length: 25 }, (_, index) =>
+        tweet(`${index + 10}`, {
+          in_reply_to_status_id_str: "1",
+          ...(index % 2 === 0
+            ? { in_reply_to_user_id_str: "7" }
+            : { in_reply_to_screen_name: "thread_guy" }),
+        }),
+      ),
+      tweet("99", { in_reply_to_status_id_str: "5", in_reply_to_user_id_str: "8" }),
+      tweet("98", { in_reply_to_status_id_str: "5" }),
+    ]).posts;
+    const owner = repliesTabOwnerTweets(parsed, "7");
+    expect(owner?.posts).toHaveLength(28);
+    expect(repliesIn(owner?.posts ?? [])).toBe(2);
   });
 });

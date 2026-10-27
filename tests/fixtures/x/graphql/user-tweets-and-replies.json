@@ -1,0 +1,973 @@
+{
+  "_fixture": "Hand-written, not a recording: a UserTweetsAndReplies body in the documented shape for reply_guy_01 (user id 1000000000000000007): 20 replies, 2 plain posts, 1 repost and 1 post with an empty in_reply_to_status_id_str, so 24 of the owner's tweets and a reply share of 20/24. The repost wraps a reply by quoted_author, who is not the owner and is not counted. The wrapper path and legacy.in_reply_to_status_id_str are GUESSES until a recording confirms them (docs/test-plan.md, ADR-0021).",
+  "data": {
+    "user": {
+      "result": {
+        "__typename": "User",
+        "timeline": {
+          "timeline": {
+            "instructions": [
+              {
+                "type": "TimelineAddEntries",
+                "entries": [
+                  {
+                    "entryId": "tweet-1720000000000000000",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000000",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 0",
+                              "in_reply_to_status_id_str": "1600000000000000000",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000001",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000001",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 1",
+                              "in_reply_to_status_id_str": "1600000000000000001",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000002",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000002",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 2",
+                              "in_reply_to_status_id_str": "1600000000000000002",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000003",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000003",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 3",
+                              "in_reply_to_status_id_str": "1600000000000000003",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000004",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000004",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 4",
+                              "in_reply_to_status_id_str": "1600000000000000004",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000005",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000005",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 5",
+                              "in_reply_to_status_id_str": "1600000000000000005",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000006",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000006",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 6",
+                              "in_reply_to_status_id_str": "1600000000000000006",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000007",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000007",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 7",
+                              "in_reply_to_status_id_str": "1600000000000000007",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000008",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000008",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 8",
+                              "in_reply_to_status_id_str": "1600000000000000008",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000009",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000009",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 9",
+                              "in_reply_to_status_id_str": "1600000000000000009",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000010",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000010",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 10",
+                              "in_reply_to_status_id_str": "1600000000000000010",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000011",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000011",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 11",
+                              "in_reply_to_status_id_str": "1600000000000000011",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000012",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000012",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 12",
+                              "in_reply_to_status_id_str": "1600000000000000012",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000013",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000013",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 13",
+                              "in_reply_to_status_id_str": "1600000000000000013",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000014",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000014",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 14",
+                              "in_reply_to_status_id_str": "1600000000000000014",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000015",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000015",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 15",
+                              "in_reply_to_status_id_str": "1600000000000000015",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000016",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000016",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 16",
+                              "in_reply_to_status_id_str": "1600000000000000016",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000017",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000017",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 17",
+                              "in_reply_to_status_id_str": "1600000000000000017",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000018",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000018",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 18",
+                              "in_reply_to_status_id_str": "1600000000000000018",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000019",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000019",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 18:44:18 +0000 2026",
+                              "full_text": "@someone reply 19",
+                              "in_reply_to_status_id_str": "1600000000000000019",
+                              "in_reply_to_screen_name": "someone"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000020",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000020",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 12:00:00 +0000 2026",
+                              "full_text": "Own post 0"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000021",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000021",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 12:00:00 +0000 2026",
+                              "full_text": "Own post 1"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000022",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000022",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 11:00:00 +0000 2026",
+                              "retweeted_status_result": {
+                                "result": {
+                                  "__typename": "Tweet",
+                                  "rest_id": "1720000000000000023",
+                                  "core": {
+                                    "user_results": {
+                                      "result": {
+                                        "__typename": "User",
+                                        "rest_id": "1000000000000000008",
+                                        "core": {
+                                          "name": "Quoted Author",
+                                          "screen_name": "quoted_author"
+                                        },
+                                        "legacy": {}
+                                      }
+                                    }
+                                  },
+                                  "legacy": {
+                                    "created_at": "Tue Oct 20 11:00:00 +0000 2026",
+                                    "full_text": "@x hi",
+                                    "in_reply_to_status_id_str": "1500000000000000001"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-1720000000000000024",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "__typename": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "__typename": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "1720000000000000024",
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "__typename": "User",
+                                  "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA3",
+                                  "rest_id": "1000000000000000007",
+                                  "core": {
+                                    "created_at": "Tue Mar 03 10:00:00 +0000 2026",
+                                    "name": "Reply Guy",
+                                    "screen_name": "reply_guy_01"
+                                  },
+                                  "is_blue_verified": true,
+                                  "legacy": {}
+                                }
+                              }
+                            },
+                            "legacy": {
+                              "created_at": "Wed Oct 21 10:00:00 +0000 2026",
+                              "full_text": "Empty reply field",
+                              "in_reply_to_status_id_str": ""
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
