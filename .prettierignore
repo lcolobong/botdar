@@ -10,3 +10,5 @@ tests/fixtures/perf/
 # Hand-written smoke bodies with one post per line so their 100 entries stay reviewable.
 tests/fixtures/smoke/x-user-tweets.json
 tests/fixtures/smoke/bluesky-author-feed.json
+# Recorded by pnpm capture (scripts/capture/run.ts); kept byte-for-byte as the serializer wrote them.
+tests/fixtures/hackernews/html/

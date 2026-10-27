@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -5,7 +7,12 @@ import {
   anonymizeUrl,
   fakeHandleFor,
 } from "../../../src/core/snapshot/anonymize";
-import { fakeHandle, fakeId } from "../../../src/core/snapshot/fakeNames";
+import {
+  distinctDigits,
+  distinctFakes,
+  fakeHandle,
+  fakeId,
+} from "../../../src/core/snapshot/fakeNames";
 import { isDefaultAvatarUrl } from "../../../src/platforms/reddit/conventions";
 
 describe("fakeHandle", () => {
@@ -129,5 +136,148 @@ describe("anonymizeSnapshot on X and Bluesky markup", () => {
     expect(result.html).toMatch(/href="\/profile\/[a-z]+\d{2}\.bsky\.social"/);
     expect(result.html).toMatch(/href="\/profile\/[a-z]+\d{2}\.example\.com"/);
     expect(result.html).toContain("/img/avatar/plain/anon@jpeg");
+  });
+});
+
+describe("anonymizeSnapshot on Hacker News markup", () => {
+  const html = `<tr class="athing comtr" id="50248190"><td><span class="comhead"><a href="user?id=torben-friis" class="hnuser">torben-friis</a>
+      <a id='up_50248190' href='vote?id=50248190&amp;how=up&amp;goto=item%3Fid%3D50245138'></a>
+      <span id="unv_50248190"></span><a href="#50249391" class="clicky">next</a>
+      <a href="user?id=_1" class="hnuser">_1</a> <a href="user?id=newcomer" class="hnuser"><font color="#3c963c">newcomer</font></a>
+      <a href="reply?id=50248190&amp;goto=item%3Fid%3D50245138%2350248190">reply</a></span>
+      <input type="hidden" name="parent" value="50245138"><input type="hidden" name="hmac" value="4db0af3cee0e586e981da4b94108e0a01d537b8a">
+      <div class="commtext">torben-friis is right, and 12345 is not an id.</div></td></tr>`;
+  const result = anonymizeSnapshot(html, "hackernews");
+
+  it("replaces usernames in profile links and hnuser text, two-character and green ones too", () => {
+    for (const handle of ['id=torben-friis"', ">torben-friis<", "user?id=_1", ">_1<", "newcomer"]) {
+      expect(result.html).not.toContain(handle);
+    }
+    const fake: string = fakeHandleFor("torben-friis", "hackernews");
+    expect(result.html).toContain(`href="user?id=${fake}" class="hnuser">${fake}</a>`);
+    // Comment text is prose, left alone as on every platform.
+    expect(result.html).toContain("torben-friis is right");
+  });
+
+  it("leaves closing tags alone for an author named after one, such as div", () => {
+    const page = `<div class="comment"><span class="comhead"><a href="user?id=div" class="hnuser">div</a></span>
+      <a href="https://github.com/div/tools">repo</a></div></td></tr></table>`;
+    const anonymised: string = anonymizeSnapshot(page, "hackernews").html;
+    const fake: string = fakeHandleFor("div", "hackernews");
+    expect(anonymised).toContain(`<a href="user?id=${fake}" class="hnuser">${fake}</a></span>`);
+    expect(anonymised).toContain(`https://github.com/${fake}/tools`);
+    expect(anonymised).toContain('<div class="comment">');
+    expect(anonymised).toContain("</a></div></td></tr></table>");
+  });
+
+  it("keeps an all-digit colour but replaces item fragments", () => {
+    const page = `<font color="#828282">a</font><span style="color:#828282">b</span>
+      <a href="#12345678">next</a><a href="item?id=1#12345678">context</a>`;
+    const anonymised: string = anonymizeSnapshot(page, "hackernews").html;
+    expect(anonymised).toContain('<font color="#828282">');
+    expect(anonymised).toContain('style="color:#828282"');
+    expect(anonymised).not.toContain("12345678");
+    expect(anonymised).toMatch(/href="#\d{8}">next/);
+    expect(anonymised).toMatch(/item\?id=1#\d{8}"/);
+  });
+
+  it("never rewrites markup or prose for a two-letter user such as td", () => {
+    const page = `<table><tr class="athing"><td class="default"><span class="comhead"><a href="user?id=td" class="hnuser">td</a> by</span>
+      <div class="commtext">td and by stay words here.</div></td></tr></table>`;
+    const anonymised: string = anonymizeSnapshot(page, "hackernews").html;
+    const fake: string = fakeHandleFor("td", "hackernews");
+    expect(anonymised).toContain(`<a href="user?id=${fake}" class="hnuser">${fake}</a> by</span>`);
+    expect(anonymised).toContain('<table><tr class="athing"><td class="default">');
+    expect(anonymised).toContain("</td></tr></table>");
+    expect(anonymised).toContain("td and by stay words here.");
+  });
+
+  it("keeps two accounts whose names differ only in case apart", () => {
+    const page = `<a href="user?id=Foo" class="hnuser">Foo</a><a href="user?id=foo" class="hnuser">foo</a>`;
+    const fakes: string[] = [
+      ...anonymizeSnapshot(page, "hackernews").html.matchAll(/class="hnuser">([^<]+)</g),
+    ].map((match) => match[1] ?? "");
+    expect(fakes).toHaveLength(2);
+    expect(new Set(fakes).size).toBe(2);
+    expect(fakes).not.toContain("Foo");
+    expect(fakes).not.toContain("foo");
+  });
+
+  it("anonymises the user page's title and birth link and a site named after its author", () => {
+    const page = `<title>Profile: catfood | Hacker News</title><a href="front?day=2013-11-05&amp;birth=catfood">x</a>
+      <a href="user?id=catfood" class="hnuser">catfood</a><span class="sitebit comhead"><a href="from?site=catfood.com"><span class="sitestr">catfood.com</span></a></span>
+      <div class="commtext"><a href="https://github.com/catfood/kan">https://github.com/catfood/kan</a></div></td>`;
+    const anonymised: string = anonymizeSnapshot(page, "hackernews").html;
+    expect(anonymised).not.toContain("catfood");
+  });
+
+  it("replaces item ids everywhere they appear, consistently, and blanks the form hmac", () => {
+    for (const id of ["50248190", "50245138", "50249391", "4db0af3cee"]) {
+      expect(result.html).not.toContain(id);
+    }
+    const rowIds: string[] = [...result.html.matchAll(/ id="(\d{8})"/g)].map(
+      (match) => match[1] ?? "",
+    );
+    expect(rowIds).toHaveLength(1);
+    const rowId: string = rowIds[0] ?? "";
+    expect(result.html).toContain(`id='up_${rowId}'`);
+    expect(result.html).toContain(`vote?id=${rowId}&amp;`);
+    expect(result.html).toContain(`%23${rowId}"`);
+    expect(result.html).toContain("12345 is not an id");
+    expect(result.html).toContain(`name="hmac" value="${"0".repeat(40)}"`);
+  });
+
+  it("gives distinct ids distinct fakes, which base-36 letters turned into sevens did not", () => {
+    const fakeNumeric: (id: string) => string = distinctDigits();
+    const ids: string[] = Array.from({ length: 5000 }, (_unused, index) =>
+      String(50_240_000 + index),
+    );
+    const fakes: string[] = ids.map(fakeNumeric);
+    expect(new Set(fakes).size).toBe(ids.length);
+    expect(fakes.every((fake) => /^\d{8}$/.test(fake))).toBe(true);
+    expect(fakeNumeric(ids[0] ?? "")).toBe(fakes[0]);
+  });
+
+  it("moves a colliding handle to its next fake and leaves the others as they are", () => {
+    const sameFake = (): string => "alice_sails57";
+    const fakes: Map<string, string> = distinctFakes(
+      ["siva7", "torben-friis", "Siva7"],
+      (handle, attempt) => (attempt === 0 ? sameFake() : `${handle}-${attempt}`),
+      (handle) => handle.toLowerCase(),
+    );
+    expect(fakes.get("Siva7")).toBe("alice_sails57");
+    expect(fakes.get("siva7")).toBe("alice_sails57");
+    expect(fakes.get("torben-friis")).toBe("torben-friis-1");
+  });
+
+  it("keeps the id query of a recorded address, anonymised", () => {
+    expect(anonymizeUrl("https://news.ycombinator.com/user?id=torben-friis", "hackernews")).toBe(
+      `https://news.ycombinator.com/user?id=${fakeHandleFor("torben-friis", "hackernews")}`,
+    );
+    const item: string = anonymizeUrl(
+      "https://news.ycombinator.com/item?id=50245138",
+      "hackernews",
+    );
+    expect(item).toMatch(/^https:\/\/news\.ycombinator\.com\/item\?id=\d{8}$/);
+    expect(item).not.toContain("50245138");
+    expect(anonymizeUrl("https://news.ycombinator.com/newcomments", "hackernews")).toBe(
+      "https://news.ycombinator.com/newcomments",
+    );
+  });
+});
+
+describe("the committed Hacker News recordings", () => {
+  it("give every story and comment row its own fake id", () => {
+    for (const name of ["front", "newest", "thread", "newcomments"]) {
+      const html: string = readFileSync(
+        resolve(process.cwd(), "tests/fixtures/hackernews/html", `${name}.html`),
+        "utf8",
+      );
+      const rowIds: string[] = [...html.matchAll(/<tr class="athing[^"]*" id="(\d+)"/g)].map(
+        (match) => match[1] ?? "",
+      );
+      expect(rowIds.length, name).toBeGreaterThan(0);
+      expect(new Set(rowIds).size, name).toBe(rowIds.length);
+    }
   });
 });

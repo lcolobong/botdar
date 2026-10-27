@@ -2,7 +2,7 @@
  * Records a live page from the user's own Chrome as an anonymised fixture, with a screenshot of
  * the page as the extension rendered it.
  *
- *   pnpm capture -- --url <url> --platform x|reddit|bluesky --name <scene>
+ *   pnpm capture -- --url <url> --platform x|reddit|bluesky|hackernews --name <scene>
  *                   [--cdp http://127.0.0.1:9222] [--wait <ms>] [--no-anonymize] [--out <dir>] [--force]
  *
  * Chrome must be running with a DevTools port on a dedicated profile (`pnpm capture:chrome`);
@@ -18,6 +18,7 @@ import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { AnonymizedSnapshot, SnapshotPlatform } from "../../src/core/snapshot/anonymize.ts";
 import {
+  SNAPSHOT_PLATFORMS,
   anonymizeSnapshot,
   anonymizeUrl,
   describeAnonymization,
@@ -31,13 +32,15 @@ const rawOutputDir: string = join(projectRoot, ".output", "capture");
 const defaultCdpUrl = "http://127.0.0.1:9222";
 const defaultSettleMs = 1_500;
 const networkIdleTimeoutMs = 10_000;
-const platforms: readonly SnapshotPlatform[] = ["x", "reddit", "bluesky"];
+const platforms: readonly SnapshotPlatform[] = SNAPSHOT_PLATFORMS;
 /** What a reviewer wants counted to judge whether the page and the extension did their part. */
 const countedSelectors: Readonly<Record<string, string>> = {
   "shreddit-post": "shreddit-post",
   "shreddit-comment": "shreddit-comment",
   tweets: 'article[data-testid="tweet"]',
   "bluesky posts": '[data-testid^="feedItem-by-"], [data-testid^="postThreadItem-by-"]',
+  "hacker news stories": "tr.athing.submission",
+  "hacker news comments": "tr.athing:has(.comment)",
   "botdar-badge hosts": "botdar-badge",
 };
 
@@ -56,7 +59,7 @@ interface CaptureOptions {
 function usage(message: string): never {
   process.stderr.write(`${message}\n\n`);
   process.stderr.write(
-    "usage: pnpm capture -- --url <url> --platform x|reddit|bluesky --name <scene>\n" +
+    "usage: pnpm capture -- --url <url> --platform x|reddit|bluesky|hackernews --name <scene>\n" +
       "                      [--cdp http://127.0.0.1:9222] [--wait <ms>] [--no-anonymize] [--out <dir>] [--force]\n",
   );
   process.exit(2);
@@ -71,7 +74,7 @@ function parseOptions(argv: readonly string[]): CaptureOptions {
   const platform: string | undefined = flagValue(argv, "--platform");
   const name: string | undefined = flagValue(argv, "--name");
   if (url === undefined) usage("--url is required");
-  if (!isPlatform(platform)) usage("--platform must be x, reddit or bluesky");
+  if (!isPlatform(platform)) usage("--platform must be x, reddit, bluesky or hackernews");
   if (name === undefined || !/^[a-z0-9-]+$/.test(name)) usage("--name must be a lowercase slug");
   const wait: string | undefined = flagValue(argv, "--wait");
   return {
