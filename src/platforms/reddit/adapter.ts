@@ -5,6 +5,7 @@
  * feed at two densities, so each PostRef carries its own density over the adapter default.
  */
 import type { PlatformAdapter, PostRef, SignalSource } from "../../core/types";
+import type { OnSightPlatform } from "../onSightWire";
 import { densityFor, extractDomSignals } from "./dom";
 import { toFeatures } from "./features";
 import { observeRedditFeed } from "./observer";
@@ -43,3 +44,10 @@ export function createRedditAdapter(options: RedditAdapterOptions = {}): Platfor
 }
 
 export const redditAdapter: PlatformAdapter = createRedditAdapter();
+
+/** Reddit as the shared on-sight wiring sees it (src/platforms/onSightWire.ts). */
+export const redditOnSight: OnSightPlatform = {
+  platform: "reddit",
+  adapter: redditAdapter,
+  cardHandle: (handle) => `u/${handle}`,
+};
