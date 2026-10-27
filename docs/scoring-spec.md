@@ -76,9 +76,9 @@ follow ratios). They will move after the calibration pass.
 | `x.newAndBlue` | verification | 0.8 | `verified === 'blue'` and age < 90 d | bool, 0.8 | both known |
 | `x.replyShare` | content | 0.8 | `replyShare.ratio` | `[0,0.9)→0` `[0.9,∞)→0.8` | `replyShare.n ≥ 20` |
 | `x.usernameChanges` | profile | 0.6 | count from About | `[0,3)→0` `[3,∞)→0.6` | Tier 2 delivered |
-| `x.countryLocaleMismatch` (weight 0 until v1.1: the current code compares the account country with the viewer's browser region, not the account's own language; see docs/adversarial-evasion.md) | geo | 0.4 | About country differs from the account's bio language region | bool, 0.4 | Tier 2 delivered; weak and error-prone (VPNs, travel) |
+| `x.countryLocaleMismatch` | geo | 0.4 | About country is not among the plausible regions of the language detected in the account's bio plus the post text Tier 1 carries for it (`src/core/text/`) | bool, 0.4 | About country known and resolved to a code; a language detected (≥ 12 words, confidence ≥ 0.5) that has a region table; never English. Weak and error-prone (VPNs, travel, second-language writers) |
 
-Group caps: `handle` 1.2, `profile` 1.2. Prior `-2.5`. Confidence weights `{0: 0.25, 1: 0.55, 2: 0.20}`.
+Group caps: `handle` 1.2, `profile` 1.2, `geo` 0.4. Prior `-2.5`. Confidence weights `{0: 0.25, 1: 0.55, 2: 0.20}`.
 
 ### Reddit
 
@@ -216,13 +216,24 @@ anything that costs per-account time, money or patience is skipped, and the skip
 - **Evidence.** A single unverified report; weighted 0.6 until the calibration pass says more.
 - **Counter-case.** People rebrand, marry, or fix a typo. Once or twice is free.
 
-### Country mismatch (`x.countryLocaleMismatch`, weight 0)
+### Country mismatch (`x.countryLocaleMismatch`)
 
 - **Mechanism.** Influence operations run personas in another country's politics, and the platform's
-  IP-inferred country can contradict the persona's language. The signal is real but the current code
-  compares against the viewer's browser region, not the account's own language, so it stays at zero
-  until v1.1 (see [adversarial-evasion.md](adversarial-evasion.md)).
-- **Counter-case.** Travellers, expatriates and VPN users; the platform's inference is often wrong.
+  IP-inferred country can contradict the persona's language. The input is the account's own text: a
+  bundled detector (`src/core/text/language.ts`; script first, then stopword profiles for 23
+  Latin and Cyrillic languages) reads the bio and the post text Tier 1 kept (a repost's text is the
+  reposted author's and is not kept), and the About country, resolved to an ISO code from its
+  printed name, is compared with the regions where that language is official or widely spoken
+  (`languageRegions.ts`). A global language lists every country where it is official, so French in
+  Senegal never fires. English never compares at all: it is the lingua franca of the platforms,
+  written everywhere, so "Based in Germany, writes in English" says nothing. A short bio, an even
+  mix, a language read at under 0.5 confidence or an unreadable country omits the feature. The
+  feature carries the language it compared, so the reason line does not detect it again. The
+  viewer's locale only helps read the country's name.
+- **Evidence.** None measured for this feature yet; the persona-from-abroad pattern is what the About
+  panel's country exposes. Hence 0.4 under a `geo` cap of 0.4, which can never decide a tier alone.
+- **Counter-case.** Expatriates, travellers, VPN users and people who write in a second language
+  other than English; the platform's inference is also often wrong.
 
 ### Reddit karma shape (`reddit.postToCommentKarma`)
 
@@ -305,7 +316,7 @@ Input: `Feature[]` from the platform adapter, the effective platform config, and
      young account with a default avatar can stay under `thresholds.some` and must not get a card
      that says it looks ordinary. Neutral items (`contribution = 0`, such as "Custom avatar") count,
      since most ordinary observations sit in a zero bin, unless the feature has no ordinary reading
-     (the country mismatch held at weight 0): the card shows such an item pointing towards automated,
+     (a country mismatch a policy weighs at 0): the card shows such an item pointing towards automated,
      so it cannot vouch for the account (ADR-0022). The rule, the card's arrow and the Likely human
      counter-case share one test, `isOrdinaryEvidence` in `src/core/scoring/reasons.ts`. With little data the low prior
      alone lands an account in `typical`: on Reddit's page an obvious self-declared bot scored
@@ -336,10 +347,10 @@ counts with thousands separators.
 Every reason also carries a **direction** and a **why clause** ([ADR-0022](decisions/ADR-0022-reasons-say-why.md)).
 A positive contribution points towards automated (↑ on the card) and a negative one towards ordinary (↓).
 A contribution of zero points towards ordinary, as step 7 counts it, unless the feature has no ordinary
-clause below: such a feature (the country mismatch, held at weight 0) points towards automated whenever
-it is stated. The why clause is the one for the reason's direction. The card keeps it hidden until the
-reader presses "What these mean" under the reasons, then shows it as a muted sentence on its own line
-under the observation ([ADR-0023](decisions/ADR-0023-strength-scale-and-progressive-disclosure.md)).
+clause below: such a feature (the country mismatch, if a policy weighs it at 0) points towards automated
+whenever it is stated. The why clause is the one for the reason's direction. The card keeps it hidden
+until the reader presses "What these mean" under the reasons, then shows it as a muted sentence on its
+own line under the observation ([ADR-0023](decisions/ADR-0023-strength-scale-and-progressive-disclosure.md)).
 Each clause condenses the mechanism in "Why each feature is a signal" above, in at most about eight words,
 aiming for one 12px line on the 320px card; when a mechanism changes, its clause changes with it. The
 clauses live in `src/core/scoring/whyClauses.ts` as lowercase fragments; the card adds the capital and
@@ -362,7 +373,7 @@ such a line once, from the stronger item.
 | `x.newAndBlue` | "Verified within {age} of joining" / false: nothing | "paid for reach before having anything to say" / none | verification: "Paid verification is available to any new account." |
 | `x.replyShare` | "{pct}% of recent posts are replies" | "it inserts itself into others' threads" / "starts its own threads too" | content: "Some people only ever reply; that is a style, not automation." |
 | `x.usernameChanges` | "Username changed {n} times" | "bought or repurposed accounts get renamed" / "too few renames to suggest a resale" | profile: as above |
-| `x.countryLocaleMismatch` | "Account based in {country}" / false: nothing | "a persona run from abroad" / none | geo: "Location is inferred by the platform and is often wrong for travellers and VPN users." |
+| `x.countryLocaleMismatch` | "Based in {country}, writes in {language}" / false: nothing | "a persona run from abroad" / none | geo: "Expats, travellers, VPN users and people writing in a second language look the same." |
 | `reddit.karmaPerDay` | "~{rate} karma/day on a {age}-old account" | "karma-farming pattern" / "a pace ordinary use earns" | activity: as above |
 | `reddit.postToCommentKarma` | "Post karma {link}, comment karma {comment}" | "reposts earn it without conversation" / "it joins conversations" | content: as above |
 | `reddit.generatedName` | "Username matches Reddit's auto-generated pattern" / false: nothing | "kept as suggested" / none | handle: as above |

@@ -177,7 +177,10 @@ From the code and the 4x CPU profiles (unminified build; totals are inclusive of
    `evidenceFor` renders a reason string for every evidence item although the card shows only the
    selected few (src/core/scoring/engine.ts:78–88). Verified: 63.3 ms inclusive in the relay
    listener for three relays of a 300 KB body, 8.7 ms self in `regionFromNavigatorLanguage`,
-   10.0 ms in `renderReason`; two of the three relays changed nothing.
+   10.0 ms in `renderReason`; two of the three relays changed nothing. (`regionFromNavigatorLanguage`
+   was removed on 2026-10-26 with the country-mismatch fix; the default now only reads
+   `navigator.language`, and the language detection runs only for an account whose About country
+   is known.)
 4. **Per-badge shadow root with its own copy of every stylesheet.** `createMountedUi`
    (src/ui/mount.ts:149–181) goes through WXT's `createShadowRootUi`, which per badge awaits
    `createIsolatedElement`, regex-splits the CSS, and appends a `<style>` carrying the whole
