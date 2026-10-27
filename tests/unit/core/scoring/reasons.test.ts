@@ -42,6 +42,17 @@ describe("reason templates", () => {
     }
   });
 
+  it("words near-duplicate replies by the number of other accounts, only when they weigh", () => {
+    expect(render("thread.nearDuplicateReply", 1, { contribution: 0.6 })).toBe(
+      "Reply closely matches an earlier one by another account",
+    );
+    expect(render("thread.nearDuplicateReply", 3, { contribution: 1 })).toBe(
+      "Reply closely matches earlier ones by 3 other accounts",
+    );
+    expect(render("thread.nearDuplicateReply", 0, { contribution: 0 })).toBe(NO_REASON);
+    expect(render("thread.nearDuplicateReply", 2, { contribution: 0 })).toBe(NO_REASON);
+  });
+
   it("renders posting rate with a whole number", () => {
     expect(render("x.postsPerDay", 143.2)).toBe("~143 posts/day since joining");
     expect(render("bsky.postsPerDay", 1500)).toBe("~1,500 posts/day since joining");
@@ -337,6 +348,16 @@ describe("caveatFor", () => {
       );
     }
     expect(allFixedStrings()).toContain("Shared and team-run accounts post around the clock.");
+  });
+
+  it("names repeated phrases and memes when copied replies lead the read", () => {
+    expect(
+      caveatFor({
+        ...base,
+        evidenceByMagnitude: [evidence("thread.nearDuplicateReply", 1, "coordination")],
+      }),
+    ).toBe("Popular phrases and memes get repeated by real people.");
+    expect(allFixedStrings()).toContain("Popular phrases and memes get repeated by real people.");
   });
 
   it("picks the group caveat from the largest positive contribution", () => {

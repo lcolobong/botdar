@@ -49,6 +49,10 @@ const NO_QUIET_HOURS: WhyClauses = {
   automated: "no daily quiet window",
   caveat: "Shared and team-run accounts post around the clock.",
 };
+const NEAR_DUPLICATE_REPLY: WhyClauses = {
+  automated: "reply templates get reused across accounts",
+  caveat: "Popular phrases and memes get repeated by real people.",
+};
 
 /** One entry per reason template in reasons.ts; whyClauses.test.ts checks the two lists match. */
 const WHY_CLAUSES: Readonly<Record<FeatureId, WhyClauses>> = {
@@ -79,6 +83,7 @@ const WHY_CLAUSES: Readonly<Record<FeatureId, WhyClauses>> = {
   "bsky.gapRegularity": REGULAR_GAPS,
   "x.noSleepWindow": NO_QUIET_HOURS,
   "bsky.noSleepWindow": NO_QUIET_HOURS,
+  "thread.nearDuplicateReply": NEAR_DUPLICATE_REPLY,
   "reddit.karmaPerDay": KARMA_RATE,
   "reddit.postToCommentKarma": {
     automated: "reposts earn it without conversation",

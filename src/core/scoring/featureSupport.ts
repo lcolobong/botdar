@@ -1,8 +1,9 @@
 /**
  * Helpers every platform's `toFeatures` shares: the day length the rates divide by, the tier a
- * feature is attributed to, and the age gate the karma-rate features use on Reddit and Hacker News.
+ * feature is attributed to, the age gate the karma-rate features use on Reddit and Hacker News, and
+ * the near-duplicate reply feature every platform reads from its thread index.
  */
-import type { AccountSignals, SignalField, SourceTier } from "../types";
+import type { AccountSignals, Feature, FeatureId, SignalField, SourceTier } from "../types";
 
 export const DAY_MILLIS = 86_400_000;
 
@@ -23,4 +24,17 @@ export function tierOf(signals: AccountSignals, fields: SignalField[]): SourceTi
     }
   }
   return highest;
+}
+
+export const NEAR_DUPLICATE_REPLY_FEATURE: FeatureId = "thread.nearDuplicateReply";
+
+/**
+ * How many other accounts posted a near copy of the account's reply earlier in the same thread
+ * (ADR-0027), from the page's thread index; omitted when the account has no reply on the page long
+ * enough to compare. Every reply it reads is on the page, so it is Tier 0 evidence.
+ */
+export function nearDuplicateReplyFeatures(copiedReplies: number | undefined): Feature[] {
+  return copiedReplies === undefined
+    ? []
+    : [{ id: NEAR_DUPLICATE_REPLY_FEATURE, value: copiedReplies, group: "coordination", tier: 0 }];
 }

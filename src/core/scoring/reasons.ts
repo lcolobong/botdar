@@ -228,6 +228,17 @@ function roundTheClockReason({ contribution }: ReasonContext): string {
   return contribution > 0 ? "Posts around the clock" : NO_REASON;
 }
 
+/** The value counts other accounts, not their replies: one account repeating itself counts once. */
+function nearDuplicateReplyReason({ value, contribution }: ReasonContext): string {
+  const otherAccounts: number = Number(value);
+  if (contribution <= 0 || otherAccounts < 1) {
+    return NO_REASON;
+  }
+  return otherAccounts === 1
+    ? "Reply closely matches an earlier one by another account"
+    : `Reply closely matches earlier ones by ${formatCount(otherAccounts)} other accounts`;
+}
+
 const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "x.postsPerDay": postsPerDayReason,
   "bsky.postsPerDay": postsPerDayReason,
@@ -251,6 +262,7 @@ const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "bsky.gapRegularity": regularGapsReason,
   "x.noSleepWindow": roundTheClockReason,
   "bsky.noSleepWindow": roundTheClockReason,
+  "thread.nearDuplicateReply": nearDuplicateReplyReason,
   "reddit.karmaPerDay": karmaPerDayReason,
   "reddit.postToCommentKarma": karmaSplitReason,
   "reddit.generatedName": ({ value }) =>
@@ -328,6 +340,7 @@ const GROUP_CAVEATS: Readonly<Record<IndependenceGroup, string>> = {
   content: "Some people only ever reply; that is a style, not automation.",
   geo: "Expats, travellers, VPN users and people writing in a second language look the same.",
   timing: "Accounts that schedule posts with a publishing tool show the same regularity.",
+  coordination: "People reacting to the same post often say the same thing.",
 };
 
 /** The case against a read led by `item`: the feature's own counter-case, else its group's. */
