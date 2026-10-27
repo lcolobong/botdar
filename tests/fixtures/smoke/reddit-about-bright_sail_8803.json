@@ -1,0 +1,27 @@
+{
+  "kind": "t2",
+  "data": {
+    "is_employee": false,
+    "subreddit": {
+      "display_name": "u_Bright_Sail_8803",
+      "title": "",
+      "public_description": "",
+      "icon_img": "https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png",
+      "is_default_icon": true,
+      "display_name_prefixed": "u/Bright_Sail_8803",
+      "url": "/user/Bright_Sail_8803/",
+      "subreddit_type": "user"
+    },
+    "id": "b8803x",
+    "verified": true,
+    "has_verified_email": true,
+    "icon_img": "https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png",
+    "link_karma": 1,
+    "comment_karma": 38,
+    "total_karma": 39,
+    "name": "Bright_Sail_8803",
+    "created": 1791979200.0,
+    "created_utc": 1791979200.0,
+    "snoovatar_img": ""
+  }
+}
