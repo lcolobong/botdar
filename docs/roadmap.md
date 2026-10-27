@@ -10,7 +10,7 @@ and the evidence is in [research/platforms.md](research/platforms.md) and
 |---|---|---|
 | X | Biggest felt bot problem among news readers; rich author objects already arrive in the page's own GraphQL responses | Tier 0 DOM, Tier 1 timeline interception, Tier 2 About-account query on hover |
 | Reddit | Cheap: cake day and karma in the DOM, logged-in `about.json`; official API is closing so client-side is the only route | Tier 0 DOM, Tier 2 `about.json` |
-| Bluesky | Cheapest and lowest-risk of all: public AppView with open CORS, join date and counts, native `bot` self-label, Terms of Service that invite third-party tools | Tier 0 DOM, Tier 1 XRPC interception, Tier 2 public `getProfiles` |
+| Bluesky | Cheapest and lowest-risk of all: public AppView with open CORS, join date and counts, native `bot` self-label, Terms of Service that invite third-party tools | Tier 0 DOM, Tier 1 XRPC interception, Tier 2 public `getProfiles` and `getAuthorFeed` |
 
 ## v1.1
 
@@ -19,10 +19,13 @@ and the evidence is in [research/platforms.md](research/platforms.md) and
 | YouTube comment authors | Commenters expose nothing in the DOM; one innertube `browse` per channel for join date and video count. Scam-comment bots impersonate the creator. Client-side only; the Data API bans derived metrics. |
 | Hacker News | Firebase `user/<id>.json` has created date, karma and submissions, no rate limit, CORS allows the HN origin. Trivial adapter. |
 
-Scoring in v1.1 adds the six local countermeasures recommended in
+Scoring in v1.1 adds the remaining local countermeasures recommended in
 [adversarial-evasion.md](adversarial-evasion.md#5-cost-raising-framing): `thread.nearDuplicateReply`,
-`thread.sharedRareDomain`, `x.gapRegularity`, `x.noSleepWindow` (with Bluesky twins), `x.agedRepurposed`
-and `reddit.karmaSinceFirstActivity`, each gated on its calibration result.
+`thread.sharedRareDomain`, `x.agedRepurposed` and `reddit.karmaSinceFirstActivity`, each gated on its
+calibration result. The timing pair from the same set, `x.gapRegularity` and `x.noSleepWindow` with
+their Bluesky twins, moved into v1 on 2026-10-26
+([decisions/ADR-0024](decisions/ADR-0024-posting-cadence-features.md)); `reddit.gapRegularity` waits
+for its measurement.
 
 ## v1.2
 

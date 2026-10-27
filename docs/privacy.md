@@ -37,7 +37,9 @@ Scores for accounts are kept in memory while a tab is open and discarded afterwa
 
 On X and Bluesky when you hover a badge, and on Reddit when a post comes into view, the extension may ask
 the platform for the same public profile information the page itself shows, using your existing session.
-On Reddit that is one request per author per page at most, and the cache answers repeats. These requests are rate-limited,
+On Reddit that is one request per author per page at most, and the cache answers repeats. On Bluesky
+a hover also asks Bluesky's public service, without your session, for that author's recent public
+posts, to read only when they post. These requests are rate-limited,
 cached, and can be turned off with "conservative mode" or per platform. The maintainer can also turn them
 off for everyone through the configuration file.
 

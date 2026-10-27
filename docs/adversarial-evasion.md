@@ -128,7 +128,7 @@ marketing pages unless marked otherwise, so read them as order-of-magnitude figu
 
 Notation follows the scoring spec. Two new independence groups are proposed: `coordination` (evidence
 from the thread a post appears in, scoped to that post and never stored) and `timing` (cadence from a
-timeline), with group caps 1.5 and 1.2. Thread-scoped evidence changes one contract: the resolver keys
+timeline), with group caps 1.5 and 1.2 (the timing cap shipped at 1.5, ADR-0024). Thread-scoped evidence changes one contract: the resolver keys
 verdicts by handle, so thread features attach to the `PostRef` and merge at render time, and the same
 account can read `typical` in one thread and `some` in another; the reason line names the thread. Text
 comparisons lowercase the text, strip mentions, URLs, emoji and digits, and compare character 5-gram
@@ -153,8 +153,8 @@ about 0.6. Accounts verified `org` or `gov` are excluded from the `timing` group
 
 | Feature (group, cap) | Detects | Input and bins | Gate | False-positive risk; caveat copy | v1.1 |
 |---|---|---|---|---|---|
-| `x.gapRegularity`, `bsky.gapRegularity`, `reddit.gapRegularity` (timing, 1.0) | Throttled or scheduled posting | Coefficient of variation of the gaps between the latest ≤ 100 posts, gaps over 7 days dropped: `[0,0.5)→1.0` `[0.5,0.8)→0.5` `[0.8,∞)→0` | ≥ 30 gaps spanning ≥ 3 days | Medium: news desks and brands on schedulers. "Accounts that schedule posts with a publishing tool show the same regularity." | **Yes** (X, Bluesky); Reddit after measuring |
-| `x.noSleepWindow`, `bsky.noSleepWindow` (timing, 1.0) | Round-the-clock posting | Longest run of empty hours in the circular UTC hour-of-day histogram: `[0,2)→1.0` `[2,4)→0.5` `[4,∞)→0` | ≥ 100 posts over ≥ 7 days (at 50 uniformly random posts about 3 hours are empty by chance) | Medium: team-run and shared accounts, insomniacs. "Shared and team-run accounts post around the clock." | **Yes** |
+| `x.gapRegularity`, `bsky.gapRegularity`, `reddit.gapRegularity` (timing, 1.0) | Throttled or scheduled posting | Coefficient of variation of the gaps between the latest ≤ 100 posts, gaps over 7 days dropped: `[0,0.5)→1.0` `[0.5,0.8)→0.5` `[0.8,∞)→0` | ≥ 30 gaps spanning ≥ 3 days | Medium: news desks and brands on schedulers. "Accounts that schedule posts with a publishing tool show the same regularity." | **Shipped 2026-10-26** (X, Bluesky; ADR-0024); Reddit after measuring |
+| `x.noSleepWindow`, `bsky.noSleepWindow` (timing, 1.0) | Round-the-clock posting | Longest run of empty hours in the circular UTC hour-of-day histogram: `[0,2)→1.0` `[2,4)→0.5` `[4,∞)→0` | ≥ 100 posts over ≥ 7 days (at 50 uniformly random posts about 3 hours are empty by chance) | Medium: team-run and shared accounts, insomniacs. "Shared and team-run accounts post around the clock." | **Shipped 2026-10-26** (ADR-0024) |
 | `x.minuteMarkShare` (timing, 0.6) | Posting at exact minute marks | Share of posts with seconds = 0: `[0,0.15)→0` `[0.15,0.4)→0.3` `[0.4,∞)→0.6` | ≥ 30 posts | Native-scheduler users; defeated by one line of jitter. | No (brittle) |
 | `x.fastReplyShare` (timing, 0.8) | Reply latency after the parent, per account | Share of the account's replies posted < 20 s after their parent: `[0,0.3)→0` `[0.3,0.6)→0.4` `[0.6,∞)→0.8` | ≥ 10 replies with a known parent time (parents arrive in TweetDetail and conversation modules) | Medium to high: notification-on fans; sample hard to reach passively. | No; measure |
 
@@ -241,9 +241,9 @@ carry a `many` verdict.
    covering Reddit's same-thread copied comments, with the earliest-author rule against poisoning.
 2. `thread.sharedRareDomain` (Tier 0, Tier 1 for X link expansion): fox8's strongest tell; it shares the
    `coordination` cap with (1), so the two cannot stack past 1.5.
-3. `x.gapRegularity` with `bsky.gapRegularity`: X data Tier 1 already captures; one sanctioned public
+3. `x.gapRegularity` with `bsky.gapRegularity` (shipped 2026-10-26, ADR-0024): X data Tier 1 already captures; one sanctioned public
    call on Bluesky.
-4. `x.noSleepWindow` with `bsky.noSleepWindow`: the most expensive timing property to fake.
+4. `x.noSleepWindow` with `bsky.noSleepWindow` (shipped 2026-10-26, ADR-0024): the most expensive timing property to fake.
 5. `x.agedRepurposed`: reads fields the About lookup already returns; aimed at the aged-account market.
 6. `reddit.karmaSinceFirstActivity`: closes the 180-day gate that lets every aged Reddit account skip
    the rate check.

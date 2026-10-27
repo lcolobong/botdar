@@ -39,6 +39,10 @@ The first release, covering the MVP.
   where the language of its own bio and posts is commonly spoken ("Based in Brazil, writes in
   Russian"). The language is read on the device from a bundled word list, never from your browser's
   settings, and English, written everywhere, is never compared.
+- Posting cadence on X and Bluesky: "Posts at regular intervals" when the gaps between an account's
+  latest posts barely vary, and "Posts around the clock" when it has no daily quiet hours. On X this
+  reads the profile timeline the page already loaded when you open a profile; on Bluesky a hover also
+  asks Bluesky's public service for the author's last 100 posts.
 - Chrome and Firefox builds from one codebase. Firefox 128 or later.
 
 ### Privacy
