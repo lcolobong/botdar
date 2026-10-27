@@ -10,7 +10,8 @@ export const DAY_MILLIS = 86_400_000;
 /**
  * On an account older than this, years of ordinary use dilute a karma rate until it says nothing
  * (docs/scoring-spec.md, "Activity rate"), so `reddit.karmaPerDay` and `hn.karmaPerDay` are gated
- * below it.
+ * below it. `reddit.karmaSinceFirstActivity` takes the other side of the line, from the first
+ * activity instead of the join date.
  */
 export const KARMA_RATE_MAX_AGE_DAYS = 180;
 

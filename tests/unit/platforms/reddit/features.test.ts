@@ -138,6 +138,76 @@ describe("reddit toFeatures", () => {
     });
   });
 
+  describe("karmaSinceFirstActivity", () => {
+    const aged = {
+      createdAt: NOW - 400 * DAY_MILLIS,
+      linkKarma: 3_000,
+      commentKarma: 3_000,
+      oldestItemAt: NOW - 30 * DAY_MILLIS,
+      visibleItemCount: 60,
+    };
+    const without = (field: keyof typeof aged): Partial<AccountSignals> =>
+      Object.fromEntries(Object.entries(aged).filter(([key]) => key !== field));
+    const withoutOldestItem: Partial<AccountSignals> = without("oldestItemAt");
+    const withoutItemCount: Partial<AccountSignals> = without("visibleItemCount");
+    const withoutCommentKarma: Partial<AccountSignals> = without("commentKarma");
+
+    it("divides karma by the days since the oldest visible item", () => {
+      const features: Feature[] = toFeatures(signalsFor("a", aged), NOW);
+      expect(featureById(features, "reddit.karmaSinceFirstActivity")).toMatchObject({
+        value: 200,
+        group: "activity",
+      });
+    });
+
+    it("reads the tier of the overview fields", () => {
+      const features: Feature[] = toFeatures(
+        signalsFor("a", {
+          ...aged,
+          provenance: { createdAt: 2, linkKarma: 2, commentKarma: 2, oldestItemAt: 2 },
+        }),
+        NOW,
+      );
+      expect(featureById(features, "reddit.karmaSinceFirstActivity").tier).toBe(2);
+    });
+
+    it("never fires together with karmaPerDay, on either side of 180 days", () => {
+      for (const ageDays of [1, 179, 180, 181, 3_000]) {
+        const found: string[] = ids(
+          toFeatures(signalsFor("a", { ...aged, createdAt: NOW - ageDays * DAY_MILLIS }), NOW),
+        );
+        const both: boolean =
+          found.includes("reddit.karmaPerDay") && found.includes("reddit.karmaSinceFirstActivity");
+        expect(both, `age ${ageDays}`).toBe(false);
+      }
+      const atBoundary: string[] = ids(
+        toFeatures(signalsFor("a", { ...aged, createdAt: NOW - 180 * DAY_MILLIS }), NOW),
+      );
+      expect(atBoundary).toContain("reddit.karmaSinceFirstActivity");
+      expect(atBoundary).not.toContain("reddit.karmaPerDay");
+    });
+
+    it.each([
+      ["the listing filled the page", { ...aged, visibleItemCount: 100 }],
+      ["the profile shows nothing", { ...withoutOldestItem, visibleItemCount: 0 }],
+      ["the oldest item is unknown", withoutOldestItem],
+      ["the item count is unknown", withoutItemCount],
+      ["comment karma is unknown", withoutCommentKarma],
+    ])("is omitted when %s", (_label, signals) => {
+      expect(ids(toFeatures(signalsFor("a", signals), NOW))).not.toContain(
+        "reddit.karmaSinceFirstActivity",
+      );
+    });
+
+    it("needs the oldest item to be at least a week old, so a wiped account is not rated over days", () => {
+      const spanOf = (days: number): string[] =>
+        ids(toFeatures(signalsFor("a", { ...aged, oldestItemAt: NOW - days * DAY_MILLIS }), NOW));
+      expect(spanOf(6.9)).not.toContain("reddit.karmaSinceFirstActivity");
+      expect(spanOf(0)).not.toContain("reddit.karmaSinceFirstActivity");
+      expect(spanOf(7)).toContain("reddit.karmaSinceFirstActivity");
+    });
+  });
+
   describe("tiers", () => {
     it("takes the highest tier among the fields a feature reads", () => {
       const features: Feature[] = toFeatures(

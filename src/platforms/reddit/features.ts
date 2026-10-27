@@ -12,8 +12,14 @@ import type {
   SignalField,
   SourceTier,
 } from "../../core/types";
+import { OVERVIEW_PAGE_LIMIT } from "./conventions";
 
 const POST_TO_COMMENT_MIN_LINK_KARMA = 500;
+/**
+ * Karma over a shorter span is too thin to call a rate: an account that wiped its history and posted
+ * a few comments this week shows its whole karma over a handful of days.
+ */
+const MIN_FIRST_ACTIVITY_SPAN_DAYS = 7;
 /** The username is rendered on every post, so the name feature is always Tier 0 evidence. */
 const HANDLE_TIER: SourceTier = 0;
 
@@ -53,6 +59,28 @@ export function toFeatures(signals: AccountSignals, now: number = Date.now()): F
       "linkKarma",
       "commentKarma",
     ]);
+  }
+  const daysSinceFirstActivity: number | undefined =
+    signals.oldestItemAt === undefined ? undefined : (now - signals.oldestItemAt) / DAY_MILLIS;
+  if (
+    ageDays !== undefined &&
+    ageDays >= KARMA_RATE_MAX_AGE_DAYS &&
+    linkKarma !== undefined &&
+    commentKarma !== undefined &&
+    daysSinceFirstActivity !== undefined &&
+    daysSinceFirstActivity >= MIN_FIRST_ACTIVITY_SPAN_DAYS &&
+    signals.visibleItemCount !== undefined &&
+    signals.visibleItemCount < OVERVIEW_PAGE_LIMIT
+  ) {
+    // The complement of karmaPerDay's age gate, so the two never both fire. A listing under the page
+    // size is the whole visible history, so its oldest item is the account's first activity; an empty
+    // one (hidden profile) has no oldest item and is omitted above.
+    add(
+      "reddit.karmaSinceFirstActivity",
+      (linkKarma + commentKarma) / daysSinceFirstActivity,
+      "activity",
+      ["createdAt", "linkKarma", "commentKarma", "oldestItemAt", "visibleItemCount"],
+    );
   }
   if (ageDays !== undefined) {
     add("reddit.accountAgeDays", ageDays, "age", ["createdAt"]);

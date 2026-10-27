@@ -179,6 +179,17 @@
             [1000, null, 1.5]
           ]
         },
+        "reddit.karmaSinceFirstActivity": {
+          "group": "activity",
+          "cap": 1.0,
+          "kind": "bins",
+          "bins": [
+            [0, 50, 0],
+            [50, 200, 0.4],
+            [200, 1000, 0.7],
+            [1000, null, 1.0]
+          ]
+        },
         "reddit.accountAgeDays": {
           "group": "age",
           "cap": 1.2,

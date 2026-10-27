@@ -189,6 +189,17 @@ function karmaPerDayReason({ value, signals, now }: ReasonContext): string {
     : `${rate} on a ${formatDurationAdjective(days)}-old account`;
 }
 
+/** "~120 karma/day since first activity 3 months ago": the rate's window is the activity, not the account. */
+function karmaSinceFirstActivityReason({ value, signals, now }: ReasonContext): string {
+  const rate: string = `~${formatCount(Number(value))} karma/day since first activity`;
+  if (signals.oldestItemAt === undefined) {
+    return rate;
+  }
+  const days: number = (now - signals.oldestItemAt) / DAY_MS;
+  // formatDuration would print "0 days ago" for a span under half a day.
+  return days < 1 ? `${rate} today` : `${rate} ${formatDuration(days)} ago`;
+}
+
 /** "1,530 posts and comments in 3 years": a rate under one a day reads better as a count. */
 function submissionsReason({ signals, now }: ReasonContext): string {
   const count: string = formatCount(signals.postCount ?? 0);
@@ -264,6 +275,7 @@ const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "bsky.noSleepWindow": roundTheClockReason,
   "thread.nearDuplicateReply": nearDuplicateReplyReason,
   "reddit.karmaPerDay": karmaPerDayReason,
+  "reddit.karmaSinceFirstActivity": karmaSinceFirstActivityReason,
   "reddit.postToCommentKarma": karmaSplitReason,
   "reddit.generatedName": ({ value }) =>
     value === false ? NO_REASON : "Username matches Reddit's auto-generated pattern",

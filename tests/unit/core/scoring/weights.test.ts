@@ -127,7 +127,7 @@ describe("defaultWeights", () => {
       "x.noSleepWindow",
       "thread.nearDuplicateReply",
     ]);
-    expect(Object.keys(defaultWeights.reddit.features)).toHaveLength(7);
+    expect(Object.keys(defaultWeights.reddit.features)).toHaveLength(8);
     expect(Object.keys(defaultWeights.bluesky.features)).toHaveLength(8);
     expect(Object.keys(defaultWeights.hackernews.features)).toHaveLength(5);
   });
