@@ -72,6 +72,15 @@ export const smokeFeedScenes: readonly SmokeFeedScene[] = [
     path: "/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/",
     fixtureFile: "comments.html",
   },
+  // A hand-written thread where two new accounts post near copies of an earlier comment; their
+  // profiles are served below, so the hover card on the later copier shows a full read.
+  {
+    platform: "reddit",
+    scene: "copied-replies",
+    path: "/r/woodworking/comments/1k9x2ab/walnut_table_copied_replies/",
+    fixtureFile: "copied-replies.html",
+    hoverAnchor: 'a[href="/user/Bright_Sail_8803/"]',
+  },
   { platform: "bluesky", scene: "feed", path: "/" },
   // The feed page again, at a profile path where its script also fetches alice.example.com's
   // author feed (a hand-written body under tests/fixtures/smoke/).
@@ -213,6 +222,12 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
     path: "/user/quiet_lantern_4821/about.json",
     file: "tests/fixtures/reddit/about/normal.json",
   },
+  // The two copiers in the copied-replies scene: accounts two weeks old, hand-written bodies.
+  ...["quick_fern_2291", "bright_sail_8803"].map((handle): ApiFixtureRoute => ({
+    platform: "reddit",
+    path: `/user/${handle}/about.json`,
+    file: `tests/fixtures/smoke/reddit-about-${handle}.json`,
+  })),
   // Three authors on the first screens of the recorded thread and front page, with bodies
   // hand-written in the recorded shape; every other author answers null, as an unknown id does.
   ...["tomas_bakes28", "jonas_draws01", "priya_draws51"].map((handle): ApiFixtureRoute => ({
