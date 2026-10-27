@@ -31,7 +31,8 @@ import type {
   Scorer,
   VerdictListener,
 } from "./pipeline/types";
-import type { MergeableSignals } from "./pipeline/mergeSignals";
+import type { AccountEntry } from "./pipeline/trackedAccounts";
+import { TrackedAccounts } from "./pipeline/trackedAccounts";
 import { markDelivered, mergeSignals } from "./pipeline/mergeSignals";
 
 export type {
@@ -44,17 +45,10 @@ export type {
 } from "./pipeline/types";
 export type { MergeableSignals } from "./pipeline/mergeSignals";
 export { mergeSignals } from "./pipeline/mergeSignals";
+export { MAX_TRACKED_ACCOUNTS } from "./pipeline/trackedAccounts";
 
 /** ADR-0012 ceiling for Tier 2 results held in memory; callers size their cache with it. */
 export const TIER2_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Ceiling on accounts tracked per tab. Passive sources emit for every author in every response, so
- * an endless feed would otherwise grow the map without bound; see `evictIdleEntries`.
- */
-export const MAX_TRACKED_ACCOUNTS = 2000;
-/** Evicting a batch at a time keeps the sort of idle entries off the hot path of every emission. */
-const EVICTION_BATCH_SIZE = MAX_TRACKED_ACCOUNTS / 10;
 
 interface ActiveRunOptions {
   settleWhenTurnedAway: boolean;
@@ -62,30 +56,6 @@ interface ActiveRunOptions {
   sources?: SignalSource[];
   /** The run tops up a storage hit, so it is neither cached nor persisted. */
   topUp?: boolean;
-}
-
-interface AccountEntry extends MergeableSignals {
-  verdict: Verdict | null;
-  listeners: Set<VerdictListener>;
-  posts: Set<Element>;
-  pendingLookup: Promise<void> | null;
-  /**
-   * Set while the active sources run and cleared before the closing rescore, so listeners already
-   * see the settled status; `pendingLookup` is only cleared after that rescore.
-   */
-  lookupRunning: boolean;
-  /** A source got a rate-limit token and ran for this account at least once. */
-  lookupAttempted: boolean;
-  /**
-   * Set from a hover that will run hover-only sources until they have settled, cleared before the
-   * closing rescore like `lookupRunning`; one hover run at a time per account.
-   */
-  hoverLookupActive: boolean;
-  hoverLookup: Promise<void> | null;
-  /** Set by a hover while the on-sight lookup is still reading storage, before it can be queued. */
-  promoteWhenQueued: boolean;
-  /** Value of the resolver's touch counter when the entry was last looked up; orders eviction. */
-  touchedAt: number;
 }
 
 /** What one call to a source came to: its signals, or how it failed. */
@@ -107,7 +77,7 @@ export class AccountResolver {
   private readonly cache: TtlLruCache<string, PartialSignals>;
   private readonly persistence: LookupPersistence | undefined;
   private readonly now: () => number;
-  private readonly entries = new Map<string, AccountEntry>();
+  private readonly accounts = new TrackedAccounts();
   private readonly attachedPosts = new Map<Element, AttachedPost>();
   private readonly abortController = new AbortController();
   private readonly onSightQueue: LookupQueue;
@@ -115,7 +85,6 @@ export class AccountResolver {
   private readonly stopPageEvidence: () => void;
   private config: EffectivePlatformConfig;
   private disposed = false;
-  private touchCounter = 0;
 
   constructor(options: AccountResolverOptions) {
     this.adapter = options.adapter;
@@ -145,7 +114,7 @@ export class AccountResolver {
    */
   private rescorePageEvidence(handles: readonly string[]): void {
     for (const handle of handles) {
-      const entry: AccountEntry | undefined = this.entries.get(handle);
+      const entry: AccountEntry | undefined = this.accounts.get(handle);
       if (!this.disposed && entry !== undefined && entry.posts.size > 0) {
         this.recompute(entry);
       }
@@ -154,7 +123,7 @@ export class AccountResolver {
 
   /** Accounts currently tracked in this tab; never exceeds `MAX_TRACKED_ACCOUNTS`. */
   get trackedAccountCount(): number {
-    return this.entries.size;
+    return this.accounts.size;
   }
 
   /** Runs Tier 0 now, merges Tier 1 data already received, scores, and returns the badge's handle. */
@@ -163,7 +132,7 @@ export class AccountResolver {
     if (existing !== undefined) {
       return existing.handle;
     }
-    const entry: AccountEntry = this.entryFor(post.ref);
+    const entry: AccountEntry = this.accounts.entryFor(post.ref);
     entry.posts.add(post.element);
     mergeSignals(entry, this.adapter.extractDomSignals(post), 0, this.now());
     markDelivered(entry.signals, 0);
@@ -208,7 +177,7 @@ export class AccountResolver {
     if (!this.config.tiers.t2 || this.disposed) {
       return;
     }
-    const entry: AccountEntry = this.entryFor(ref);
+    const entry: AccountEntry = this.accounts.entryFor(ref);
     const mainLookupWasRunning: boolean = entry.pendingLookup !== null;
     const mainLookup: Promise<void> = this.requestMainLookup(entry);
     if (entry.hoverLookup !== null) {
@@ -273,7 +242,7 @@ export class AccountResolver {
     if (!this.config.tiers.t2 || this.disposed || !this.hasActiveLookupSource()) {
       return Promise.resolve();
     }
-    const entry: AccountEntry = this.entryFor(ref);
+    const entry: AccountEntry = this.accounts.entryFor(ref);
     if (entry.pendingLookup !== null) {
       return entry.pendingLookup;
     }
@@ -450,7 +419,7 @@ export class AccountResolver {
    * (Tier 2 turned off, a login wall), is dropped as done; its badges hear the settled status.
    */
   private runQueuedLookup(handle: string): Promise<boolean> {
-    const entry: AccountEntry | undefined = this.entries.get(handle);
+    const entry: AccountEntry | undefined = this.accounts.get(handle);
     if (entry === undefined || this.disposed) {
       return Promise.resolve(true);
     }
@@ -633,7 +602,7 @@ export class AccountResolver {
     }
     this.stopPassive();
     this.startPassiveSources();
-    for (const entry of this.entries.values()) {
+    for (const entry of this.accounts.values()) {
       if (entry.posts.size > 0) {
         this.recompute(entry);
       }
@@ -647,7 +616,7 @@ export class AccountResolver {
     this.stopPageEvidence();
     this.abortController.abort();
     this.attachedPosts.clear();
-    this.entries.clear();
+    this.accounts.clear();
   }
 
   private startPassiveSources(): void {
@@ -691,7 +660,7 @@ export class AccountResolver {
     if (this.disposed || ref.platform !== this.adapter.id) {
       return;
     }
-    this.absorb(this.entryFor(ref), partial, source.tier);
+    this.absorb(this.accounts.entryFor(ref), partial, source.tier);
   }
 
   /**
@@ -785,49 +754,5 @@ export class AccountResolver {
       listener(verdict);
     }
     return verdict;
-  }
-
-  private entryFor(ref: AccountRef): AccountEntry {
-    let entry: AccountEntry | undefined = this.entries.get(ref.handle);
-    if (entry === undefined) {
-      if (this.entries.size >= MAX_TRACKED_ACCOUNTS) {
-        this.evictIdleEntries();
-      }
-      entry = {
-        signals: { ref: { ...ref }, provenance: {}, tiersDelivered: [], observedAt: 0 },
-        fieldObservedAt: {},
-        verdict: null,
-        listeners: new Set(),
-        posts: new Set(),
-        pendingLookup: null,
-        lookupRunning: false,
-        lookupAttempted: false,
-        hoverLookupActive: false,
-        hoverLookup: null,
-        promoteWhenQueued: false,
-        touchedAt: 0,
-      };
-      this.entries.set(ref.handle, entry);
-    } else if (entry.signals.ref.id === undefined && ref.id !== undefined) {
-      entry.signals.ref.id = ref.id;
-    }
-    entry.touchedAt = ++this.touchCounter;
-    return entry;
-  }
-
-  /**
-   * Drops the least recently touched accounts that have no post on screen, a batch at a time. An
-   * entry with attached posts is never evicted, so a feed with more than the cap on screen at once
-   * grows past it rather than losing badges.
-   */
-  private evictIdleEntries(): void {
-    const idle: Array<[string, AccountEntry]> = [...this.entries].filter(
-      ([, entry]) => entry.posts.size === 0,
-    );
-    idle.sort(([, left], [, right]) => left.touchedAt - right.touchedAt);
-    const excess: number = this.entries.size - MAX_TRACKED_ACCOUNTS + EVICTION_BATCH_SIZE;
-    for (const [handle] of idle.slice(0, excess)) {
-      this.entries.delete(handle);
-    }
   }
 }
