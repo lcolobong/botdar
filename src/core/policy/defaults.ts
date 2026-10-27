@@ -28,4 +28,6 @@ export const buildDefaults: BuildDefaults = deepFreeze({
   bluesky: { enabled: true, tiers: { t1: true, t2: true }, rateLimitPerMinute: 30 },
   // Hacker News pages fetch no JSON of their own, so there is no Tier 1 to switch on.
   hackernews: { enabled: true, tiers: { t1: false, t2: true }, rateLimitPerMinute: 30 },
+  // YouTube's Tier 2 runs on hover only and costs two innertube requests a lookup; no Tier 1 is read.
+  youtube: { enabled: true, tiers: { t1: false, t2: true }, rateLimitPerMinute: 10 },
 });

@@ -20,12 +20,18 @@ function weights(): Record<PlatformId, PlatformWeights> {
     thresholds: { some: 0.3, many: 0.6 },
     features: {},
   });
-  return { x: platform(), reddit: platform(), bluesky: platform(), hackernews: platform() };
+  return {
+    x: platform(),
+    reddit: platform(),
+    bluesky: platform(),
+    hackernews: platform(),
+    youtube: platform(),
+  };
 }
 
 function customSettings(): Settings {
   return {
-    platforms: { x: false, reddit: true, bluesky: true, hackernews: true },
+    platforms: { x: false, reddit: true, bluesky: true, hackernews: true, youtube: true },
     conservativeMode: true,
     labelStyle: "sus",
     showLikelyHuman: false,
@@ -42,7 +48,7 @@ beforeEach(() => {
 describe("defaultSettings", () => {
   it("has every platform on, conservative mode off, plain labels, Likely human shown and glyph comments", () => {
     expect(defaultSettings).toEqual({
-      platforms: { x: true, reddit: true, bluesky: true, hackernews: true },
+      platforms: { x: true, reddit: true, bluesky: true, hackernews: true, youtube: true },
       conservativeMode: false,
       labelStyle: "plain",
       showLikelyHuman: true,
@@ -76,7 +82,7 @@ describe("parseSettings", () => {
     });
     expect(parsed).toEqual({
       ...defaultSettings,
-      platforms: { x: true, reddit: false, bluesky: true, hackernews: true },
+      platforms: { x: true, reddit: false, bluesky: true, hackernews: true, youtube: true },
     });
   });
 
@@ -143,7 +149,7 @@ describe("applySettings", () => {
     const effective: EffectiveConfig = applyPolicy(buildDefaults, weights(), null);
     const overlaid: EffectiveConfig = applySettings(effective, {
       ...defaultSettings,
-      platforms: { x: false, reddit: true, bluesky: false, hackernews: true },
+      platforms: { x: false, reddit: true, bluesky: false, hackernews: true, youtube: true },
     });
     expect(overlaid.platforms.x.enabled).toBe(false);
     expect(overlaid.platforms.reddit.enabled).toBe(true);

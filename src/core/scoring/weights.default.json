@@ -450,6 +450,81 @@
           ]
         }
       }
+    },
+    "youtube": {
+      "prior": -2.5,
+      "thresholds": {
+        "some": 0.3,
+        "many": 0.6
+      },
+      "groupCaps": {
+        "handle": 2.0,
+        "profile": 1.2,
+        "coordination": 1.5
+      },
+      "confidenceWeights": {
+        "0": 0.3,
+        "1": 0.0,
+        "2": 0.7
+      },
+      "features": {
+        "youtube.channelAgeDays": {
+          "group": "age",
+          "cap": 1.2,
+          "kind": "bins",
+          "bins": [
+            [0, 30, 1.2],
+            [30, 180, 0.6],
+            [180, 730, 0],
+            [730, null, -0.6]
+          ]
+        },
+        "youtube.hasVideos": {
+          "group": "profile",
+          "cap": 0.3,
+          "kind": "bool",
+          "weight": -0.3
+        },
+        "youtube.hasDescription": {
+          "group": "profile",
+          "cap": 0.3,
+          "kind": "bool",
+          "weight": -0.3
+        },
+        "youtube.assignedHandle": {
+          "group": "handle",
+          "cap": 0.3,
+          "kind": "bool",
+          "weight": 0.3
+        },
+        "youtube.imitatesCreator": {
+          "group": "handle",
+          "cap": 2.0,
+          "kind": "bool",
+          "weight": 2.0
+        },
+        "thread.nearDuplicateReply": {
+          "group": "coordination",
+          "cap": 1.5,
+          "kind": "bins",
+          "bins": [
+            [0, 1, 0],
+            [1, 2, 0.6],
+            [2, 4, 1.0],
+            [4, null, 1.5]
+          ]
+        },
+        "thread.sharedRareDomain": {
+          "group": "coordination",
+          "cap": 1.2,
+          "kind": "bins",
+          "bins": [
+            [0, 3, 0],
+            [3, 5, 0.8],
+            [5, null, 1.2]
+          ]
+        }
+      }
     }
   }
 }

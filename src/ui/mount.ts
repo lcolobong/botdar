@@ -137,6 +137,8 @@ export function shadowStyles(...sheets: string[]): string {
   return sheets.join("\n");
 }
 
+const YOUTUBE_DARK_ATTRIBUTE = "dark";
+
 export function detectHostTheme(platform: PlatformId, doc: Document = document): HostTheme {
   switch (platform) {
     case "x":
@@ -148,6 +150,10 @@ export function detectHostTheme(platform: PlatformId, doc: Document = document):
     case "hackernews":
       // Hacker News has one theme, a light one, whatever the system prefers.
       return "light";
+    case "youtube":
+      // GUESS: YouTube marks its dark theme with a `dark` attribute on <html>; the recording
+      // (tests/fixtures/youtube/html/watch.html) is light and carries none.
+      return doc.documentElement.hasAttribute(YOUTUBE_DARK_ATTRIBUTE) ? "dark" : "light";
   }
 }
 

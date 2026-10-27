@@ -39,6 +39,10 @@ const KARMA_RATE: WhyClauses = {
   ordinary: "a pace ordinary use earns",
 };
 const SUGGESTED_HANDLE: WhyClauses = { automated: "unchanged suggested handle" };
+const CREATOR_IMITATION: WhyClauses = {
+  automated: "posing as the creator draws trusting replies",
+  caveat: "Fan and tribute channels often use the creator's name too.",
+};
 const PROFILE_EFFORT: WhyClauses = {
   automated: "left as created",
   ordinary: "effort spent on this one account",
@@ -110,6 +114,11 @@ const WHY_CLAUSES: Readonly<Record<FeatureId, WhyClauses>> = {
   "hn.karmaPerDay": KARMA_RATE,
   "hn.submissionsPerDay": POSTING_RATE,
   "hn.hasAbout": PROFILE_EFFORT,
+  "youtube.channelAgeDays": ACCOUNT_AGE,
+  "youtube.hasVideos": PROFILE_EFFORT,
+  "youtube.hasDescription": PROFILE_EFFORT,
+  "youtube.assignedHandle": SUGGESTED_HANDLE,
+  "youtube.imitatesCreator": CREATOR_IMITATION,
 };
 
 export const DECLARED_WHY = "self-declared";
