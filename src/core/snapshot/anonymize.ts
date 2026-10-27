@@ -12,13 +12,26 @@ import {
   hackerNewsIdSubstitutions,
   replaceHackerNewsHandles,
 } from "./hackerNews.ts";
+import {
+  YOUTUBE_AVATAR_SUBSTITUTION,
+  YOUTUBE_ID_SUBSTITUTIONS,
+  anonymizeYouTubeUrl,
+  replaceYouTubeHandles,
+  replaceYouTubeVideoIds,
+  youTubeFakeHandle,
+  youTubeHandles,
+} from "./youTube.ts";
 
 import type { PlatformId } from "../types.ts";
 import { PLATFORM_IDS } from "../types.ts";
 
-export type SnapshotPlatform = PlatformId;
+/**
+ * YouTube is recorded before its adapter exists (ADR-0021); it joins PLATFORM_IDS with its scoring
+ * table, and this list goes back to being PLATFORM_IDS.
+ */
+export type SnapshotPlatform = PlatformId | "youtube";
 
-export const SNAPSHOT_PLATFORMS: readonly SnapshotPlatform[] = PLATFORM_IDS;
+export const SNAPSHOT_PLATFORMS: readonly SnapshotPlatform[] = [...PLATFORM_IDS, "youtube"];
 
 export interface AnonymizedSnapshot {
   html: string;
@@ -101,10 +114,13 @@ function handlesOf(html: string, platform: SnapshotPlatform): Set<string> {
       ]);
     case "hackernews":
       return hackerNewsHandles(html);
+    case "youtube":
+      return youTubeHandles(html);
   }
 }
 
 function fakeFor(handle: string, platform: SnapshotPlatform, attempt = 0): string {
+  if (platform === "youtube") return youTubeFakeHandle(handle, attempt);
   if (platform === "bluesky") {
     const base: string = fakeHandle(handle, "plain", attempt).replace("_", "");
     return handle.endsWith(".bsky.social") ? `${base}.bsky.social` : `${base}.example.com`;
@@ -164,6 +180,8 @@ function idSubstitutions(
       ];
     case "hackernews":
       return hackerNewsIdSubstitutions(fakeNumeric);
+    case "youtube":
+      return [...YOUTUBE_ID_SUBSTITUTIONS];
   }
 }
 
@@ -186,6 +204,7 @@ const AVATAR_SUBSTITUTIONS: Substitution[] = [
     replacement: (_m, prefix) => `${prefix}anon@jpeg`,
   },
   { pattern: /(styles\.redditmedia\.com\/[^"'\s]*?)\?[^"'\s]*/g, replacement: (_m, path) => path },
+  YOUTUBE_AVATAR_SUBSTITUTION,
 ];
 
 /**
@@ -213,9 +232,12 @@ export function anonymizeSnapshot(html: string, platform: SnapshotPlatform): Ano
     (handle, attempt) => fakeFor(handle, platform, attempt),
     accountOf(platform),
   );
-  if (platform === "hackernews") {
+  if (platform === "hackernews" || platform === "youtube") {
+    // Both replace a handle only where the page marks it as one, never page-wide.
+    const replaceHandles: typeof replaceHackerNewsHandles =
+      platform === "hackernews" ? replaceHackerNewsHandles : replaceYouTubeHandles;
     const matched: Set<string> = new Set();
-    output = replaceHackerNewsHandles(output, fakes, (handle) => {
+    output = replaceHandles(output, fakes, (handle) => {
       matched.add(handle);
       replaced += 1;
     });
@@ -250,6 +272,11 @@ export function anonymizeSnapshot(html: string, platform: SnapshotPlatform): Ano
     });
   }
   handles += seenIds.size;
+  if (platform === "youtube") {
+    const videos: { text: string; replaced: number } = replaceYouTubeVideoIds(output);
+    output = videos.text;
+    replaced += videos.replaced;
+  }
   for (const { pattern, replacement } of AVATAR_SUBSTITUTIONS) substitute(pattern, replacement);
   return { html: output, handles, replaced };
 }
@@ -300,6 +327,8 @@ export function anonymizeUrl(url: string, platform: SnapshotPlatform): string {
       break;
     case "hackernews":
       return anonymizeHackerNewsUrl(parsed, (id) => fakeFor(id, platform), fakeDigits);
+    case "youtube":
+      return anonymizeYouTubeUrl(parsed);
   }
   let path: string = segments.join("/");
   for (const { pattern, replacement } of idSubstitutions(platform)) {

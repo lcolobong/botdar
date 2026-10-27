@@ -1,7 +1,7 @@
 /**
  * Rewrites a recorded fixture with stable fake identifiers in place:
  *
- *   pnpm fixtures:anonymize -- <file> --platform x|reddit|bluesky|hackernews
+ *   pnpm fixtures:anonymize -- <file> --platform x|reddit|bluesky|hackernews|youtube
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
