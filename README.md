@@ -64,8 +64,10 @@ rotating the key is in [policy-ops.md](docs/policy-ops.md), and the design ratio
 
 ## Privacy
 
-Nothing about the accounts you see leaves your browser. The only request the extension makes on its own
-is the daily policy fetch, which carries no information about you. Settings, the last policy file and
+Nothing is sent to us, and there is no Botdar server. To read an author's public profile the
+extension asks the platform the post is on (x.com, reddit.com, Bluesky's public API, the Hacker News
+API), naming that author; conservative mode turns these lookups off. The daily policy fetch carries no
+information about you. Settings, the last policy file and
 any "This looks wrong" feedback you record stay in local storage; account signals live in memory for the
 open tab and are discarded when it closes. The full text is in [privacy.md](docs/privacy.md) and
 published at [lcolobong.github.io/botdar/privacy.html](https://lcolobong.github.io/botdar/privacy.html).

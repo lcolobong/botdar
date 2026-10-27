@@ -7,9 +7,10 @@ everything around it.
 
 ## Principles
 
-1. **Local only.** Every signal is extracted and scored inside the user's browser. Nothing about any
-   account leaves the browser. The only network request the extension makes on its own is a daily fetch
-   of a signed policy file.
+1. **Local only.** Every signal is extracted and scored inside the user's browser. Nothing is sent to
+   the developer, and there is no Botdar server. Tier 2 lookups send an author's name to that platform's
+   own site or public API (docs/privacy.md lists them); the only other request is a daily fetch of a
+   signed policy file.
 2. **Tiered sources, each switchable.** Every way of obtaining a signal has a tier. Tier 0 reads the
    rendered DOM. Tier 1 passively reads JSON responses the page already fetched for itself. Tier 2 makes
    extra, on-demand requests. Each tier is independently switchable per platform.
@@ -505,8 +506,8 @@ delivery is written back. Hover-only sources (`SignalSource.hoverOnly`) run afte
 over-cap entries using the index, and wipes everything while `persistLookups` is off. Its keys are salted hashes, so it holds no readable account reference; feedback is the
 only store that does. Feedback is created only by the user clicking
 the button, never transmitted, and exportable as JSON from the options page. Nothing is sent to any
-server. The Chrome Web Store data-use disclosure reads: "nothing leaves the browser except a daily signed
-policy fetch from GitHub Pages".
+server. The Chrome Web Store data-use disclosure (store/README.md) declares Website content for the Tier 2
+lookups and nothing else.
 
 ## Cloud-layer seam
 

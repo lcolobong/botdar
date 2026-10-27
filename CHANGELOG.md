@@ -58,9 +58,11 @@ The first release, covering the MVP.
 
 ### Privacy
 
-- Nothing about the accounts you see leaves the browser. The only request the extension makes on its
-  own is the daily policy fetch, which carries no user data.
-- On Hacker News, the author's name goes to the official Hacker News API at
-  hacker-news.firebaseio.com, without cookies, to read their public profile.
+- Nothing is sent to the developer, and there is no Botdar server. To read an author's public
+  profile, the extension sends that author's name to the platform: to x.com on hover and to the
+  Reddit site you are on as posts come into view, both with your session; to Bluesky's public API
+  at public.api.bsky.app on hover, and to the official Hacker News API at hacker-news.firebaseio.com
+  as rows come into view, both without cookies. Conservative mode, the per-platform switches and
+  the signed policy turn these lookups off. The daily policy fetch carries no user data.
 - Only the `storage` and `alarms` permissions, and host permissions for x.com, twitter.com,
   www.reddit.com, old.reddit.com, bsky.app and news.ycombinator.com.
