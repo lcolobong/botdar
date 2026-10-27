@@ -133,7 +133,8 @@ interface Substitution {
 
 /**
  * Opaque ids per platform: thing ids and permalink ids, status ids, DIDs, record keys and Hacker
- * News item ids, which `fakeNumeric` replaces (distinct per snapshot when anonymising a page).
+ * News item ids. `fakeNumeric` replaces the numeric ones (X status ids, item ids); when
+ * anonymising a page it is distinct per snapshot.
  */
 function idSubstitutions(
   platform: SnapshotPlatform,
@@ -155,7 +156,7 @@ function idSubstitutions(
       return [
         {
           pattern: /\/status\/(\d{15,20})\b/g,
-          replacement: (_m, id) => `/status/${fakeId(id).replace(/\D/g, "7")}`,
+          replacement: (_m, id) => `/status/${fakeNumeric(id)}`,
         },
       ];
     case "bluesky":
