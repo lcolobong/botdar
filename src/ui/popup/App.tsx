@@ -20,7 +20,7 @@ import { loadPolicyStatus, policyStatusLine } from "../policyStatus";
 import type { PolicyStatus } from "../policyStatus";
 
 export const NOTICE_SEEN_IDS_KEY = "notice.seenIds";
-export const PRIVACY_SENTENCE = "Nothing about the accounts you see leaves this browser.";
+export const PRIVACY_SENTENCE = "Nothing is sent to us; lookups go only to the platform.";
 
 export interface AppProps {
   now?: () => number;

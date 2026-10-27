@@ -29,9 +29,6 @@ const policyLastKnownGoodKey = "policy.lkg";
 const policyLastAttemptKey = "policy.lastAttempt";
 const policyKeyId = "2026-10";
 const signedPolicyPath = "policy/dist/v1.json";
-/** Scrolls the options page so the Lookups heading sits this far from the top, keeping Badges and Policy in frame. */
-const optionsHeadingTopOffset = 24;
-const scrollRoomPx = 400;
 
 interface StoreFeedScene {
   readonly file: string;
@@ -155,29 +152,11 @@ async function captureExtensionPageAt(
   url: string,
   viewport: Viewport,
   path: string,
-  scrollToHeading?: string,
 ): Promise<string> {
   const page: Page = await openThemedPage(context, "light", viewport, false);
   try {
     await page.goto(url, { waitUntil: "load" });
     await page.waitForTimeout(pageSettleMs);
-    if (scrollToHeading !== undefined) {
-      // The page is barely taller than the viewport, so it cannot scroll far enough to put the
-      // heading near the top; extra space below the last section lets it, without touching the app.
-      await page.addStyleTag({ content: `body { padding-bottom: ${scrollRoomPx}px; }` });
-      await page.evaluate(
-        ({ heading, offset }: { heading: string; offset: number }): void => {
-          const target: Element | undefined = [...document.querySelectorAll("h1, h2, h3")].find(
-            (candidate) => candidate.textContent?.trim() === heading,
-          );
-          if (target !== undefined) {
-            window.scrollTo(0, target.getBoundingClientRect().top + window.scrollY - offset);
-          }
-        },
-        { heading: scrollToHeading, offset: optionsHeadingTopOffset },
-      );
-      await page.waitForTimeout(hoverSettleMs);
-    }
     await page.screenshot({ path });
     return await page.evaluate((): string => {
       const bodyColor: string = getComputedStyle(document.body).backgroundColor;
@@ -231,12 +210,12 @@ export async function captureStoreScenes(
     return records;
   }
   await seedFetchedPolicy(context, extensionId, viewport);
+  // Framed from the top of the page, so the platform switches the caption names come first.
   await captureExtensionPageAt(
     context,
     `chrome-extension://${extensionId}/options.html`,
     viewport,
     join(outDir, optionsFile),
-    "Lookups",
   );
   records.push(record(optionsFile, "light", "captured"));
   const popupAlonePath: string = join(outDir, "popup-alone.png");

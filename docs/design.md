@@ -91,8 +91,9 @@ tradeoffs are in [decisions/ADR-0017](decisions/ADR-0017-badge-wording-and-label
   conservative mode, privacy sentence, link to settings.
 - **Options.** Platforms, lookups (conservative mode), badges (label style, show Likely human, labels in
   Reddit comments), feedback (export, clear), policy (version, verified, fetched, check now), reset.
-- **Onboarding.** Three panels: what the badge means (set A shown live), what data is used and what
-  never leaves the browser, how to turn it down.
+- **Onboarding.** Three panels: what the badge means (set A shown live), "Computed on this device"
+  (what is read, what does leave the browser: an author's name to the platform's site or public API
+  and the daily policy file, and what never does), how to turn it down.
 
 ## Copy rules
 
