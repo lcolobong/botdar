@@ -20,8 +20,10 @@ and the evidence is in [research/platforms.md](research/platforms.md) and
 | YouTube comment authors | Commenters expose nothing in the DOM; one innertube `browse` per channel for join date and video count. Scam-comment bots impersonate the creator. Client-side only; the Data API bans derived metrics. |
 
 Scoring in v1.1 adds the remaining local countermeasures recommended in
-[adversarial-evasion.md](adversarial-evasion.md#5-cost-raising-framing): `thread.sharedRareDomain`
-and `x.agedRepurposed`, each gated on its calibration result.
+[adversarial-evasion.md](adversarial-evasion.md#5-cost-raising-framing): `x.agedRepurposed`, gated
+on its calibration result. `thread.sharedRareDomain` moved into v1 on 2026-10-27 on all four platforms
+([decisions/ADR-0029](decisions/ADR-0029-shared-rare-domain.md)); its calibration and recordings of
+Reddit and Bluesky thread pages and of an X conversation body with links are still owed.
 `reddit.karmaSinceFirstActivity` moved into v1 on 2026-10-27
 ([decisions/ADR-0028](decisions/ADR-0028-reddit-karma-since-first-activity.md)). The timing pair from the same set, `x.gapRegularity` and `x.noSleepWindow` with their Bluesky twins, moved
 into v1 on 2026-10-26 ([decisions/ADR-0024](decisions/ADR-0024-posting-cadence-features.md));

@@ -50,6 +50,11 @@ The first release, covering the MVP.
   accounts" when other accounts posted nearly the same reply earlier in the same thread. Only the
   copies count, never the first author, and short replies and quoted text are never compared. It
   reads the thread on the page you are viewing and keeps nothing once you leave it (ADR-0027).
+- Shared links on X, Reddit, Bluesky and Hacker News: "Links a site 5 other accounts linked earlier in
+  this thread" when several accounts link the same small site in one thread. The 1,000 most visited
+  domains (Tranco), link shorteners, archive mirrors and the post's own site never count, and only the
+  accounts that linked after others do. On X it needs Tier 1, which reads where t.co links lead from
+  data the page already loaded. Site names stay in memory, at most 5,000 posts per tab (ADR-0029).
 - Chrome and Firefox builds from one codebase. Firefox 128 or later.
 - Hacker News (front page, /newest, threads, /newcomments), pulled forward from v1.1: a badge after
   every story and comment author, read from the public Firebase API's join date, karma, submission

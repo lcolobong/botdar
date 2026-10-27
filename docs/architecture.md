@@ -95,7 +95,8 @@ botdar/
 │  │  ├─ scoring/                # engine, weights.default.json, reasons
 │  │  ├─ handle/                 # shape.ts, bigram.ts, bigrams.json
 │  │  ├─ text/                   # language.ts + stopwords.json, languageRegions, countryNames, replySimilarity
-│  │  ├─ thread/                 # threadIndex, pageThreads, replyText: the page's thread replies (ADR-0027)
+│  │  ├─ thread/                 # threadIndex, sharedDomainIndex, pageThreads, replyText: the page's thread replies (ADR-0027, ADR-0029)
+│  │  ├─ links/                  # registrableDomain, topDomains + topDomains.json (Tranco top 1,000)
 │  │  ├─ policy/                 # schema, merge, verify, publicKey, loader
 │  │  ├─ pipeline.ts             # AccountResolver: attach, passive sources, rescoring
 │  │  ├─ pipeline/               # types, mergeSignals (tier-merge rule), trackedAccounts (store,
@@ -385,13 +386,16 @@ badge is removed, so a removed post is not kept alive by the context.
 5. `config.changed` from the background recomputes every verdict with the new effective config.
 6. The map holds at most 2,000 accounts per tab (`MAX_TRACKED_ACCOUNTS`); past that, the least
    recently touched accounts with no post on screen are evicted a batch at a time.
-7. **Page evidence** (ADR-0027): `thread.nearDuplicateReply` does not come from `AccountSignals`. Each
+7. **Page evidence** (ADR-0027, ADR-0029): `thread.nearDuplicateReply` and `thread.sharedRareDomain` do not come from `AccountSignals`. Each
    adapter owns a `PageThreads` index (`src/core/thread/`) that its observer feeds with every post a
    discovery pass finds, near the viewport or not and badged or not, through the platform's
    `threadReply.ts` reader, reading each element once to a final answer; the platform's `toFeatures`
    stays account-only and the adapter appends the count (`PageThreads.withPageEvidence`). When a reply recorded later changes the count of an
    account already scored, the adapter's `onEvidenceChanged` tells the resolver, which rescores that
-   account if it has a post on screen. An in-place navigation clears the index.
+   account if it has a post on screen. An in-place navigation clears the index. The readers also
+   read each reply's links and the thread root's; on X the passive GraphQL source hands
+   `PageThreads.recordPostLinks` each `TweetDetail` post's expanded links by status id, so the domain
+   index joins them with the replies the DOM shows, and only while Tier 1 runs.
 
 ## Policy system
 
@@ -493,6 +497,7 @@ The result is frozen. Unit tests assert every "cannot enable" case. Settings the
 | Tier 1 and Tier 2 account signals | Memory, per tab | 24 h TTL, gone on tab close |
 | Verdicts | Memory, per tab | Recomputed on config change |
 | Thread index: each reply's word set, author, id, parent id and time, never its text (ADR-0027) | Memory, per page | Cleared on in-place navigation and page load; at most 5,000 replies |
+| Domain index: the registrable domains each post links (by post id) and each thread root links (by thread key), never a link's path (ADR-0029) | Memory, per tab | Kept past in-place navigation (X does not refetch a thread); cleared on page load; at most 5,000 posts and 5,000 roots, oldest first |
 | `policy.lkg`, `policy.lastAttempt` | `storage.local` | Until replaced |
 | `lookups.v1.<hash>` (Tier 2 snapshot, no display name, handle or bio text, fetch time, source tier; a hover-only source stores a second entry under its own hash with a 24 h life), `lookups.salt.v1` and `lookups.index.v1` (entry key to fetch time) | `storage.local` | 7 days from the fetch (24 h for a hover-only entry); at most 5,000 entries; wiped by "Clear cache" (which rotates the salt) or by turning off `persistLookups` (ADR-0025) |
 | `settings.v1`, `onboarding.seen`, `notice.seenIds` | `storage.local` | Until changed |

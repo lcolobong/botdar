@@ -138,14 +138,14 @@ The green name Hacker News gives new accounts is not read until a recording show
 
 ### Every platform
 
-One feature reads the thread on the page rather than the account
-([ADR-0027](decisions/ADR-0027-near-duplicate-reply.md)). It sits in every platform's table with the
-same numbers and a `coordination` group cap of 1.5, which the planned `thread.sharedRareDomain` will
-share.
+Two features read the thread on the page rather than the account
+([ADR-0027](decisions/ADR-0027-near-duplicate-reply.md), [ADR-0029](decisions/ADR-0029-shared-rare-domain.md)). They sit in every platform's table
+with the same numbers and share a `coordination` group cap of 1.5.
 
 | Feature | Group | Cap | Input | Bins / weight | Gate |
 |---|---|---|---|---|---|
 | `thread.nearDuplicateReply` | coordination | 1.5 | distinct other authors with an earlier reply in the same thread whose word set has Jaccard similarity ≥ 0.7 with this account's reply; the most over the account's replies on the page (`src/core/thread/`) | `[0,1)→0` `[1,2)→0.6` `[2,4)→1.0` `[4,∞)→1.5` | the account has a reply on the page whose normalised text is ≥ 40 characters and ≥ 6 words. A thread is a post page (X, Bluesky), a Reddit post's comments, a Hacker News `item` page; the root post, its ancestors, a reply's own parent, X's promoted posts and the posts X appends below the conversation are never sources, and quoted text is left out. Tier 0 |
+| `thread.sharedRareDomain` | coordination | 1.2 | distinct other authors with an earlier reply in the same thread, not this reply's parent, linking the same registrable domain as one of this account's replies; the most over the account's replies and their domains (`src/core/thread/`, `src/core/links/`) | `[0,3)→0` `[3,5)→0.8` `[5,∞)→1.2` | the account has a reply on the page linking a domain that counts: registrable domain from the last two host labels (three under a known multi-label country suffix), not in the bundled Tranco top 1,000 (list GQ3QK, 2026-10-26), not a platform, shortener, archive-mirror or gif domain, and not a domain the thread's root post links. Tier 0 on Reddit, Bluesky and Hacker News; Tier 1 on X, whose page shows only t.co (`TweetDetail` `expanded_url`) |
 
 ### Gating rules
 
@@ -341,6 +341,27 @@ anything that costs per-account time, money or patience is skipped, and the skip
   which the author's client writes, so a backdated copy can make an original look later
   ([ADR-0027](decisions/ADR-0027-near-duplicate-reply.md)).
 
+### Shared rare domains (`thread.sharedRareDomain`)
+
+- **Mechanism.** A link operation pushes one site, its own or a client's, from many accounts into the
+  threads it targets; spreading the same links over many domains means registering, hosting and
+  warming each one. People link what they read, and in one thread they rarely converge on the same
+  small site unless the post is about it. So several accounts linking one domain that is neither among
+  the web's most visited nor the post's own is coordination. Only *earlier* linkers count, as for
+  near-duplicate replies: the first accounts to link a site score 0, and accounts that link a real
+  person's site after them cannot get that person flagged; the cost is that a campaign is caught from
+  its fourth account.
+- **Evidence.** The fox8 botnet (Yang and Menczer 2023) was found through its accounts linking the same
+  few sites; adversarial-evasion.md 4.1 and 5 rank it the second local coordination signal. No
+  measurement on Botdar's own sample yet (adversarial-evasion.md 6: fires per thread, and which domains
+  the top list misses).
+- **Counter-case.** People discussing the same story often share the same link, and a thread about one
+  niche site can make its later linkers fire. The root's own domains never count, the bins start at
+  three earlier authors, and the `coordination` cap of 1.5, shared with near-duplicate replies, keeps
+  the two alone below `some`. The registrable-domain approximation folds hosting suffixes it does not
+  know (`<blog>.github.io`) into one, often top, domain, so it misses such sites rather than inventing
+  rare ones ([ADR-0029](decisions/ADR-0029-shared-rare-domain.md)).
+
 ### Reddit karma shape (`reddit.postToCommentKarma`)
 
 - **Mechanism.** Karma farming reposts content that already did well; a repost earns post karma without
@@ -484,6 +505,7 @@ such a line once, from the stronger item.
 | `x.gapRegularity`, `bsky.gapRegularity` | "Posts at regular intervals" / no contribution: nothing | "scheduling tools post on a clock" / none | timing: "Accounts that schedule posts with a publishing tool show the same regularity." |
 | `x.noSleepWindow`, `bsky.noSleepWindow` | "Posts around the clock" / no contribution: nothing | "no daily quiet window" / none | this feature's own: "Shared and team-run accounts post around the clock." |
 | `thread.nearDuplicateReply` | "Reply closely matches an earlier one by another account" / "… earlier ones by {n} other accounts" / no contribution: nothing | "reply templates get reused across accounts" / none | this feature's own: "Popular phrases and memes get repeated by real people." (group coordination: "People reacting to the same post often say the same thing.") |
+| `thread.sharedRareDomain` | "Links a site {n} other accounts linked earlier in this thread" / "Links a site another account linked earlier in this thread" / no contribution: nothing | "networks push one site from many accounts" / none | this feature's own: "People discussing the same story often share the same link." |
 | `reddit.karmaPerDay`, `hn.karmaPerDay` | "~{rate} karma/day on a {age}-old account" | "karma-farming pattern" / "a pace ordinary use earns" | activity: as above |
 | `reddit.karmaSinceFirstActivity` | "~{rate} karma/day since first activity {age} ago" ({age} counted from the oldest visible item; "today" under a day) | "karma-farming pattern" / "a pace ordinary use earns" | this feature's own: "Long-time readers who start posting in large communities can earn karma quickly. Accounts that delete their old posts keep their karma, so the rate can look inflated." |
 | `hn.submissionsPerDay` | "{n} posts and comments in {age}" (a rate under one a day reads better as a count) | "prolonged hyperactivity" / "a pace a person keeps up" | activity: as above |
