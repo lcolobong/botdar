@@ -1,5 +1,6 @@
 import { TtlLruCache } from "@/src/core/cache";
 import { diagnosticsSnapshot, resetDiagnostics } from "@/src/core/diagnostics";
+import { MAX_POST_TEXT_LENGTH } from "@/src/core/types";
 import type { BadgeHandle, MergeableSignals, Scorer } from "@/src/core/pipeline";
 import {
   AccountResolver,
@@ -188,6 +189,33 @@ describe("mergeSignals", () => {
     mergeSignals(target, { followers: 5 }, 1, 100);
     expect(mergeSignals(target, { followers: 5 }, 2, 100)).toBe(true);
     expect(target.signals.provenance.followers).toBe(2);
+  });
+
+  describe("post text", () => {
+    it("gathers within a tier, so a later short body cannot wipe a long sample", () => {
+      const target = blankSignals();
+      const profileSample: string = "Я пишу о книгах и путешествиях. ".repeat(20);
+      mergeSignals(target, { postText: profileSample }, 1, 100);
+      expect(mergeSignals(target, { postText: "lol" }, 1, 200)).toBe(true);
+      expect(target.signals.postText?.startsWith(profileSample.slice(0, 50))).toBe(true);
+      expect(target.signals.postText?.length).toBeLessThanOrEqual(MAX_POST_TEXT_LENGTH);
+    });
+
+    it("does not repeat text it already holds, and stops at the cap", () => {
+      const target = blankSignals();
+      mergeSignals(target, { postText: "first post" }, 1, 100);
+      expect(mergeSignals(target, { postText: "first post" }, 1, 200)).toBe(false);
+      mergeSignals(target, { postText: "x".repeat(3000) }, 1, 300);
+      expect(target.signals.postText).toHaveLength(MAX_POST_TEXT_LENGTH);
+      expect(target.signals.postText?.startsWith("first post\n")).toBe(true);
+    });
+
+    it("lets a higher tier's text replace a lower tier's", () => {
+      const target = blankSignals();
+      mergeSignals(target, { postText: "from the page" }, 1, 100);
+      mergeSignals(target, { postText: "from a lookup" }, 2, 200);
+      expect(target.signals.postText).toBe("from a lookup");
+    });
   });
 
   it("skips undefined values and reserved keys", () => {

@@ -12,6 +12,7 @@ import type { PersistedLookup, PersistedLookupStore } from "./persistedLookups";
 import type { RateLimiter } from "./ratelimit";
 import { recordLookup } from "./diagnostics.ts";
 import { RateLimitedError } from "./ratelimit";
+import { MAX_POST_TEXT_LENGTH } from "./types";
 import type {
   AccountRef,
   AccountSignals,
@@ -145,9 +146,23 @@ function markDelivered(signals: AccountSignals, tier: SourceTier): boolean {
 }
 
 /**
+ * Post text gathers instead of being replaced within a tier: each response carries a few of an
+ * author's posts, and a later body with one short reply must not wipe a profile page's sample and
+ * flip the language read. New text is appended, unless the sample already holds it, up to the cap;
+ * a higher tier's text replaces a lower tier's, as for every field.
+ */
+function gatheredPostText(existing: string | undefined, incoming: string): string {
+  if (existing === undefined || existing.includes(incoming)) {
+    return existing ?? incoming.slice(0, MAX_POST_TEXT_LENGTH);
+  }
+  return `${existing}\n${incoming}`.slice(0, MAX_POST_TEXT_LENGTH);
+}
+
+/**
  * Tier-merge rule: a higher tier overwrites a lower tier's value for the same field; within the same
- * tier the newer observation wins; a lower tier never overwrites. Returns whether a value or its
- * tier changed, which is all scoring reads: re-observing the same value only refreshes the times.
+ * tier the newer observation wins (post text gathers, `gatheredPostText`); a lower tier never
+ * overwrites. Returns whether a value or its tier changed, which is all scoring reads: re-observing
+ * the same value only refreshes the times.
  */
 export function mergeSignals(
   target: MergeableSignals,
@@ -157,24 +172,29 @@ export function mergeSignals(
 ): boolean {
   let accepted = false;
   let changed = false;
-  for (const [key, value] of Object.entries(incoming)) {
-    if (value === undefined || RESERVED_FIELDS.has(key)) {
+  for (const [key, observed] of Object.entries(incoming)) {
+    if (observed === undefined || RESERVED_FIELDS.has(key)) {
       continue;
     }
     const field = key as SignalField;
     const existingTier: SourceTier | undefined = target.signals.provenance[field];
     const existingObservedAt: number = target.fieldObservedAt[field] ?? 0;
     const outranked: boolean = existingTier !== undefined && tier < existingTier;
+    const gathers: boolean = field === "postText" && existingTier === tier;
     const older: boolean = existingTier === tier && observedAt < existingObservedAt;
-    if (outranked || older) {
+    if (outranked || (older && !gathers)) {
       continue;
     }
+    const value: unknown =
+      gathers && typeof observed === "string"
+        ? gatheredPostText(target.signals.postText, observed)
+        : observed;
     if (existingTier !== tier || !sameSignalValue(target.signals[field], value)) {
       changed = true;
     }
     Object.assign(target.signals, { [field]: value });
     target.signals.provenance[field] = tier;
-    target.fieldObservedAt[field] = observedAt;
+    target.fieldObservedAt[field] = gathers ? Math.max(existingObservedAt, observedAt) : observedAt;
     accepted = true;
   }
   if (accepted) {

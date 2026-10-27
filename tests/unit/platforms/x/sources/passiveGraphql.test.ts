@@ -70,6 +70,22 @@ describe("createPassiveGraphqlSource", () => {
     expect(aliceSignals).toMatchObject({ followers: 340, following: 210, postCount: 4100 });
   });
 
+  it("adds each author's post text to the signals it emits for them", () => {
+    const { emissions, stop } = start();
+    relay("HomeTimeline", loadFixture("home-timeline-core.json"));
+    stop();
+    const postTexts: Record<string, string | undefined> = Object.fromEntries(
+      emissions.map(([ref, signals]) => [ref.handle, signals.postText]),
+    );
+    expect(postTexts).toEqual({
+      alice_example: "This is worth a read.\nRepeated author, same rest_id.",
+      example_news: "Our live coverage starts now.",
+      kai09127364: "Agreed 💯",
+      maria_dev: undefined,
+      mila48213907: "Follow for daily picks 🔥",
+    });
+  });
+
   it("emits the user and the About projection for an AboutAccountQuery body", () => {
     const { emissions, stop } = start();
     relay("AboutAccountQuery", loadFixture("about-account.json"));

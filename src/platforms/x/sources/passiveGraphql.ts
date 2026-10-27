@@ -7,10 +7,11 @@
 import { onRelay } from "@/src/core/relay";
 import type { PartialSignals, SignalSource } from "@/src/core/types";
 import { ABOUT_ACCOUNT_OPERATION, X_GRAPHQL_RELAY_KIND } from "../graphqlRoutes";
-import type { ParsedAboutAccount } from "../parsers/graphqlUsers";
+import type { ParsedAboutAccount, ParsedXBody } from "../parsers/graphqlUsers";
 import {
-  collectUsers,
   parseAboutAccount,
+  parseGraphqlBody,
+  postTextByHandle,
   toAboutSignals,
   toSignals,
 } from "../parsers/graphqlUsers";
@@ -38,8 +39,12 @@ export function createPassiveGraphqlSource(target: Window = window): SignalSourc
       onRelay(
         X_GRAPHQL_RELAY_KIND,
         (envelope) => {
-          for (const user of collectUsers(envelope.body)) {
-            emit(user.ref, withoutDeclaredOverride(toSignals(user)));
+          const parsed: ParsedXBody = parseGraphqlBody(envelope.body);
+          const postTexts: Map<string, string> = postTextByHandle(parsed.posts);
+          for (const user of parsed.users) {
+            const signals: PartialSignals = withoutDeclaredOverride(toSignals(user));
+            const postText: string | undefined = postTexts.get(user.ref.handle);
+            emit(user.ref, postText === undefined ? signals : { ...signals, postText });
           }
           if (envelope.op !== ABOUT_ACCOUNT_OPERATION) {
             return;
