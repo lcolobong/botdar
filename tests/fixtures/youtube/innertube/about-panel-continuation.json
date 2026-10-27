@@ -1,0 +1,320 @@
+{
+  "_recording": "Recorded in the same session as html/watch.html, on 2026-10-27: the page's own POST https://www.youtube.com/youtubei/v1/browse?prettyPrint=false (a continuation token, gzipped body) when \"...more\" on the same commenter's channel header opened the About panel, signed out. Anonymised: handle, channel id, visitorData, tokens and tracking params. Otherwise as received.",
+  "responseContext": {
+    "serviceTrackingParams": [
+      {
+        "service": "GFEEDBACK",
+        "params": [
+          {
+            "key": "browse_id",
+            "value": "UCw7ictt1i8xu9166kl9l7ui"
+          },
+          {
+            "key": "browse_id_prefix",
+            "value": ""
+          },
+          {
+            "key": "route",
+            "value": "channel.featured"
+          },
+          {
+            "key": "is_owner",
+            "value": "false"
+          },
+          {
+            "key": "is_alc_surface",
+            "value": "false"
+          },
+          {
+            "key": "logged_in",
+            "value": "0"
+          },
+          {
+            "key": "visitor_data",
+            "value": "CgtPOFlwV3RHaXRTYyia7ITXBjIKCgJVUxIEGgAgLWKyAgqvAkN1QUJDQVVTa2dFQjhRWnVaaDc4MXkyN0ZEdGh1WE9qMGJsSnpkUERHbVBRdUtuU04wZTlfVlBEOUN2cVhlNWRUSjFjaFliY0xXdldBZ3R2cWVKcnV1RDYwLWZYYXpaMWNzSEFfdUFydDhYeGhNTXRLUS1CTzZCMnI4Q0tBLUV1WmgwblhKdUpCaEdiazE3VW1CSS1Ha0FQNnFKN1lxNWhkaGJnNjM2dC1sOG1sc1pFLWdGNXpXUktkWU5IMjFNZ0VyTjRCdGRYSDZOUm1TZ0ZNa1VCM3FtZFR4U3Zxd21PZ0d6Q25HNG53dl8xZjFtc05RY3ktLW5SN0FocmM4aElJOGs1NnozZ3BrRWFGaGF5bGp5NHNoSkJQbDFoSVpDbnh3ZHdfYmNTY1d2QUhRTQ%3D%3D"
+          }
+        ]
+      },
+      {
+        "service": "GOOGLE_HELP",
+        "params": [
+          {
+            "key": "browse_id",
+            "value": "UCw7ictt1i8xu9166kl9l7ui"
+          },
+          {
+            "key": "browse_id_prefix",
+            "value": ""
+          }
+        ]
+      },
+      {
+        "service": "CSI",
+        "params": [
+          {
+            "key": "c",
+            "value": "WEB"
+          },
+          {
+            "key": "cver",
+            "value": "2.20261027.01.00"
+          },
+          {
+            "key": "yt_li",
+            "value": "0"
+          },
+          {
+            "key": "GetChannelPage_rid",
+            "value": "0xa0732c29a821eac5"
+          }
+        ]
+      },
+      {
+        "service": "GUIDED_HELP",
+        "params": [
+          {
+            "key": "logged_in",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "service": "ECATCHER",
+        "params": [
+          {
+            "key": "client.version",
+            "value": "2.20261027"
+          },
+          {
+            "key": "client.name",
+            "value": "WEB"
+          }
+        ]
+      }
+    ],
+    "maxAgeSeconds": 300,
+    "mainAppWebResponseContext": {
+      "loggedOut": true,
+      "trackingParam": "klCfmPxho3oR4yNMvEvEQ_DO3vU4I4ZdBv98fn70CspE3Xbz8TLRCQYCZnsBpoqfpMtZ8ksOdw9QDgGW4wkU6gcBqsuX8shxk4Qt9QGwHIOkBAkC5UlwRILusopIBwOcCsg9T3wslLKPQmhS"
+    },
+    "responseId": "IhMI9KyOoa_blwMVZsQ_BB2VTQ1z",
+    "webResponseContextExtensionData": {
+      "webResponseContextPreloadData": {
+        "preloadMessageNames": [
+          "aboutChannelRenderer",
+          "aboutChannelViewModel",
+          "buttonRenderer",
+          "menuPopupRenderer",
+          "menuServiceItemRenderer",
+          "unifiedSharePanelRenderer",
+          "notificationActionRenderer"
+        ]
+      },
+      "hasDecorated": true
+    }
+  },
+  "trackingParams": "anon",
+  "onResponseReceivedEndpoints": [
+    {
+      "clickTrackingParams": "anon",
+      "appendContinuationItemsAction": {
+        "continuationItems": [
+          {
+            "aboutChannelRenderer": {
+              "metadata": {
+                "aboutChannelViewModel": {
+                  "subscriberCountText": "3 subscribers",
+                  "viewCountText": "494 views",
+                  "joinedDateText": {
+                    "content": "Joined Oct 16, 2013",
+                    "styleRuns": [
+                      {
+                        "startIndex": 0,
+                        "length": 19
+                      }
+                    ]
+                  },
+                  "canonicalChannelUrl": "http://www.youtube.com/@jonas_reads12",
+                  "channelId": "UCw7ictt1i8xu9166kl9l7ui",
+                  "additionalInfoLabel": {
+                    "content": "More info",
+                    "styleRuns": [
+                      {
+                        "startIndex": 0,
+                        "length": 9
+                      }
+                    ]
+                  },
+                  "customUrlOnTap": {
+                    "innertubeCommand": {
+                      "clickTrackingParams": "anon",
+                      "commandMetadata": {
+                        "webCommandMetadata": {
+                          "ignoreNavigation": true
+                        }
+                      },
+                      "shareEntityEndpoint": {
+                        "serializedShareEntity": "anon",
+                        "sharePanelType": "SHARE_PANEL_TYPE_UNIFIED_SHARE_PANEL"
+                      }
+                    }
+                  },
+                  "videoCountText": "4 videos",
+                  "displayCanonicalChannelUrl": "www.youtube.com/@jonas_reads12",
+                  "rendererContext": {
+                    "loggingContext": {
+                      "loggingDirectives": {
+                        "trackingParams": "anon",
+                        "visibility": {
+                          "types": "12"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "shareChannel": {
+                "buttonRenderer": {
+                  "style": "STYLE_DEFAULT",
+                  "size": "SIZE_DEFAULT",
+                  "text": {
+                    "runs": [
+                      {
+                        "text": "Share channel"
+                      }
+                    ]
+                  },
+                  "icon": {
+                    "iconType": "SHARE"
+                  },
+                  "trackingParams": "anon",
+                  "accessibilityData": {
+                    "accessibilityData": {
+                      "label": "Share channel"
+                    }
+                  },
+                  "command": {
+                    "clickTrackingParams": "anon",
+                    "commandMetadata": {
+                      "webCommandMetadata": {
+                        "sendPost": true
+                      }
+                    },
+                    "signalServiceEndpoint": {
+                      "signal": "CLIENT_SIGNAL",
+                      "actions": [
+                        {
+                          "clickTrackingParams": "anon",
+                          "openPopupAction": {
+                            "popup": {
+                              "menuPopupRenderer": {
+                                "items": [
+                                  {
+                                    "menuServiceItemRenderer": {
+                                      "text": {
+                                        "runs": [
+                                          {
+                                            "text": "Share channel"
+                                          }
+                                        ]
+                                      },
+                                      "trackingParams": "anon",
+                                      "command": {
+                                        "clickTrackingParams": "anon",
+                                        "commandMetadata": {
+                                          "webCommandMetadata": {
+                                            "sendPost": true,
+                                            "apiUrl": "/youtubei/v1/share/get_share_panel"
+                                          }
+                                        },
+                                        "shareEntityServiceEndpoint": {
+                                          "serializedShareEntity": "anon",
+                                          "commands": [
+                                            {
+                                              "clickTrackingParams": "anon",
+                                              "openPopupAction": {
+                                                "popup": {
+                                                  "unifiedSharePanelRenderer": {
+                                                    "trackingParams": "anon",
+                                                    "showLoadingSpinner": true
+                                                  }
+                                                },
+                                                "popupType": "DIALOG",
+                                                "beReused": true
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "menuServiceItemRenderer": {
+                                      "text": {
+                                        "runs": [
+                                          {
+                                            "text": "Copy channel ID"
+                                          }
+                                        ]
+                                      },
+                                      "trackingParams": "anon",
+                                      "command": {
+                                        "clickTrackingParams": "anon",
+                                        "copyTextEndpoint": {
+                                          "text": "UCw7ictt1i8xu9166kl9l7ui",
+                                          "successActions": [
+                                            {
+                                              "clickTrackingParams": "anon",
+                                              "commandMetadata": {
+                                                "webCommandMetadata": {
+                                                  "sendPost": true
+                                                }
+                                              },
+                                              "signalServiceEndpoint": {
+                                                "signal": "CLIENT_SIGNAL",
+                                                "actions": [
+                                                  {
+                                                    "clickTrackingParams": "anon",
+                                                    "openPopupAction": {
+                                                      "popup": {
+                                                        "notificationActionRenderer": {
+                                                          "responseText": {
+                                                            "runs": [
+                                                              {
+                                                                "text": "Channel ID copied to clipboard"
+                                                              }
+                                                            ]
+                                                          },
+                                                          "trackingParams": "anon"
+                                                        }
+                                                      },
+                                                      "popupType": "TOAST"
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "popupType": "RESPONSIVE_DROPDOWN"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "targetId": "6b2ac21f-0000-29a0-ba68-089e0828a8d0"
+      }
+    }
+  ]
+}

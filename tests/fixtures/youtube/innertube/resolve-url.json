@@ -1,0 +1,89 @@
+{
+  "_recording": "Recorded in the same session as html/watch.html, on 2026-10-27: POST https://www.youtube.com/youtubei/v1/navigation/resolve_url?prettyPrint=false with body {context: {client: {clientName: \"WEB\", clientVersion, hl: \"en\"}}, url: \"https://www.youtube.com/@<handle>/about\"} from the watch page, credentials omitted. Anonymised: handle, channel id, visitorData. Otherwise as received.",
+  "responseContext": {
+    "visitorData": "anon",
+    "serviceTrackingParams": [
+      {
+        "service": "CSI",
+        "params": [
+          {
+            "key": "c",
+            "value": "WEB"
+          },
+          {
+            "key": "cver",
+            "value": "2.20261027.01.00"
+          },
+          {
+            "key": "yt_li",
+            "value": "0"
+          },
+          {
+            "key": "ResolveUrl_rid",
+            "value": "0xacb8620dbeae2cca"
+          }
+        ]
+      },
+      {
+        "service": "GFEEDBACK",
+        "params": [
+          {
+            "key": "logged_in",
+            "value": "0"
+          },
+          {
+            "key": "visitor_data",
+            "value": "CgtuRTFUQVlQQlJhVSia7ITXBjIKCgJVUxIEGgAgKw%3D%3D"
+          }
+        ]
+      },
+      {
+        "service": "GUIDED_HELP",
+        "params": [
+          {
+            "key": "logged_in",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "service": "ECATCHER",
+        "params": [
+          {
+            "key": "client.version",
+            "value": "2.20261027"
+          },
+          {
+            "key": "client.name",
+            "value": "WEB"
+          }
+        ]
+      }
+    ],
+    "mainAppWebResponseContext": {
+      "loggedOut": true
+    },
+    "responseId": "IhMInde2nq_blwMV3MFyCR0bjCTN",
+    "webResponseContextExtensionData": {
+      "hasDecorated": true
+    }
+  },
+  "endpoint": {
+    "clickTrackingParams": "anon",
+    "commandMetadata": {
+      "webCommandMetadata": {
+        "url": "/youtubei/v1/navigation/resolve_url",
+        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+        "rootVe": 3611,
+        "apiUrl": "/youtubei/v1/browse"
+      },
+      "resolveUrlCommandMetadata": {
+        "isVanityUrl": true
+      }
+    },
+    "browseEndpoint": {
+      "browseId": "UCw7ictt1i8xu9166kl9l7ui",
+      "params": "EgVhYm91dLgBAJIDAPIGBgoCMgBKAA%3D%3D"
+    }
+  }
+}
