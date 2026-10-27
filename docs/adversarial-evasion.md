@@ -31,7 +31,10 @@ marketing pages unless marked otherwise, so read them as order-of-magnitude figu
   not with the account's bio language as the spec says, so a viewer whose browser locale is `en-US` adds
   +0.4 to every account based outside the US. And `x.replyShare` has no producer anywhere in `src/`, so
   it never fires. (Bluesky's `features.ts` does not exist yet either.) The first should be neutralised
-  by policy now (`weight: 0`) and fixed in v1.1.
+  by policy now (`weight: 0`) and fixed in v1.1. *Update 2026-10-26:* fixed. The feature now compares
+  the About country with the language detected in the account's own bio and posts
+  (`src/core/text/`), `regionFromNavigatorLanguage()` is gone, and the spec'd weight of 0.4 under a
+  `geo` cap of 0.4 is restored (scoring-spec.md, "Country mismatch").
 
 ## 1. Threat actors and goals
 
@@ -58,7 +61,7 @@ marketing pages unless marked otherwise, so read them as order-of-magnitude figu
 | `x.newAndBlue` | Verify an aged account instead of a new one. | $8/month. | `x.agedRepurposed`: a recent verified-since date on an old account. |
 | `x.replyShare` (no producer in v1) | Mix in original posts, quote posts and reposts to stay under 90% replies. | One scheduled post per ten replies. | The original posts are generic and repeated, and cadence is unchanged. |
 | `x.usernameChanges` | Keep renames under 3; buy accounts that have never been renamed. | Limits handle reuse. | The last-change date: one recent rename on an old account is the aged-market tell. |
-| `x.countryLocaleMismatch` | Route through residential proxies in the target audience's country so "based in" matches. | $1–8/GB ([DataImpulse](https://dataimpulse.com/blog/residential-proxy-pricing-comparison/), [Databay](https://databay.com/blog/how-much-do-residential-proxies-cost)). | The "connected via" app-store region can still disagree with the country if the device is foreign. As implemented, the feature mostly flags foreign accounts for the viewer, not operators. |
+| `x.countryLocaleMismatch` | Route through residential proxies in the target audience's country so "based in" matches. | $1–8/GB ([DataImpulse](https://dataimpulse.com/blog/residential-proxy-pricing-comparison/), [Databay](https://databay.com/blog/how-much-do-residential-proxies-cost)). | The "connected via" app-store region can still disagree with the country if the device is foreign. |
 | X About panel: app-store field | Use the web client, or a phone registered in the target country. | A cloud phone from about $3/month ([ScrapingBee](https://www.scrapingbee.com/blog/anti-detect-browser/)). | Weak; travellers and expats produce the same mismatch. |
 | Automated label (`declaredAutomated`) | Never self-declare. | Nothing. | None, which is why declared is a neutral state rather than evidence. |
 | Signals only the platform sees: device fingerprint, IP reputation, phone verification, payment instrument, client telemetry, challenge results | Antidetect browsers, residential and mobile proxies, cloud phones, SMS-verification services. | Most of the operator's real spend. | Invisible to Botdar, locally and forever. Platform enforcement, not Botdar, sets the operator's cost floor. |
@@ -246,7 +249,8 @@ carry a `many` verdict.
    the rate check.
 
 Alongside, as fixes rather than features: produce `x.replyShare` from Tier 1, and set
-`x.countryLocaleMismatch` to weight 0 by policy until its input is the account's bio language.
+`x.countryLocaleMismatch` to weight 0 by policy until its input is the account's bio language. (Done
+2026-10-26: its input is now the language of the account's bio and posts, and it is no longer zeroed.)
 
 **Must stay out**, because the false-positive cost on real people is too high:
 

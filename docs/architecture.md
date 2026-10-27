@@ -93,6 +93,7 @@ botdar/
 │  │  ├─ types.ts                # contracts below
 │  │  ├─ scoring/                # engine, weights.default.json, reasons
 │  │  ├─ handle/                 # shape.ts, bigram.ts, bigrams.json
+│  │  ├─ text/                   # language.ts + stopwords.json, languageRegions, countryNames
 │  │  ├─ policy/                 # schema, merge, verify, publicKey, loader
 │  │  ├─ pipeline.ts             # AccountResolver
 │  │  ├─ cache.ts  ratelimit.ts  settings.ts  messaging.ts  feedback.ts  relay.ts
@@ -149,6 +150,7 @@ export interface AccountSignals {
   usernameChanges?: number;
   appStore?: string;
   replyShare?: { ratio: number; n: number };   // only when observable
+  postText?: string;                  // own post text from Tier 1 bodies (reposts excluded), gathered ≤ 2,000 chars
   provenance: Partial<Record<keyof AccountSignals, SourceTier>>;  // which tier set each field (source dots)
   tiersDelivered: SourceTier[];       // tiers that delivered data for this account (confidence)
   observedAt: number;
@@ -268,7 +270,7 @@ Firefox requires `cloneInto` for cross-world `detail`.
 | Concern | Approach |
 |---|---|
 | Interceptor allowlist | `HomeTimeline`, `HomeLatestTimeline`, `SearchTimeline`, `UserTweets`, `UserTweetsAndReplies`, `TweetDetail`, `UserByScreenName`, `AboutAccountQuery`, `Followers`, `Following` under `/i/api/graphql/<queryId>/<op>` |
-| Tier 1 | `parsers/graphqlUsers.ts` walks any response for user objects: `core.screen_name`, `core.created_at`, `is_blue_verified`, `profile_bio.description`, `relationship_count`, `tweet_count`, `rest_id`, with `legacy.*` fallbacks. The X "Automated" label is expected in the user object (`legacy.automated` or `affiliates_highlighted_label`); confirm day one |
+| Tier 1 | `parsers/graphqlUsers.ts` walks any response for user objects and posts (each post's `legacy.full_text` is kept per author as `postText`, for `x.countryLocaleMismatch`): `core.screen_name`, `core.created_at`, `is_blue_verified`, `profile_bio.description`, `relationship_count`, `tweet_count`, `rest_id`, with `legacy.*` fallbacks. The X "Automated" label is expected in the user object (`legacy.automated` or `affiliates_highlighted_label`); confirm day one |
 | Tier 0 | `article[data-testid="tweet"]:not([data-botdar])`; handle from `[data-testid="User-Name"] a[href^="/"]` whose text starts with `@`; default-avatar heuristic from `[data-testid="Tweet-User-Avatar"]` |
 | Tier 2 | `AboutAccountQuery` on hover only: country, username-change count, app store. queryId resolution: observed from page traffic > policy value > baked constant. Limiter 20/min, burst 3, backoff on `x-rate-limit-reset` / `retry-after`, 60 s fallback |
 | Observer | One `MutationObserver` on `document.body`, coalesced per pass via `requestIdleCallback` (150 ms timeout fallback); the analysis behind a pass runs in slices capped at the idle deadline or 8 ms, whichever is shorter, and yields between them (`src/core/idleSlices.ts`, the same for Reddit and Bluesky); a discovered post is only analysed once it comes within one screen of the viewport (`src/core/nearViewport.ts`, ADR-0019); `data-botdar="1"` set only after a badge mounts; `WeakMap<Element, BadgeHandle>`; removed nodes unmount (X virtualizes its list) |
@@ -344,7 +346,8 @@ badge is removed, so a removed post is not kept alive by the context.
 4. **Tier-merge rule:** a higher tier overwrites a lower tier's value for the same field; within the same
    tier, newer wins. `provenance` records the tier for each field (the source dots). Which tiers delivered is tracked
    separately in `tiersDelivered`, which the resolver maintains, because an overwritten field no longer
-   shows the tier that first supplied it; confidence reads `tiersDelivered`.
+   shows the tier that first supplied it; confidence reads `tiersDelivered`. `postText` gathers
+   within a tier instead of the newer body winning, up to 2,000 characters.
 5. `config.changed` from the background recomputes every verdict with the new effective config.
 6. The map holds at most 2,000 accounts per tab (`MAX_TRACKED_ACCOUNTS`); past that, the least
    recently touched accounts with no post on screen are evicted a batch at a time.

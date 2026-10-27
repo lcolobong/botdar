@@ -35,6 +35,10 @@ The first release, covering the MVP.
 - Remembered lookups: profile data a lookup returned is kept on the device for seven days under salted
   one-way hashes, so the same account is not fetched again after a reload. "Remember lookups for 7
   days" turns it off and "Clear cache" erases it, both on the options page.
+- On X, one weak observation when the country in an account's "About this account" panel is not one
+  where the language of its own bio and posts is commonly spoken ("Based in Brazil, writes in
+  Russian"). The language is read on the device from a bundled word list, never from your browser's
+  settings, and English, written everywhere, is never compared.
 - Chrome and Firefox builds from one codebase. Firefox 128 or later.
 
 ### Privacy
