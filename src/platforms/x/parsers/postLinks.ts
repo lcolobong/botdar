@@ -3,7 +3,7 @@
  * (ADR-0029). The page renders every link through t.co, so the DOM cannot say where one leads;
  * the post object carries each link's target as `legacy.entities.urls[].expanded_url`, the field
  * X documents. A long post keeps its links with its full text under `note_tweet` (GUESS, as for
- * its text in graphqlUsers.ts: no recorded body holds a long post yet). Untrusted page data: every
+ * its text in graphql/posts.ts: no recorded body holds a long post yet). Untrusted page data: every
  * read is type-guarded and the count is capped.
  */
 import type { UnknownRecord } from "../../../core/json/untrusted";
