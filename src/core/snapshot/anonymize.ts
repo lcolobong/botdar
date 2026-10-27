@@ -1,6 +1,26 @@
-import { fakeHandle, fakeId, stableHash } from "./fakeNames.ts";
+import {
+  distinctDigits,
+  distinctFakes,
+  fakeDigits,
+  fakeHandle,
+  fakeId,
+  stableHash,
+} from "./fakeNames.ts";
+import {
+  anonymizeHackerNewsUrl,
+  hackerNewsHandles,
+  hackerNewsIdSubstitutions,
+  replaceHackerNewsHandles,
+} from "./hackerNews.ts";
 
-export type SnapshotPlatform = "x" | "reddit" | "bluesky";
+export type SnapshotPlatform = "x" | "reddit" | "bluesky" | "hackernews";
+
+export const SNAPSHOT_PLATFORMS: readonly SnapshotPlatform[] = [
+  "x",
+  "reddit",
+  "bluesky",
+  "hackernews",
+];
 
 export interface AnonymizedSnapshot {
   html: string;
@@ -81,18 +101,25 @@ function handlesOf(html: string, platform: SnapshotPlatform): Set<string> {
         ...collect(html, new RegExp(`/profile/(${BLUESKY_HANDLE})(?=[/"?#])`, "g")),
         ...collect(html, new RegExp(`(?:^|[^\\w.])@(${BLUESKY_HANDLE})\\b`, "g")),
       ]);
+    case "hackernews":
+      return hackerNewsHandles(html);
   }
 }
 
-function fakeFor(handle: string, platform: SnapshotPlatform): string {
+function fakeFor(handle: string, platform: SnapshotPlatform, attempt = 0): string {
   if (platform === "bluesky") {
-    const base: string = fakeHandle(handle, "plain").replace("_", "");
+    const base: string = fakeHandle(handle, "plain", attempt).replace("_", "");
     return handle.endsWith(".bsky.social") ? `${base}.bsky.social` : `${base}.example.com`;
   }
   if (platform === "reddit" && REDDIT_GENERATED_NAME.test(handle))
-    return fakeHandle(handle, "generated");
-  if (NAME_THEN_DIGITS.test(handle)) return fakeHandle(handle, "nameDigits");
-  return fakeHandle(handle, "plain");
+    return fakeHandle(handle, "generated", attempt);
+  if (NAME_THEN_DIGITS.test(handle)) return fakeHandle(handle, "nameDigits", attempt);
+  return fakeHandle(handle, "plain", attempt);
+}
+
+/** Hacker News usernames are case-sensitive; every other platform folds case. */
+function accountOf(platform: SnapshotPlatform): (handle: string) => string {
+  return platform === "hackernews" ? (handle) => handle : (handle) => handle.toLowerCase();
 }
 
 function escapeRegExp(value: string): string {
@@ -104,8 +131,14 @@ interface Substitution {
   replacement: (match: string, ...groups: string[]) => string;
 }
 
-/** Opaque ids per platform: thing ids and permalink ids, status ids, DIDs and record keys. */
-function idSubstitutions(platform: SnapshotPlatform): Substitution[] {
+/**
+ * Opaque ids per platform: thing ids and permalink ids, status ids, DIDs, record keys and Hacker
+ * News item ids, which `fakeNumeric` replaces (distinct per snapshot when anonymising a page).
+ */
+function idSubstitutions(
+  platform: SnapshotPlatform,
+  fakeNumeric: (id: string) => string = fakeDigits,
+): Substitution[] {
   switch (platform) {
     case "reddit":
       return [
@@ -130,6 +163,8 @@ function idSubstitutions(platform: SnapshotPlatform): Substitution[] {
         { pattern: /did:plc:([a-z0-9]{24})\b/g, replacement: (_m, id) => `did:plc:${fakeId(id)}` },
         { pattern: /\/post\/([a-z0-9]{13})\b/g, replacement: (_m, id) => `/post/${fakeId(id)}` },
       ];
+    case "hackernews":
+      return hackerNewsIdSubstitutions(fakeNumeric);
   }
 }
 
@@ -171,12 +206,22 @@ export function anonymizeSnapshot(html: string, platform: SnapshotPlatform): Ano
     });
   };
 
-  const fakes: Map<string, string> = new Map();
-  for (const handle of handlesOf(output, platform)) {
-    if (SYSTEM_ACCOUNTS.has(handle.toLowerCase())) continue;
-    fakes.set(handle, fakeFor(handle, platform));
-  }
-  if (fakes.size > 0) {
+  const accounts: string[] = [...handlesOf(output, platform)].filter(
+    (handle) => !SYSTEM_ACCOUNTS.has(handle.toLowerCase()),
+  );
+  const fakes: Map<string, string> = distinctFakes(
+    accounts,
+    (handle, attempt) => fakeFor(handle, platform, attempt),
+    accountOf(platform),
+  );
+  if (platform === "hackernews") {
+    const matched: Set<string> = new Set();
+    output = replaceHackerNewsHandles(output, fakes, (handle) => {
+      matched.add(handle);
+      replaced += 1;
+    });
+    handles += matched.size;
+  } else if (fakes.size > 0) {
     // One pass for every handle: the content script runs this on a page that can be many
     // megabytes, and a scan per handle froze the tab. Longest first inside the alternation so a
     // handle that is a prefix of another never claims the other's occurrences; a hyphen is left
@@ -199,7 +244,7 @@ export function anonymizeSnapshot(html: string, platform: SnapshotPlatform): Ano
     handles += matched.size;
   }
   const seenIds: Set<string> = new Set();
-  for (const { pattern, replacement } of idSubstitutions(platform)) {
+  for (const { pattern, replacement } of idSubstitutions(platform, distinctDigits())) {
     substitute(pattern, (match, ...groups) => {
       seenIds.add(match);
       return replacement(match, ...groups);
@@ -254,6 +299,8 @@ export function anonymizeUrl(url: string, platform: SnapshotPlatform): string {
     case "bluesky":
       if (segments[1] === "profile") replaceAt(2);
       break;
+    case "hackernews":
+      return anonymizeHackerNewsUrl(parsed, (id) => fakeFor(id, platform), fakeDigits);
   }
   let path: string = segments.join("/");
   for (const { pattern, replacement } of idSubstitutions(platform)) {
@@ -264,7 +311,10 @@ export function anonymizeUrl(url: string, platform: SnapshotPlatform): string {
   return `${parsed.origin}${path}`;
 }
 
-/** Exposed for the capture script's header: which fake a real handle became, without re-scanning. */
+/**
+ * Exposed for the capture script's header: which fake a real handle became, without re-scanning.
+ * A handle that collided with another on its page got a later attempt there instead.
+ */
 export function fakeHandleFor(handle: string, platform: SnapshotPlatform): string {
   return fakeFor(handle, platform);
 }

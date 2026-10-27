@@ -1,0 +1,7 @@
+{
+  "_recording": "Recorded from https://hacker-news.firebaseio.com/v0/user/<id>.json on 2026-10-27 with fetch, no credentials. Anonymised: id, submitted (same count, fake item ids). The id is the fake the HTML fixtures use for this account. created and karma are real.",
+  "created": 1793035984,
+  "id": "lena_draws92",
+  "karma": 2,
+  "submitted": [1192530]
+}
