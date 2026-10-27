@@ -43,6 +43,10 @@ The first release, covering the MVP.
   latest posts barely vary, and "Posts around the clock" when it has no daily quiet hours. On X this
   reads the profile timeline the page already loaded when you open a profile; on Bluesky a hover also
   asks Bluesky's public service for the author's last 100 posts.
+- Copied replies on X, Reddit, Bluesky and Hacker News: "Reply closely matches earlier ones by 2 other
+  accounts" when other accounts posted nearly the same reply earlier in the same thread. Only the
+  copies count, never the first author, and short replies and quoted text are never compared. It
+  reads the thread on the page you are viewing and keeps nothing once you leave it (ADR-0027).
 - Chrome and Firefox builds from one codebase. Firefox 128 or later.
 - Hacker News (front page, /newest, threads, /newcomments), pulled forward from v1.1: a badge after
   every story and comment author, read from the public Firebase API's join date, karma, submission

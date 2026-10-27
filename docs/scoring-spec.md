@@ -55,7 +55,7 @@ file (see "Policy override semantics").
     wins. A value matching no bin contributes 0.
   - `bool`: contributes `weight` when true, 0 when false.
 - `group`: one of `age`, `activity`, `graph`, `handle`, `profile`, `verification`, `content`, `geo`,
-  `timing`.
+  `timing`, `coordination`.
 
 ## Default feature tables
 
@@ -81,7 +81,7 @@ follow ratios). They will move after the calibration pass.
 | `x.gapRegularity` | timing | 1.0 | coefficient of variation of the gaps between the newest ≤ 100 `postTimestamps`, gaps over 7 days dropped | `[0,0.5)→1.0` `[0.5,0.8)→0.5` `[0.8,∞)→0` | ≥ 30 gaps spanning ≥ 3 days; not verified `org` or `gov`, not declared automated. Post times come from Tier 1 `UserTweets` only (the posts tab of a profile visit), owned by the user the request names |
 | `x.noSleepWindow` | timing | 1.0 | longest run of empty hours in the circular UTC hour-of-day histogram of the newest ≤ 100 posts | `[0,2)→1.0` `[2,4)→0.5` `[4,∞)→0` | ≥ 100 posts over ≥ 7 days; not verified `org` or `gov`, not declared automated |
 
-Group caps: `handle` 1.2, `profile` 1.2, `geo` 0.4, `timing` 1.5. Prior `-2.5`. Confidence weights `{0: 0.25, 1: 0.55, 2: 0.20}`.
+Group caps: `handle` 1.2, `profile` 1.2, `geo` 0.4, `timing` 1.5, `coordination` 1.5. Prior `-2.5`. Confidence weights `{0: 0.25, 1: 0.55, 2: 0.20}`.
 
 ### Reddit
 
@@ -94,7 +94,8 @@ Group caps: `handle` 1.2, `profile` 1.2, `geo` 0.4, `timing` 1.5. Prior `-2.5`. 
 | `reddit.noAvatar` | profile | 0.3 | default snoo avatar | bool, 0.3 | Tier 2 delivered |
 | `reddit.noVerifiedEmail` | profile | 0.3 | `has_verified_email === false` | bool, 0.3 | field present for other users (day-one check; drop otherwise) |
 
-Prior `-2.8`. Confidence weights `{0: 0.30, 1: 0.0, 2: 0.70}` (Reddit has no Tier 1).
+Prior `-2.8`. Confidence weights `{0: 0.30, 1: 0.0, 2: 0.70}` (Reddit has no Tier 1). Group cap
+`coordination` 1.5.
 
 ### Bluesky (proposed)
 
@@ -112,12 +113,12 @@ Mirrors the X numbers where the signal is the same. All uncalibrated.
 | `bsky.noSleepWindow` | timing | 1.0 | as `x.noSleepWindow` | same bins as `x.noSleepWindow` | as `x.noSleepWindow` |
 
 Prior `-2.5`. Confidence weights `{0: 0.20, 1: 0.40, 2: 0.40}`. Group caps `handle` 1.2, `profile` 1.2,
-`timing` 1.5.
+`timing` 1.5, `coordination` 1.5.
 
 ### Hacker News
 
 Mirrors the Reddit numbers where the signal is the same, and weighs less where Hacker News makes it
-weaker ([ADR-0026](decisions/ADR-0026-hacker-news-adapter.md)). Every input comes from the Firebase
+weaker ([ADR-0026](decisions/ADR-0026-hacker-news-adapter.md)). Every account input comes from the Firebase
 `user/<id>.json` lookup: the page renders a username and nothing else, and Hacker News has no avatars,
 no follower graph and no suggested usernames. All uncalibrated.
 
@@ -129,9 +130,21 @@ no follower graph and no suggested usernames. All uncalibrated.
 | `hn.hasAbout` | profile | 0.3 | the `about` field is non-empty | bool, −0.3 | Tier 2 delivered |
 | Declared (username, about) | — | — | a username whose last word is "bot", or a first-person "I am a … bot" in `about` | override → `declared` | always |
 
-Prior `-2.8`. Confidence weights `{0: 0.30, 1: 0.0, 2: 0.70}` (Hacker News has no Tier 1). No group caps.
+Prior `-2.8`. Confidence weights `{0: 0.30, 1: 0.0, 2: 0.70}` (Hacker News has no Tier 1). Group cap
+`coordination` 1.5.
 The green name Hacker News gives new accounts is not read until a recording shows one, and `[dead]` and
 `[flagged]` are moderation outcomes, not evidence about the account, so neither is a feature.
+
+### Every platform
+
+One feature reads the thread on the page rather than the account
+([ADR-0027](decisions/ADR-0027-near-duplicate-reply.md)). It sits in every platform's table with the
+same numbers and a `coordination` group cap of 1.5, which the planned `thread.sharedRareDomain` will
+share.
+
+| Feature | Group | Cap | Input | Bins / weight | Gate |
+|---|---|---|---|---|---|
+| `thread.nearDuplicateReply` | coordination | 1.5 | distinct other authors with an earlier reply in the same thread whose word set has Jaccard similarity ≥ 0.7 with this account's reply; the most over the account's replies on the page (`src/core/thread/`) | `[0,1)→0` `[1,2)→0.6` `[2,4)→1.0` `[4,∞)→1.5` | the account has a reply on the page whose normalised text is ≥ 40 characters and ≥ 6 words. A thread is a post page (X, Bluesky), a Reddit post's comments, a Hacker News `item` page; the root post, its ancestors, a reply's own parent, X's promoted posts and the posts X appends below the conversation are never sources, and quoted text is left out. Tier 0 |
 
 ### Gating rules
 
@@ -290,6 +303,27 @@ anything that costs per-account time, money or patience is skipped, and the skip
   Post times are normalised once, in the pipeline: no time more than ten minutes in the future
   (Bluesky's client-written `createdAt` can say 2099), distinct, the newest 100.
 
+### Near-duplicate replies (`thread.nearDuplicateReply`)
+
+- **Mechanism.** A reply operation posts the same template from many accounts into the threads it
+  targets, because writing a reply per account costs a person's time or an LLM call each, and a
+  template that already got engagement is worth reusing. A person writes their own words. So several
+  accounts posting near copies of one reply in one thread is coordination, the one pattern no single
+  account's profile shows. Only *earlier* copies count, so the first author of a text always scores 0:
+  copying a real person's reply flags the copier, never the person.
+- **Evidence.** Coordinated-inauthentic-behaviour takedowns and the fox8 botnet (Yang and Menczer
+  2023) show reply farms sharing text and links across accounts; Reddit's copied-comment bots repost
+  an earlier comment from the same thread (adversarial-evasion.md 4.1). Text is compared as sets of words after removing case, URLs,
+  mentions, punctuation and emoji, so a swapped word or an added hashtag still matches and two
+  different replies of six words or more rarely do. No measurement on Botdar's own sample yet
+  (adversarial-evasion.md 6).
+- **Counter-case.** Popular phrases, slogans and memes get repeated by real people, and a thread of
+  fans can repeat one line. The length gate drops greetings and one-liners; the `coordination` cap of
+  1.5 keeps this feature alone below `some` (prior −2.5 + 1.5 gives p ≈ 0.27); and as one group it can
+  never meet the two-group rule for `many` on its own. On Bluesky the order comes from the record key,
+  which the author's client writes, so a backdated copy can make an original look later
+  ([ADR-0027](decisions/ADR-0027-near-duplicate-reply.md)).
+
 ### Reddit karma shape (`reddit.postToCommentKarma`)
 
 - **Mechanism.** Karma farming reposts content that already did well; a repost earns post karma without
@@ -432,6 +466,7 @@ such a line once, from the stronger item.
 | `x.countryLocaleMismatch` | "Based in {country}, writes in {language}" / false: nothing | "a persona run from abroad" / none | geo: "Expats, travellers, VPN users and people writing in a second language look the same." |
 | `x.gapRegularity`, `bsky.gapRegularity` | "Posts at regular intervals" / no contribution: nothing | "scheduling tools post on a clock" / none | timing: "Accounts that schedule posts with a publishing tool show the same regularity." |
 | `x.noSleepWindow`, `bsky.noSleepWindow` | "Posts around the clock" / no contribution: nothing | "no daily quiet window" / none | this feature's own: "Shared and team-run accounts post around the clock." |
+| `thread.nearDuplicateReply` | "Reply closely matches an earlier one by another account" / "… earlier ones by {n} other accounts" / no contribution: nothing | "reply templates get reused across accounts" / none | this feature's own: "Popular phrases and memes get repeated by real people." (group coordination: "People reacting to the same post often say the same thing.") |
 | `reddit.karmaPerDay`, `hn.karmaPerDay` | "~{rate} karma/day on a {age}-old account" | "karma-farming pattern" / "a pace ordinary use earns" | activity: as above |
 | `hn.submissionsPerDay` | "{n} posts and comments in {age}" (a rate under one a day reads better as a count) | "prolonged hyperactivity" / "a pace a person keeps up" | activity: as above |
 | `hn.hasAbout` | "Has an about section" / false: nothing | "left as created" / "effort spent on this one account" | profile: as above |

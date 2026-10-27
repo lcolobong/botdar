@@ -128,17 +128,18 @@ marketing pages unless marked otherwise, so read them as order-of-magnitude figu
 
 Notation follows the scoring spec. Two new independence groups are proposed: `coordination` (evidence
 from the thread a post appears in, scoped to that post and never stored) and `timing` (cadence from a
-timeline), with group caps 1.5 and 1.2 (the timing cap shipped at 1.5, ADR-0024). Thread-scoped evidence changes one contract: the resolver keys
-verdicts by handle, so thread features attach to the `PostRef` and merge at render time, and the same
-account can read `typical` in one thread and `some` in another; the reason line names the thread. Text
-comparisons lowercase the text, strip mentions, URLs, emoji and digits, and compare character 5-gram
-shingles by Jaccard similarity: O(n²) over at most a few hundred visible replies.
+timeline), with group caps 1.5 and 1.2 (the timing cap shipped at 1.5, ADR-0024; the coordination cap
+shipped at 1.5, ADR-0027). Thread-scoped evidence changes one contract: the resolver keys verdicts by
+handle. The proposal here was to attach thread features to the `PostRef` and merge them at render time,
+compared as character 5-gram shingles; ADR-0027 shipped the first one per account instead, from an
+in-memory index of the page's thread that navigation clears, compared as sets of words after
+lowercasing and stripping mentions, URLs, punctuation and emoji, and says why.
 
 ### 4.1 In-thread coordination (Tier 0 DOM; Tier 1 TweetDetail where noted)
 
 | Feature (group, cap) | Detects | Input and bins | Gate | False-positive risk; caveat copy | v1.1 |
 |---|---|---|---|---|---|
-| `thread.nearDuplicateReply` (coordination, 1.5) | Template replies across authors; Reddit copied comments | Other authors' *earlier* replies with Jaccard ≥ 0.7: `[0,1)→0` `[1,2)→0.6` `[2,4)→1.0` `[4,∞)→1.5` | Normalised text ≥ 40 chars and ≥ 6 words; the parent's text is never a source | Low with the length gate: copypasta, slogans, "happy birthday" waves. "Popular phrases and memes get repeated by real people." | **Yes** |
+| `thread.nearDuplicateReply` (coordination, 1.5) | Template replies across authors; Reddit copied comments | Other authors' *earlier* replies with Jaccard ≥ 0.7: `[0,1)→0` `[1,2)→0.6` `[2,4)→1.0` `[4,∞)→1.5` | Normalised text ≥ 40 chars and ≥ 6 words; the parent's text is never a source | Low with the length gate: copypasta, slogans, "happy birthday" waves. "Popular phrases and memes get repeated by real people." | **Shipped 2026-10-27** (X, Reddit, Bluesky, Hacker News; ADR-0027) |
 | `thread.sharedRareDomain` (coordination, 1.5) | One domain linked by many authors (fox8's strongest tell) | Distinct authors linking the same registrable domain, excluding a built-in top ~1,000 domains and the parent's own domain: `[0,3)→0` `[3,5)→0.8` `[5,∞)→1.2` | Domain resolved (X needs Tier 1 `expanded_url`; the DOM shows t.co) | Low to medium: a thread about one niche site. "People discussing the same story often share the same link." | **Yes** |
 | `thread.replyBurst` (timing, 1.2) | Several replies within seconds of the parent | Other authors' replies within 30 s of the parent, when this one is too: `[0,3)→0` `[3,6)→0.4` `[6,∞)→0.8` | Absolute timestamps (`time[datetime]` on X; Reddit's comment timestamp element to confirm) | High: large accounts draw instant replies from notification-on fans. "Popular accounts get many fast replies from people with notifications on." | No; measure |
 | `thread.templatePhrase` (content, 0.6) | Generic praise and bait ("Great insight!", "Couldn't agree more", "check my bio") | Bool on a phrase list shipped in the build (the restrict-only policy cannot add phrases) | English only | High and language-biased. | No |
@@ -237,7 +238,7 @@ carry a `many` verdict.
 
 **Recommended v1.1 set (six), all local, nothing new leaves the browser:**
 
-1. `thread.nearDuplicateReply` (X, Reddit, Bluesky; Tier 0): the only local coordination signal,
+1. `thread.nearDuplicateReply` (shipped 2026-10-27, ADR-0027, with Hacker News too; Tier 0): the only local coordination signal,
    covering Reddit's same-thread copied comments, with the earliest-author rule against poisoning.
 2. `thread.sharedRareDomain` (Tier 0, Tier 1 for X link expansion): fox8's strongest tell; it shares the
    `coordination` cap with (1), so the two cannot stack past 1.5.
