@@ -27,6 +27,8 @@
   --tier-human-bg: #dcefe3;
   --tier-human-fg: #1f5e3a;
   --tier-human-line: #3f8a5c;
+  /* The strength bar's moderate step towards ordinary: a lighter green on the way to Unsure's amber. */
+  --tier-human-soft-line: #5d9a3a;
   --bot-eye: #e3242b;
   --tier-unknown-fg: #5c6168;
   --tier-unknown-line: #6e757f;
@@ -81,6 +83,7 @@
   --tier-human-bg: #163626;
   --tier-human-fg: #9fe0b8;
   --tier-human-line: #4faa75;
+  --tier-human-soft-line: #a8c96a;
   --bot-eye: #ff3b47;
   --tier-unknown-fg: #9aa0a8;
   --tier-unknown-line: #7d848d;
