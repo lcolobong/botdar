@@ -153,7 +153,7 @@ export interface AccountSignals {
   country?: string;                   // X "About this account"
   usernameChanges?: number;
   appStore?: string;
-  replyShare?: { ratio: number; n: number };   // only when observable
+  replyShare?: { ratio: number; sampleSize: number };   // only when observable: Tier 1 replies tab; tallied across replies-tab pages by tweet id in the passive source
   postText?: string;                  // own post text from Tier 1 bodies (reposts excluded), gathered ≤ 2,000 chars
   postTimestamps?: number[];          // own post times, newest first, ≤ 100; a higher tier's set replaces
   provenance: Partial<Record<keyof AccountSignals, SourceTier>>;  // which tier set each field (source dots)
@@ -272,14 +272,15 @@ Firefox requires `cloneInto` for cross-world `detail`.
 
 Two operations also carry the request's query string as `query` (capped, untrusted like the body):
 X's `UserTweets`, whose `variables.userId` names the profile the timeline belongs to, and Bluesky's
-`getAuthorFeed`, whose `filter` says which tab it is. The cadence features read them (ADR-0024).
+`getAuthorFeed`, whose `filter` says which tab it is. The cadence features read them (ADR-0024); X's
+`UserTweetsAndReplies` carries its query too, for the reply share.
 
 ### X (`x.com`, `twitter.com`)
 
 | Concern | Approach |
 |---|---|
 | Interceptor allowlist | `HomeTimeline`, `HomeLatestTimeline`, `SearchTimeline`, `UserTweets`, `UserTweetsAndReplies`, `TweetDetail`, `UserByScreenName`, `AboutAccountQuery`, `Followers`, `Following` under `/i/api/graphql/<queryId>/<op>` |
-| Tier 1 | `parsers/graphqlUsers.ts` walks any response for user objects and posts (each post's `legacy.full_text` is kept per author as `postText`, for `x.countryLocaleMismatch`; on `UserTweets` (the posts tab; the replies tab is a different population) the `legacy.created_at` values of the user the request's `variables.userId` names, relayed with the body as the request's query string, become `postTimestamps`, for the cadence features, and no active X request fetches a timeline, ADR-0024): `core.screen_name`, `core.created_at`, `is_blue_verified`, `profile_bio.description`, `relationship_count`, `tweet_count`, `rest_id`, with `legacy.*` fallbacks. The X "Automated" label is expected in the user object (`legacy.automated` or `affiliates_highlighted_label`); confirm day one |
+| Tier 1 | `parsers/graphqlUsers.ts` walks any response for user objects and posts (each post's `legacy.full_text` is kept per author as `postText`, for `x.countryLocaleMismatch`; on `UserTweets` (the posts tab; the replies tab is a different population for cadence) the `legacy.created_at` values of the user the request's `variables.userId` names, relayed with the body as the request's query string, become `postTimestamps`, for the cadence features, and no active X request fetches a timeline, ADR-0024; on `UserTweetsAndReplies` the share of that user's tweets with a non-empty `legacy.in_reply_to_status_id_str` becomes `replyShare`, tallied across pages by tweet id, thread continuations not counted, and only when the request names the user; the field names are guesses until recorded): `core.screen_name`, `core.created_at`, `is_blue_verified`, `profile_bio.description`, `relationship_count`, `tweet_count`, `rest_id`, with `legacy.*` fallbacks. The X "Automated" label is expected in the user object (`legacy.automated` or `affiliates_highlighted_label`); confirm day one |
 | Tier 0 | `article[data-testid="tweet"]:not([data-botdar])`; handle from `[data-testid="User-Name"] a[href^="/"]` whose text starts with `@`; default-avatar heuristic from `[data-testid="Tweet-User-Avatar"]` |
 | Tier 2 | `AboutAccountQuery` on hover only: country, username-change count, app store. queryId resolution: observed from page traffic > policy value > baked constant. Limiter 20/min, burst 3, backoff on `x-rate-limit-reset` / `retry-after`, 60 s fallback |
 | Observer | One `MutationObserver` on `document.body`, coalesced per pass via `requestIdleCallback` (150 ms timeout fallback); the analysis behind a pass runs in slices capped at the idle deadline or 8 ms, whichever is shorter, and yields between them (`src/core/idleSlices.ts`, the same for Reddit and Bluesky); a discovered post is only analysed once it comes within one screen of the viewport (`src/core/nearViewport.ts`, ADR-0019); `data-botdar="1"` set only after a badge mounts; `WeakMap<Element, BadgeHandle>`; removed nodes unmount (X virtualizes its list) |
