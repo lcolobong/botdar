@@ -37,10 +37,24 @@ export interface SmokeFeedScene {
   readonly fixturePath?: string;
   /** Carried into the manifest, for a scene that is expected to draw nothing. */
   readonly note?: string;
+  /**
+   * Hover the badge mounted after this element (a CSS selector for the adapter's badge anchor)
+   * instead of the most interesting badge on the page.
+   */
+  readonly hoverAnchor?: string;
 }
 
 export const smokeFeedScenes: readonly SmokeFeedScene[] = [
   { platform: "x", scene: "feed", path: "/home" },
+  // The recorded timeline again, at a profile path where its script also fetches maria_dev's
+  // About lookup and profile timeline (hand-written bodies under tests/fixtures/smoke/).
+  {
+    platform: "x",
+    scene: "profile",
+    path: "/maria_dev",
+    fixtureFile: "timeline.html",
+    hoverAnchor: 'div:has(> a[href="/maria_dev"])',
+  },
   { platform: "reddit", scene: "feed", path: "/" },
   {
     platform: "reddit",
@@ -140,6 +154,16 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
     platform: "x",
     path: "/i/api/graphql/SMOKEQUERYID00000001/HomeTimeline",
     file: "tests/fixtures/x/graphql/home-timeline-core.json",
+  },
+  {
+    platform: "x",
+    path: "/i/api/graphql/SMOKEQUERYID00000002/AboutAccountQuery",
+    file: "tests/fixtures/smoke/x-about-account.json",
+  },
+  {
+    platform: "x",
+    path: "/i/api/graphql/SMOKEQUERYID00000003/UserTweets",
+    file: "tests/fixtures/smoke/x-user-tweets.json",
   },
   {
     platform: "bluesky",

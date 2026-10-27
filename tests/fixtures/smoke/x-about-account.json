@@ -1,0 +1,31 @@
+{
+  "_fixture": "Hand-written for scripts/smoke, not a recording: an AboutAccountQuery body for the recorded timeline's maria_dev, so the profile scene shows the About country.",
+  "data": {
+    "user_result_by_screen_name": {
+      "result": {
+        "__typename": "User",
+        "id": "VXNlcjoxMDAwMDAwMDAwMDAwMDAwMDA0",
+        "rest_id": "1000000000000000004",
+        "about_profile": {
+          "account_based_in": "Brazil",
+          "created_country_accurate": true,
+          "location_accurate": true,
+          "source": "Web",
+          "username_changes": {
+            "count": 1
+          }
+        },
+        "affiliates_highlighted_label": {},
+        "core": {
+          "created_at": "Fri Jun 14 08:30:00 +0000 2013",
+          "name": "Maria Dev",
+          "screen_name": "maria_dev"
+        },
+        "is_blue_verified": false,
+        "verification": {
+          "verified": false
+        }
+      }
+    }
+  }
+}
