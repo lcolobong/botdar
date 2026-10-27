@@ -1,0 +1,12 @@
+{
+  "_fixture": "Hand-written, not a recording: no overview.json recording exists yet. The shape is the documented public listing (kind, data.children[].data.created_utc, data.after, data.dist); the item bodies are stand-ins for the real, larger thing the parser never reads. Validation tracker: record a real body.",
+  "kind": "Listing",
+  "data": {
+    "after": null,
+    "dist": 0,
+    "modhash": "",
+    "geo_filter": "",
+    "children": [],
+    "before": null
+  }
+}

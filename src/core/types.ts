@@ -83,6 +83,16 @@ export interface AccountSignals {
    * field these add up: each response and each tier contributes the posts it carried (pipeline.ts).
    */
   postTimestamps?: number[];
+  /**
+   * Epoch milliseconds of the oldest item in a Reddit user's overview listing. Only the timestamp
+   * is kept, never the item (ADR-0025 stores derived numbers).
+   */
+  oldestItemAt?: number;
+  /**
+   * How many items that listing returned, or the page size when it continues past the page; with
+   * `oldestItemAt` it tells whether the oldest item is the account's first visible activity.
+   */
+  visibleItemCount?: number;
   /** Which tier last supplied each field; drives the source dots, not which tiers delivered. */
   provenance: Partial<Record<SignalField, SourceTier>>;
   /**
@@ -219,6 +229,12 @@ export interface SignalSource {
    * snapshot does not answer for it and a lookup that hits storage still runs it.
    */
   memoryOnly?: boolean;
+  /**
+   * Active: runs on hover only, never on sight, and is cached apart from the account's main lookup
+   * (so an on-sight lookup that already stored the profile does not hide it). For a request that
+   * costs more than the profile fetch and only matters once someone opens the card.
+   */
+  hoverOnly?: boolean;
 }
 
 export type BadgeDensity = "x" | "reddit-post" | "reddit-comment" | "bluesky" | "hackernews";

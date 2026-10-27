@@ -1,0 +1,43 @@
+{
+  "_fixture": "Hand-written, not a recording: no overview.json recording exists yet. The shape is the documented public listing (kind, data.children[].data.created_utc, data.after, data.dist); the item bodies are stand-ins for the real, larger thing the parser never reads. Validation tracker: record a real body.",
+  "kind": "Listing",
+  "data": {
+    "after": null,
+    "dist": 3,
+    "modhash": "",
+    "geo_filter": "",
+    "children": [
+      {
+        "kind": "t1",
+        "data": {
+          "id": "x1",
+          "created_utc": 1760000000,
+          "author": "quiet_lantern_4821",
+          "subreddit": "gardening",
+          "body": "Placeholder comment text."
+        }
+      },
+      {
+        "kind": "t3",
+        "data": {
+          "id": "x2",
+          "created_utc": 1759740800.5,
+          "author": "quiet_lantern_4821",
+          "subreddit": "gardening",
+          "title": "Placeholder title"
+        }
+      },
+      {
+        "kind": "t1",
+        "data": {
+          "id": "x3",
+          "created_utc": 1756544000,
+          "author": "quiet_lantern_4821",
+          "subreddit": "gardening",
+          "body": "Placeholder comment text."
+        }
+      }
+    ],
+    "before": null
+  }
+}

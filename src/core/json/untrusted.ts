@@ -30,6 +30,12 @@ export function readBoolean(parent: UnknownRecord | undefined, key: string): boo
   return typeof value === "boolean" ? value : undefined;
 }
 
+/** Finite numbers only: NaN, infinities and numeric strings stay unobserved. */
+export function readNumber(parent: UnknownRecord | undefined, key: string): number | undefined {
+  const value: unknown = parent?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
 /** Non-negative safe integers only; a count serialised as a string stays unobserved. */
 export function readCount(parent: UnknownRecord | undefined, key: string): number | undefined {
   const value: unknown = parent?.[key];

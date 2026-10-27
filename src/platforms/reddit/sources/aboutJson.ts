@@ -5,23 +5,25 @@
  * HTML login page; after one of those the source pauses itself, since every further lookup would
  * get the same answer and add nothing but traffic to the user's session.
  */
-import { RateLimitedError, retryAfterMsFrom } from "../../../core/ratelimit";
 import type { AccountRef, PartialSignals, ResolveContext, SignalSource } from "../../../core/types";
 import type { AboutParseResult } from "../parsers/about";
 import { parseAboutResponse } from "../parsers/about";
+import type { LoginPause, RedditJsonResult } from "./redditJson";
+import {
+  LOGIN_REQUIRED_PAUSE_MS,
+  createLoginPause,
+  fetchRedditJson,
+  redditLoginPause,
+} from "./redditJson";
 
 export const ABOUT_JSON_SOURCE_ID = "reddit.aboutJson";
-/** How long lookups stay off after a logged-out answer. */
-export const LOGIN_REQUIRED_PAUSE_MS = 10 * 60_000;
-/** A real about.json is a few kilobytes; anything near this cap is not one. */
-const MAX_BODY_CHARS = 1024 * 1024;
-const HTTP_UNAUTHORIZED = 401;
-const HTTP_FORBIDDEN = 403;
-const HTTP_TOO_MANY_REQUESTS = 429;
+export { LOGIN_REQUIRED_PAUSE_MS };
 
 export interface AboutJsonSourceOptions {
   fetch?: typeof fetch;
   now?: () => number;
+  /** Shared with the other Reddit sources; a source of its own by default. */
+  loginPause?: LoginPause;
 }
 
 export interface AboutJsonSource extends SignalSource {
@@ -33,66 +35,29 @@ export function aboutJsonPath(handle: string): string {
   return `/user/${encodeURIComponent(handle)}/about.json?raw_json=1`;
 }
 
-function isHtml(response: Response): boolean {
-  return (response.headers.get("content-type") ?? "").toLowerCase().includes("text/html");
-}
-
 export function createAboutJsonSource(options: AboutJsonSourceOptions = {}): AboutJsonSource {
   const fetchResponse: typeof fetch = options.fetch ?? ((input, init) => fetch(input, init));
   const now: () => number = options.now ?? Date.now;
-  let loginRequiredUntil = 0;
-
-  const pauseForLogin = (): void => {
-    loginRequiredUntil = now() + LOGIN_REQUIRED_PAUSE_MS;
-  };
+  const loginPause: LoginPause = options.loginPause ?? createLoginPause(now);
 
   const resolve = async (
     ref: AccountRef,
     context: ResolveContext,
   ): Promise<PartialSignals | null> => {
-    if (now() < loginRequiredUntil) return null;
-    let response: Response;
-    try {
-      response = await fetchResponse(aboutJsonPath(ref.handle), {
-        credentials: "same-origin",
-        headers: { Accept: "application/json" },
-        signal: context.signal,
-      });
-    } catch {
-      // Aborted or offline: nothing to cache, the next hover tries again.
+    if (loginPause.active()) return null;
+    const response: RedditJsonResult = await fetchRedditJson({
+      fetch: fetchResponse,
+      now,
+      path: aboutJsonPath(ref.handle),
+      signal: context.signal,
+      label: "about.json",
+    });
+    if (response.status === "loginRequired" || response.status === "forbidden") {
+      loginPause.trip();
       return null;
     }
-    if (response.status === HTTP_TOO_MANY_REQUESTS) {
-      throw new RateLimitedError(
-        "Reddit rate-limited about.json",
-        retryAfterMsFrom(response.headers, now()),
-      );
-    }
-    if (
-      response.status === HTTP_UNAUTHORIZED ||
-      response.status === HTTP_FORBIDDEN ||
-      isHtml(response)
-    ) {
-      pauseForLogin();
-      return null;
-    }
-    if (!response.ok) return null;
-    let body: string;
-    try {
-      body = await response.text();
-    } catch {
-      return null;
-    }
-    if (body.length > MAX_BODY_CHARS) return null;
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(body);
-    } catch {
-      // A 200 that is not JSON is the login page served without its content type.
-      pauseForLogin();
-      return null;
-    }
-    const result: AboutParseResult = parseAboutResponse(parsed);
+    if (response.status !== "ok") return null;
+    const result: AboutParseResult = parseAboutResponse(response.body);
     switch (result.status) {
       case "ok":
         return result.handle === ref.handle ? result.signals : null;
@@ -110,8 +75,10 @@ export function createAboutJsonSource(options: AboutJsonSourceOptions = {}): Abo
     tier: 2,
     kind: "active",
     resolve,
-    loginRequired: () => now() < loginRequiredUntil,
+    loginRequired: loginPause.active,
   };
 }
 
-export const aboutJsonSource: AboutJsonSource = createAboutJsonSource();
+export const aboutJsonSource: AboutJsonSource = createAboutJsonSource({
+  loginPause: redditLoginPause,
+});
