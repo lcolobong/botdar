@@ -1,6 +1,6 @@
 # ADR-0012: No per-account data at rest
 
-Status: Accepted
+Status: Accepted, amended by ADR-0025 (Tier 2 lookups may persist on the device, under salted-hash keys, for seven days)
 Date: 2026-10-22
 
 ## Context

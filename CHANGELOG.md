@@ -32,6 +32,9 @@ The first release, covering the MVP.
 - A signed, restrict-only policy file fetched once a day that lets the maintainer switch a platform or
   a signal source off for everyone without a store release. It can never enable anything.
 - Conservative mode, which turns off the optional profile lookups locally.
+- Remembered lookups: profile data a lookup returned is kept on the device for seven days under salted
+  one-way hashes, so the same account is not fetched again after a reload. "Remember lookups for 7
+  days" turns it off and "Clear cache" erases it, both on the options page.
 - Chrome and Firefox builds from one codebase. Firefox 128 or later.
 
 ### Privacy

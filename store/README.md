@@ -78,7 +78,9 @@ features.
 ```
 Stores the user's settings (which platforms are on, conservative mode, label style), the last
 downloaded signed configuration file, and the optional "This looks wrong" feedback the user chooses to
-record, which stays on the device until the user exports or clears it. No account signals or scores are
+record, which stays on the device until the user exports or clears it, and, unless the user turns it
+off, profile lookups kept for seven days under salted one-way hashes (no handles or names in readable
+form) so the same account is not fetched twice; the user can clear them at any time. No scores are
 written to storage.
 ```
 
@@ -182,14 +184,16 @@ The manifest declares `browser_specific_settings.gecko.data_collection_permissio
 This add-on does not collect or transmit any data. It declares data_collection_permissions: none. The
 only request it makes on its own is a once-a-day download of a signed configuration file from the
 project's GitHub Pages site, which carries no information about the user or the accounts they have
-seen. Settings, the last configuration file and optional user-recorded feedback are kept in the
-browser's local storage and never leave the device.
+seen. Settings, the last configuration file, optional user-recorded feedback and seven-day remembered
+lookups (salted hashes, switchable and clearable) are kept in the browser's local storage and never
+leave the device.
 ```
 
 ### Permission notes for the reviewer
 
 ```
-storage: settings, the last downloaded configuration file, and optional user-recorded feedback.
+storage: settings, the last downloaded configuration file, optional user-recorded feedback, and
+seven-day remembered lookups keyed by salted hashes (can be switched off and cleared on the options page).
 alarms: the once-a-day configuration download.
 Host permissions (x.com, twitter.com, www.reddit.com, old.reddit.com, bsky.app): the content scripts
 that draw the badges and, on hover, may request the same public profile information the page shows.
