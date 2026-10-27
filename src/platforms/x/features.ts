@@ -5,6 +5,8 @@
  */
 import { handleBigramLogLikelihood } from "../../core/handle/bigram";
 import { looksLikeNamePlusDigits, trailingDigitCount } from "../../core/handle/shape";
+import type { Cadence } from "../../core/scoring/cadence";
+import { cadenceOf } from "../../core/scoring/cadence";
 import type { CountryLanguageComparison } from "../../core/text/accountLanguage";
 import { countryLanguageMismatch } from "../../core/text/accountLanguage";
 import type {
@@ -153,6 +155,13 @@ export function toFeatures(
         comparison.language,
       );
     }
+  }
+  const cadence: Cadence = cadenceOf(signals);
+  if (cadence.gapCoefficientOfVariation !== undefined) {
+    add("x.gapRegularity", cadence.gapCoefficientOfVariation, "timing", ["postTimestamps"]);
+  }
+  if (cadence.longestEmptyHourRun !== undefined) {
+    add("x.noSleepWindow", cadence.longestEmptyHourRun, "timing", ["postTimestamps"]);
   }
   return features;
 }

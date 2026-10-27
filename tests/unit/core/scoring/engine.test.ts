@@ -237,6 +237,25 @@ describe("scoreAccount golden table", () => {
     expect(verdict.lowConfidence).toBe(false);
   });
 
+  it("the two timing features share a cap of 1.5 and never reach many on their own", () => {
+    const timing: Feature[] = [
+      feature("x.gapRegularity", 0.05, "timing", 1),
+      feature("x.noSleepWindow", 0, "timing", 1),
+    ];
+    const verdict: Verdict = scoreAccount(timing, signalsWith(), defaultWeights.x, options);
+    expect(verdict.tier).not.toBe("many");
+    const withStrongAge: Verdict = scoreAccount(
+      [...timing, feature("x.accountAgeDays", 10, "age", 1)],
+      signalsWith({ tiersDelivered: ALL_TIERS }),
+      defaultWeights.x,
+      options,
+    );
+    // 1.0 + 1.0 scaled down to the group cap; a second group is what reaches many.
+    expect(withStrongAge.evidence.map((item) => item.contribution)).toEqual([1.5, 0.75, 0.75]);
+    expect(withStrongAge.logOdds).toBeCloseTo(defaultWeights.x.prior + 3, 10);
+    expect(withStrongAge.tier).toBe("many");
+  });
+
   it("some: two strong features from the SAME group never reach many", () => {
     const verdict: Verdict = score([strongActivity, strongLikes]);
     expect(verdict.probability).toBeGreaterThan(testWeights.thresholds.many);

@@ -17,7 +17,13 @@ import type {
   VerdictTier,
   DeclaredBy,
 } from "../types";
-import { allWhyClauses, directionFor, whyFor } from "./whyClauses";
+import {
+  allFeatureCaveats,
+  allWhyClauses,
+  directionFor,
+  featureCaveat,
+  whyFor,
+} from "./whyClauses";
 
 export interface ReasonContext {
   value: number | boolean;
@@ -204,6 +210,15 @@ function countryMismatchReason({ value, signals, detail }: ReasonContext): strin
     : `Based in ${signals.country}, writes in ${languageName}`;
 }
 
+/** Irregular gaps and a nightly lull are what most accounts show; only the pattern is worded. */
+function regularGapsReason({ contribution }: ReasonContext): string {
+  return contribution > 0 ? "Posts at regular intervals" : NO_REASON;
+}
+
+function roundTheClockReason({ contribution }: ReasonContext): string {
+  return contribution > 0 ? "Posts around the clock" : NO_REASON;
+}
+
 const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "x.postsPerDay": postsPerDayReason,
   "bsky.postsPerDay": postsPerDayReason,
@@ -223,6 +238,10 @@ const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "x.replyShare": ({ value }) => `${formatCount(Number(value) * 100)}% of recent posts are replies`,
   "x.usernameChanges": ({ value }) => `Username changed ${pluralize(Number(value), "time")}`,
   "x.countryLocaleMismatch": countryMismatchReason,
+  "x.gapRegularity": regularGapsReason,
+  "bsky.gapRegularity": regularGapsReason,
+  "x.noSleepWindow": roundTheClockReason,
+  "bsky.noSleepWindow": roundTheClockReason,
   "reddit.karmaPerDay": karmaPerDayReason,
   "reddit.postToCommentKarma": karmaSplitReason,
   "reddit.generatedName": ({ value }) =>
@@ -295,7 +314,13 @@ const GROUP_CAVEATS: Readonly<Record<IndependenceGroup, string>> = {
   verification: "Paid verification is available to any new account.",
   content: "Some people only ever reply; that is a style, not automation.",
   geo: "Expats, travellers, VPN users and people writing in a second language look the same.",
+  timing: "Accounts that schedule posts with a publishing tool show the same regularity.",
 };
+
+/** The case against a read led by `item`: the feature's own counter-case, else its group's. */
+function counterCaseFor(item: Evidence): string {
+  return featureCaveat(item.feature) ?? GROUP_CAVEATS[item.group];
+}
 
 /**
  * The case against a Likely human read, keyed on the group of its strongest ordinary evidence: what
@@ -347,7 +372,7 @@ export function caveatFor(context: CaveatContext): string {
     context.evidenceByMagnitude.find((item) => item.contribution > 0) ??
     context.evidenceByMagnitude[0];
   const groupCaveat: string | undefined =
-    dominant === undefined ? undefined : GROUP_CAVEATS[dominant.group];
+    dominant === undefined ? undefined : counterCaseFor(dominant);
 
   // The "Why this could be wrong" label and the group sentence carry the disclaimer, so a closer is
   // added only when it states something factual about this read.
@@ -390,6 +415,7 @@ export function allFixedStrings(): string[] {
     ...Object.values(DECLARED_REASONS_BY_SOURCE),
     ...allWhyClauses(),
     ...Object.values(GROUP_CAVEATS),
+    ...allFeatureCaveats(),
     ...Object.values(TYPICAL_COUNTER_CASES),
     SOURCES_MISSING_CLOSING,
     LONG_LIVED_CLOSING,

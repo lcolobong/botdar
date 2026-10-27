@@ -35,10 +35,41 @@ describe("defaultWeights", () => {
     expect(defaultWeights.bluesky.confidenceWeights).toEqual({ 0: 0.2, 1: 0.4, 2: 0.4 });
   });
 
-  it("caps handle and profile groups on X and Bluesky but not Reddit, and geo on X", () => {
-    expect(defaultWeights.x.groupCaps).toEqual({ handle: 1.2, profile: 1.2, geo: 0.4 });
-    expect(defaultWeights.bluesky.groupCaps).toEqual({ handle: 1.2, profile: 1.2 });
+  it("caps handle, profile and timing on X and Bluesky, geo on X, and nothing on Reddit", () => {
+    expect(defaultWeights.x.groupCaps).toEqual({
+      handle: 1.2,
+      profile: 1.2,
+      geo: 0.4,
+      timing: 1.5,
+    });
+    expect(defaultWeights.bluesky.groupCaps).toEqual({ handle: 1.2, profile: 1.2, timing: 1.5 });
     expect(defaultWeights.reddit.groupCaps).toEqual({});
+  });
+
+  it("weighs the two timing features as spec'd and caps them together below both", () => {
+    for (const prefix of ["x", "bsky"] as const) {
+      const platform: PlatformWeights = prefix === "x" ? defaultWeights.x : defaultWeights.bluesky;
+      expect(platform.features[`${prefix}.gapRegularity`]).toEqual({
+        group: "timing",
+        cap: 1.0,
+        kind: "bins",
+        bins: [
+          [0, 0.5, 1.0],
+          [0.5, 0.8, 0.5],
+          [0.8, null, 0],
+        ],
+      });
+      expect(platform.features[`${prefix}.noSleepWindow`]).toEqual({
+        group: "timing",
+        cap: 1.0,
+        kind: "bins",
+        bins: [
+          [0, 2, 1.0],
+          [2, 4, 0.5],
+          [4, null, 0],
+        ],
+      });
+    }
   });
 
   it("has the feature set from the spec for each platform", () => {
@@ -54,9 +85,11 @@ describe("defaultWeights", () => {
       "x.replyShare",
       "x.usernameChanges",
       "x.countryLocaleMismatch",
+      "x.gapRegularity",
+      "x.noSleepWindow",
     ]);
     expect(Object.keys(defaultWeights.reddit.features)).toHaveLength(6);
-    expect(Object.keys(defaultWeights.bluesky.features)).toHaveLength(5);
+    expect(Object.keys(defaultWeights.bluesky.features)).toHaveLength(7);
   });
 
   it("has a reason template for every feature id it defines", () => {

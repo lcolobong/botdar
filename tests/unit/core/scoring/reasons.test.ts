@@ -33,6 +33,15 @@ function evidence(feature: string, contribution: number, group: Evidence["group"
 }
 
 describe("reason templates", () => {
+  it("words posting cadence only when it points towards automation", () => {
+    for (const prefix of ["x", "bsky"]) {
+      expect(render(`${prefix}.gapRegularity`, 0.1)).toBe("Posts at regular intervals");
+      expect(render(`${prefix}.gapRegularity`, 1.4, { contribution: 0 })).toBe(NO_REASON);
+      expect(render(`${prefix}.noSleepWindow`, 0)).toBe("Posts around the clock");
+      expect(render(`${prefix}.noSleepWindow`, 7, { contribution: 0 })).toBe(NO_REASON);
+    }
+  });
+
   it("renders posting rate with a whole number", () => {
     expect(render("x.postsPerDay", 143.2)).toBe("~143 posts/day since joining");
     expect(render("bsky.postsPerDay", 1500)).toBe("~1,500 posts/day since joining");
@@ -317,6 +326,18 @@ describe("selectReasons", () => {
 
 describe("caveatFor", () => {
   const base = { tier: "some" as const, signals: signalsWith(), now: NOW, sourcesMissing: [] };
+
+  it("gives each timing feature its own counter-case", () => {
+    expect(
+      caveatFor({ ...base, evidenceByMagnitude: [evidence("x.gapRegularity", 0.75, "timing")] }),
+    ).toBe("Accounts that schedule posts with a publishing tool show the same regularity.");
+    for (const feature of ["x.noSleepWindow", "bsky.noSleepWindow"]) {
+      expect(caveatFor({ ...base, evidenceByMagnitude: [evidence(feature, 0.75, "timing")] })).toBe(
+        "Shared and team-run accounts post around the clock.",
+      );
+    }
+    expect(allFixedStrings()).toContain("Shared and team-run accounts post around the clock.");
+  });
 
   it("picks the group caveat from the largest positive contribution", () => {
     const caveat: string = caveatFor({

@@ -10,7 +10,15 @@ export type SourceTier = 0 | 1 | 2;
 
 /** Evidence groups; the top tier needs two contributions from distinct groups (ADR-0003). */
 export type IndependenceGroup =
-  "age" | "activity" | "graph" | "handle" | "profile" | "verification" | "content" | "geo";
+  | "age"
+  | "activity"
+  | "graph"
+  | "handle"
+  | "profile"
+  | "verification"
+  | "content"
+  | "geo"
+  | "timing";
 
 export interface AccountRef {
   platform: PlatformId;

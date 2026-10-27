@@ -170,3 +170,44 @@ describe("bluesky toFeatures", () => {
     });
   });
 });
+
+describe("bluesky cadence", () => {
+  const roundTheClock: number[] = Array.from(
+    { length: 100 },
+    (_, index) => NOW - index * 110 * 60_000,
+  );
+
+  it("emits both timing features from a regular, round-the-clock feed", () => {
+    const features: Feature[] = toFeatures(
+      signalsFor("a.example.com", {
+        postTimestamps: roundTheClock,
+        provenance: { postTimestamps: 2 },
+      }),
+      NOW,
+    );
+    expect(featureById(features, "bsky.gapRegularity")).toEqual({
+      id: "bsky.gapRegularity",
+      value: 0,
+      group: "timing",
+      tier: 2,
+    });
+    expect(featureById(features, "bsky.noSleepWindow")).toMatchObject({
+      value: 0,
+      group: "timing",
+    });
+  });
+
+  it("omits both below their gates and for an organisation", () => {
+    const fewPosts: Feature[] = toFeatures(
+      signalsFor("a.example.com", { postTimestamps: roundTheClock.slice(0, 20) }),
+      NOW,
+    );
+    expect(ids(fewPosts)).not.toContain("bsky.gapRegularity");
+    expect(ids(fewPosts)).not.toContain("bsky.noSleepWindow");
+    const organisation: Feature[] = toFeatures(
+      signalsFor("a.example.com", { postTimestamps: roundTheClock, verified: "org" }),
+      NOW,
+    );
+    expect(ids(organisation)).not.toContain("bsky.gapRegularity");
+  });
+});

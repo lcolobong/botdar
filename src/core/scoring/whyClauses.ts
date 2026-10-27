@@ -15,6 +15,11 @@ interface WhyClauses {
    * without one has no ordinary reading (a pattern that is either present or unsaid).
    */
   ordinary?: string;
+  /**
+   * The "Why this could be wrong" line when this feature leads the read, for a feature whose
+   * counter-case is not its group's (reasons.ts falls back to the group's).
+   */
+  caveat?: string;
 }
 
 const POSTING_RATE: WhyClauses = {
@@ -33,6 +38,12 @@ const SUGGESTED_HANDLE: WhyClauses = { automated: "unchanged suggested handle" }
 const PROFILE_EFFORT: WhyClauses = {
   automated: "left as created",
   ordinary: "effort spent on this one account",
+};
+
+const REGULAR_GAPS: WhyClauses = { automated: "scheduling tools post on a clock" };
+const NO_QUIET_HOURS: WhyClauses = {
+  automated: "no daily quiet window",
+  caveat: "Shared and team-run accounts post around the clock.",
 };
 
 /** One entry per reason template in reasons.ts; whyClauses.test.ts checks the two lists match. */
@@ -60,6 +71,10 @@ const WHY_CLAUSES: Readonly<Record<FeatureId, WhyClauses>> = {
     ordinary: "too few renames to suggest a resale",
   },
   "x.countryLocaleMismatch": { automated: "a persona run from abroad" },
+  "x.gapRegularity": REGULAR_GAPS,
+  "bsky.gapRegularity": REGULAR_GAPS,
+  "x.noSleepWindow": NO_QUIET_HOURS,
+  "bsky.noSleepWindow": NO_QUIET_HOURS,
   "reddit.karmaPerDay": {
     automated: "karma-farming pattern",
     ordinary: "a pace ordinary use earns",
@@ -105,6 +120,22 @@ export function whyFor(featureId: FeatureId, direction: ReasonDirection): string
 
 export function featureIdsWithWhyClauses(): FeatureId[] {
   return Object.keys(WHY_CLAUSES);
+}
+
+/** The feature's own counter-case, when it has one. */
+export function featureCaveat(featureId: FeatureId): string | undefined {
+  return WHY_CLAUSES[featureId]?.caveat;
+}
+
+/** Every feature counter-case, for the wording-rule test. */
+export function allFeatureCaveats(): string[] {
+  return [
+    ...new Set(
+      Object.values(WHY_CLAUSES).flatMap((clauses: WhyClauses) =>
+        clauses.caveat === undefined ? [] : [clauses.caveat],
+      ),
+    ),
+  ];
 }
 
 /** Every clause that can reach the hover card, for the wording-rule test. */
