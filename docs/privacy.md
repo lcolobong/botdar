@@ -40,6 +40,12 @@ words each reply on the current page uses, with its author and time, never the t
 already shows these replies; nothing is requested for them, nothing is stored on disk, and the list is
 dropped when you move to another page.
 
+To notice one small site linked by many accounts in one thread, it also keeps, in memory, the site
+names (such as example.com, never the rest of the address) that each reply on the page links. On X,
+which shows links only as t.co, the names come from the conversation data the page already loaded. The
+site names are kept for at most 5,000 posts while the tab stays on the site, so that returning to a
+thread finds them again, and are gone when the tab is closed or reloaded.
+
 ## Requests to platforms
 
 On X and Bluesky when you hover a badge, and on Reddit when a post comes into view, the extension may ask
