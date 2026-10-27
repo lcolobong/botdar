@@ -34,6 +34,8 @@ export interface ParsedXPost {
   text?: string;
   /** Epoch milliseconds. */
   createdAt?: number;
+  /** Whether the post answers another post. A repost wrapper is never one. */
+  isReply: boolean;
 }
 
 export interface ParsedXBody {
@@ -212,6 +214,24 @@ function longPostTextOf(node: UnknownRecord): string | undefined {
   return readString(noteResult, "text");
 }
 
+/**
+ * GUESS: a reply names the post it answers at legacy.in_reply_to_status_id_str (empty or absent on
+ * any other post) and the answered user at legacy.in_reply_to_user_id_str, else
+ * legacy.in_reply_to_screen_name; no recorded body under tests/fixtures/x/graphql/ carries a
+ * replies tab yet. An answered user that is the author makes it a thread continuation, not a reply.
+ */
+function answersAnotherPost(legacy: UnknownRecord, author: AccountRef): boolean {
+  if ((readString(legacy, "in_reply_to_status_id_str") ?? "") === "") {
+    return false;
+  }
+  const answeredUserId: string | undefined = readString(legacy, "in_reply_to_user_id_str");
+  if (answeredUserId !== undefined && answeredUserId !== "" && author.id !== undefined) {
+    return answeredUserId !== author.id;
+  }
+  const answeredScreenName: string = readString(legacy, "in_reply_to_screen_name") ?? "";
+  return answeredScreenName === "" || answeredScreenName.toLowerCase() !== author.handle;
+}
+
 /** A post object: its own `rest_id`, a `legacy` block, and its author under `core.user_results`. */
 function asPost(node: UnknownRecord): ParsedXPost | undefined {
   const legacy: UnknownRecord | undefined = readRecord(node, "legacy");
@@ -224,10 +244,13 @@ function asPost(node: UnknownRecord): ParsedXPost | undefined {
   if (id === undefined || legacy === undefined || author === undefined) {
     return undefined;
   }
-  const post: ParsedXPost = { id, author: author.ref };
+  // A repost wrapper is never a reply, and neither is a thread continuation: a post answering its own
+  // author is the author continuing a thread, which a human does as often as a bot.
+  const isRepost: boolean = readRecord(legacy, "retweeted_status_result") !== undefined;
+  const isReply: boolean = !isRepost && answersAnotherPost(legacy, author.ref);
+  const post: ParsedXPost = { id, author: author.ref, isReply };
   // A repost's text is the reposted author's words, and their language is not this account's; the
   // reposted post itself is walked into and credited to its own author.
-  const isRepost: boolean = readRecord(legacy, "retweeted_status_result") !== undefined;
   const text: string | undefined = isRepost
     ? undefined
     : (longPostTextOf(node) ?? readString(legacy, "full_text"));
@@ -337,35 +360,69 @@ export function profileTimelineUserIdOf(query: string | undefined): string | und
   }
 }
 
+export interface OwnerPosts {
+  handle: string;
+  posts: ParsedXPost[];
+}
+
 /**
- * The post times of a profile timeline's owner. Such a body also carries other authors' posts
- * (quoted and reposted posts), each a scattered sample of that author's timeline that would read as
- * false gaps. The owner is the user the request named (`ownerId`); only when the request did not
- * say does the author with the most posts count, and then a tie names no owner.
+ * The posts of a timeline's owner. Such a body also carries other authors' posts (quoted and
+ * reposted posts, the other side of a reply), each a scattered sample of that author's timeline. The
+ * owner is the user the request named (`ownerId`); only when the request did not say does the author
+ * with the most posts count, and then a tie names no owner.
  */
+function ownerPostsOf(posts: ParsedXPost[], ownerId?: string): OwnerPosts | undefined {
+  const postsByAuthor = new Map<string, OwnerPosts>();
+  for (const post of posts) {
+    const authorKey: string = post.author.id ?? post.author.handle;
+    if (ownerId !== undefined && authorKey !== ownerId) {
+      continue;
+    }
+    const entry: OwnerPosts = postsByAuthor.get(authorKey) ?? {
+      handle: post.author.handle,
+      posts: [],
+    };
+    entry.posts.push(post);
+    postsByAuthor.set(authorKey, entry);
+  }
+  const [owner, runnerUp] = [...postsByAuthor.values()].sort(
+    (left, right) => right.posts.length - left.posts.length,
+  );
+  return owner === undefined || owner.posts.length === runnerUp?.posts.length ? undefined : owner;
+}
+
+/** The post times of a profile timeline's owner; undated posts carry no time and are skipped. */
 export function timelineOwnerPosts(
   posts: ParsedXPost[],
   ownerId?: string,
 ): TimelineOwnerPosts | undefined {
-  const postsByAuthor = new Map<string, TimelineOwnerPosts>();
-  for (const post of posts) {
-    const authorKey: string = post.author.id ?? post.author.handle;
-    if (post.createdAt === undefined || (ownerId !== undefined && authorKey !== ownerId)) {
-      continue;
-    }
-    const entry: TimelineOwnerPosts = postsByAuthor.get(authorKey) ?? {
-      handle: post.author.handle,
-      timestamps: [],
-    };
-    entry.timestamps.push(post.createdAt);
-    postsByAuthor.set(authorKey, entry);
-  }
-  const [owner, runnerUp] = [...postsByAuthor.values()].sort(
-    (left, right) => right.timestamps.length - left.timestamps.length,
+  const owner: OwnerPosts | undefined = ownerPostsOf(
+    posts.filter((post) => post.createdAt !== undefined),
+    ownerId,
   );
-  return owner === undefined || owner.timestamps.length === runnerUp?.timestamps.length
+  return owner === undefined
     ? undefined
-    : owner;
+    : {
+        handle: owner.handle,
+        timestamps: owner.posts.flatMap((post) =>
+          post.createdAt === undefined ? [] : [post.createdAt],
+        ),
+      };
+}
+
+/**
+ * The tweets of a replies tab's owner (`UserTweetsAndReplies`), reposts included as the owner's posts
+ * like the cadence timestamps do. The replies tab pairs every reply with the tweet it answers, so
+ * the owner and the other party tie on tweet count and the most-tweets fallback of the posts tab
+ * would name no one: the owner must be the user the request named (`ownerId`, from
+ * `variables.userId`), and without one nothing is counted.
+ * GUESS: as for `profileTimelineUserIdOf`, the request is a GET carrying its variables.
+ */
+export function repliesTabOwnerTweets(
+  posts: ParsedXPost[],
+  ownerId: string | undefined,
+): OwnerPosts | undefined {
+  return ownerId === undefined ? undefined : ownerPostsOf(posts, ownerId);
 }
 
 // MARK: - Signals
