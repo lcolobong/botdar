@@ -15,12 +15,14 @@ function mount(overrides: Partial<HoverCardProps> = {}): HTMLElement {
         text: "Joined 3 weeks ago",
         why: "new accounts often replace banned ones",
         direction: "automated",
+        contribution: 1.2,
         tier: 1,
       },
       {
         text: "Following 4,900, followed by 12",
         why: "mass-following nobody returned",
         direction: "automated",
+        contribution: 0.4,
         tier: 2,
       },
     ],
@@ -72,9 +74,13 @@ describe("HoverCard", () => {
     expect(card.querySelector(".bd-card__why")?.textContent).toBe(
       " · new accounts often replace banned ones",
     );
-    expect(card.querySelector(".bd-card__lean")?.getAttribute("aria-label")).toBe(
-      "Points towards automated",
+    const markerNames: string[] = [...card.querySelectorAll(".bd-card__lean")].map(
+      (element: Element) => element.getAttribute("aria-label") ?? "",
     );
+    expect(markerNames).toEqual([
+      "Strong, points towards automated",
+      "Moderate, points towards automated",
+    ]);
   });
 
   it("heads a declared card's closing line as what the label means, with a neutral marker", () => {
@@ -95,6 +101,10 @@ describe("HoverCard", () => {
     );
     expect(labels).toEqual(["Why it leans this way", "What this means"]);
     expect(card.querySelector(".bd-card--declared .bd-card__reason--automated")).not.toBeNull();
+    expect(card.querySelector(".bd-card__strength")).toBeNull();
+    expect(card.querySelector(".bd-card__lean")?.getAttribute("aria-label")).toBe(
+      "Points towards automated",
+    );
   });
 
   it("leaves out the reasons label when there are no reasons", () => {

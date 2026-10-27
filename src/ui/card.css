@@ -51,8 +51,10 @@
   gap: var(--space-2);
   font-size: 13px;
   line-height: 18px;
+  /* Grey by default, so a fill without its direction rule degrades rather than vanishes. */
+  --strength-color: var(--tier-unknown-line);
 }
-/* One colour token per direction, so a strength scale can later grade them without new markup. */
+/* The arrow takes one colour token per direction; the strength bar beside it grades the row. */
 .bd-card__reason--automated {
   --lean-color: var(--tier-many-fg);
 }
@@ -63,12 +65,59 @@
 .bd-card--declared .bd-card__reason--automated {
   --lean-color: var(--tier-declared-fg);
 }
+/*
+ * Strength runs red through amber and grey to green (ADR-0023). Colour is never the only cue: the
+ * fill's height says weak, moderate or strong, the arrow beside it keeps the direction, and the
+ * marker's accessible name says both.
+ */
+.bd-card__reason--weak {
+  --strength-fill: 33%;
+}
+.bd-card__reason--moderate {
+  --strength-fill: 66%;
+}
+.bd-card__reason--strong {
+  --strength-fill: 100%;
+}
+.bd-card__reason--moderate.bd-card__reason--automated {
+  --strength-color: var(--tier-some-line);
+}
+.bd-card__reason--strong.bd-card__reason--automated {
+  --strength-color: var(--tier-many-line);
+}
+.bd-card__reason--moderate.bd-card__reason--ordinary {
+  --strength-color: var(--tier-human-soft-line);
+}
+.bd-card__reason--strong.bd-card__reason--ordinary {
+  --strength-color: var(--tier-human-line);
+}
 .bd-card__lean {
   flex: none;
-  width: 10px;
-  text-align: center;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
   font-weight: 700;
   color: var(--lean-color);
+}
+.bd-card__arrow {
+  width: 10px;
+  text-align: center;
+}
+.bd-card__strength {
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--hairline);
+  display: flex;
+  align-items: flex-end;
+}
+.bd-card__strength-fill {
+  width: 100%;
+  height: var(--strength-fill);
+  background: var(--strength-color);
 }
 .bd-card__line {
   flex: 1;
