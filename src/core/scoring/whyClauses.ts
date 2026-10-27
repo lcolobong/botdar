@@ -81,7 +81,8 @@ export const DECLARED_WHY = "self-declared";
 /**
  * Positive evidence points towards automation and negative evidence away from it. Evidence that
  * weighs nothing points away too, as the Likely human rule counts it, unless the feature has no
- * ordinary reading: a mismatch held at zero weight is still a pattern common in automated accounts.
+ * ordinary reading: a mismatch a policy weighs at zero is still a pattern common in automated
+ * accounts.
  */
 export function directionFor(featureId: FeatureId, contribution: number): ReasonDirection {
   if (contribution > 0) {

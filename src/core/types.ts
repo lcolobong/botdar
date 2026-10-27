@@ -88,6 +88,11 @@ export interface Feature {
   value: number | boolean;
   group: IndependenceGroup;
   tier: SourceTier;
+  /**
+   * A value the reason line words, computed once with the feature so the template only formats it
+   * (the language code the country mismatch compared).
+   */
+  detail?: string;
 }
 
 export interface Evidence {

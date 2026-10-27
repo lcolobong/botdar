@@ -3,6 +3,14 @@ import { toFeatures } from "../../../../src/platforms/x/features";
 
 const DAY_MILLIS = 86_400_000;
 const NOW = Date.UTC(2026, 9, 22, 12, 0, 0);
+const RUSSIAN_POSTS =
+  "Я учитель и мама двоих детей. Здесь я пишу о книгах, путешествиях и о том, что происходит в моем городе.";
+const SPANISH_BIO =
+  "Periodista y lectora. Escribo sobre ciencia y tecnología para que todo el mundo pueda entender lo que pasa.";
+const PORTUGUESE_BIO =
+  "Professora de história e mãe de dois. Aqui eu falo sobre livros, viagens e tudo o que me faz pensar.";
+const ENGLISH_BIO =
+  "Coffee first, then code. I write about the small tools that make our work easier and I share what I learn.";
 
 function signalsFor(handle: string, partial: Partial<AccountSignals> = {}): AccountSignals {
   return {
@@ -28,7 +36,7 @@ function ids(features: Feature[]): string[] {
 
 describe("x toFeatures", () => {
   it("emits only the handle features for a bare reference", () => {
-    const features: Feature[] = toFeatures(signalsFor("alice_example"), NOW, "US");
+    const features: Feature[] = toFeatures(signalsFor("alice_example"), NOW, []);
     expect(ids(features)).toEqual([
       "x.handleNameDigits",
       "x.handleTrailingDigits",
@@ -56,6 +64,7 @@ describe("x toFeatures", () => {
         replyShare: { ratio: 0.95, sampleSize: 40 },
         usernameChanges: 3,
         country: "United States",
+        postText: RUSSIAN_POSTS,
         provenance: {
           createdAt: 1,
           followers: 1,
@@ -70,7 +79,7 @@ describe("x toFeatures", () => {
         },
       }),
       NOW,
-      "GB",
+      [],
     );
     expect(ids(features)).toEqual([
       "x.postsPerDay",
@@ -129,6 +138,7 @@ describe("x toFeatures", () => {
       value: true,
       group: "geo",
       tier: 2,
+      detail: "ru",
     });
   });
 
@@ -228,34 +238,71 @@ describe("x toFeatures", () => {
       });
     });
 
-    it("compares the About country with the locale region, tolerating case and accents", () => {
-      const match: Feature[] = toFeatures(signalsFor("a", { country: "united states" }), NOW, "US");
-      expect(featureById(match, "x.countryLocaleMismatch").value).toBe(false);
-      const mismatch: Feature[] = toFeatures(signalsFor("a", { country: "Brazil" }), NOW, "US");
-      expect(featureById(mismatch, "x.countryLocaleMismatch").value).toBe(true);
-      const accented: Feature[] = toFeatures(signalsFor("a", { country: "Turkiye" }), NOW, "TR");
-      expect(featureById(accented, "x.countryLocaleMismatch").value).toBe(false);
+    const mismatchOf = (
+      partial: Partial<AccountSignals>,
+      locales: string[] = [],
+    ): boolean | number | undefined =>
+      toFeatures(signalsFor("a", partial), NOW, locales).find(
+        (feature) => feature.id === "x.countryLocaleMismatch",
+      )?.value;
+
+    it("compares the About country with the account's own language", () => {
+      expect(mismatchOf({ country: "Spain", bio: SPANISH_BIO })).toBe(false);
+      expect(mismatchOf({ country: "Argentina", bio: SPANISH_BIO })).toBe(false);
+      expect(mismatchOf({ country: "Russia", bio: SPANISH_BIO })).toBe(true);
+      expect(mismatchOf({ country: "united states", postText: RUSSIAN_POSTS })).toBe(true);
+      expect(mismatchOf({ country: "Nigeria", bio: ENGLISH_BIO })).toBeUndefined();
+      expect(mismatchOf({ country: "Germany", bio: ENGLISH_BIO })).toBeUndefined();
     });
 
-    it("omits countryLocaleMismatch without a country or with a bad region", () => {
-      expect(ids(toFeatures(signalsFor("a"), NOW, "US"))).not.toContain("x.countryLocaleMismatch");
-      expect(
-        ids(toFeatures(signalsFor("a", { country: "Brazil" }), NOW, "not a region")),
-      ).not.toContain("x.countryLocaleMismatch");
+    it("reads the bio and the post text together", () => {
+      const shortBio: Partial<AccountSignals> = { country: "Brazil", bio: "Mãe, professora." };
+      expect(mismatchOf(shortBio)).toBeUndefined();
+      expect(mismatchOf({ ...shortBio, postText: RUSSIAN_POSTS })).toBe(true);
     });
 
-    it("reads the region from navigator.language and never infers one from a bare language", () => {
-      vi.stubGlobal("navigator", { language: "pt-BR" });
+    it("never compares against the viewer's locale", () => {
+      vi.stubGlobal("navigator", { language: "en-US" });
       try {
-        const features: Feature[] = toFeatures(signalsFor("a", { country: "Brazil" }), NOW);
-        expect(featureById(features, "x.countryLocaleMismatch").value).toBe(false);
-        vi.stubGlobal("navigator", { language: "en" });
-        expect(ids(toFeatures(signalsFor("a", { country: "Brazil" }), NOW))).not.toContain(
-          "x.countryLocaleMismatch",
+        const features: Feature[] = toFeatures(
+          signalsFor("a", { country: "Brazil", bio: PORTUGUESE_BIO }),
+          NOW,
         );
+        expect(featureById(features, "x.countryLocaleMismatch").value).toBe(false);
       } finally {
         vi.unstubAllGlobals();
       }
+    });
+
+    it("reads a country name printed in the display language", () => {
+      expect(mismatchOf({ country: "Brasilien", bio: PORTUGUESE_BIO }, ["de-DE"])).toBe(false);
+      expect(mismatchOf({ country: "Brasilien", bio: PORTUGUESE_BIO })).toBeUndefined();
+    });
+
+    it("omits countryLocaleMismatch without a country, a language or a readable country", () => {
+      expect(mismatchOf({ bio: SPANISH_BIO })).toBeUndefined();
+      expect(mismatchOf({ country: "Spain" })).toBeUndefined();
+      expect(mismatchOf({ country: "Spain", bio: "Periodista." })).toBeUndefined();
+      expect(mismatchOf({ country: "Europe", bio: SPANISH_BIO })).toBeUndefined();
+    });
+
+    it("takes the tier of the About lookup", () => {
+      const features: Feature[] = toFeatures(
+        signalsFor("a", {
+          country: "Russia",
+          bio: SPANISH_BIO,
+          provenance: { country: 2, bio: 1 },
+        }),
+        NOW,
+        [],
+      );
+      expect(featureById(features, "x.countryLocaleMismatch")).toEqual({
+        id: "x.countryLocaleMismatch",
+        value: true,
+        group: "geo",
+        tier: 2,
+        detail: "es",
+      });
     });
   });
 

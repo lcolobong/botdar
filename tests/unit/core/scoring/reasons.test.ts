@@ -104,6 +104,13 @@ describe("reason templates", () => {
     expect(render("x.countryLocaleMismatch", true, { signals })).toBe("Account based in Nigeria");
   });
 
+  it("names the country and the language the feature compared", () => {
+    const signals: AccountSignals = signalsWith({ values: { country: "Nigeria" } });
+    expect(render("x.countryLocaleMismatch", true, { signals, detail: "ru" })).toBe(
+      "Based in Nigeria, writes in Russian",
+    );
+  });
+
   it("renders Reddit karma templates", () => {
     const signals: AccountSignals = signalsWith({
       values: { createdAt: THREE_WEEKS_AGO, linkKarma: 12_000, commentKarma: 15 },
