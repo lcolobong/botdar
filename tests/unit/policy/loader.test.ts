@@ -95,7 +95,7 @@ function weights(): Record<PlatformId, PlatformWeights> {
     thresholds: { some: 0.3, many: 0.6 },
     features: {},
   });
-  return { x: platform(), reddit: platform(), bluesky: platform() };
+  return { x: platform(), reddit: platform(), bluesky: platform(), hackernews: platform() };
 }
 
 beforeEach(() => {

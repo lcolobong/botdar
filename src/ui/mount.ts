@@ -145,6 +145,9 @@ export function detectHostTheme(platform: PlatformId, doc: Document = document):
       return detectRedditTheme(doc);
     case "bluesky":
       return detectBlueskyTheme(doc);
+    case "hackernews":
+      // Hacker News has one theme, a light one, whatever the system prefers.
+      return "light";
   }
 }
 

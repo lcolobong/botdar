@@ -37,7 +37,7 @@ function weights(): Record<PlatformId, ScoringWeights> {
       handleDigits: { group: "handle", kind: "bool", cap: 0.7, weight: 0.7 },
     },
   });
-  return { x: platform(), reddit: platform(), bluesky: platform() };
+  return { x: platform(), reddit: platform(), bluesky: platform(), hackernews: platform() };
 }
 
 function policyWith(platforms: Record<string, PolicyPlatform>, version = 2): Policy {
@@ -55,6 +55,7 @@ function restrictedDefaults(): BuildDefaults {
     x: { enabled: false, tiers: { t1: false, t2: false }, rateLimitPerMinute: 5 },
     reddit: { enabled: false, tiers: { t1: false, t2: false }, rateLimitPerMinute: 5 },
     bluesky: { enabled: false, tiers: { t1: false, t2: false }, rateLimitPerMinute: 5 },
+    hackernews: { enabled: false, tiers: { t1: false, t2: false }, rateLimitPerMinute: 5 },
   };
 }
 

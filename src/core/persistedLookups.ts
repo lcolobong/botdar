@@ -25,6 +25,12 @@ export const SWEEP_DEBOUNCE_MS = 5000;
 /** Scorers only test `bio.trim().length === 0`; a read of a non-empty bio gets this stand-in text. */
 export const NON_EMPTY_BIO_PLACEHOLDER = "…";
 
+/**
+ * Handles are folded to lowercase before hashing, except where case tells accounts apart: Hacker
+ * News usernames are case-sensitive (Firebase answers `null` for the wrong case), so "Foo" and "foo"
+ * are two accounts there.
+ */
+const CASE_SENSITIVE_HANDLES: ReadonlySet<PlatformId> = new Set<PlatformId>(["hackernews"]);
 const SALT_BYTES = 16;
 const MAX_STRING_LENGTH = 64;
 
@@ -262,7 +268,8 @@ export class PersistedLookupStore {
   }
 
   private async keyFor(platform: PlatformId, handle: string): Promise<string> {
-    const material = `${await this.salt()}|${platform}|${handle.toLowerCase()}`;
+    const canonical: string = CASE_SENSITIVE_HANDLES.has(platform) ? handle : handle.toLowerCase();
+    const material = `${await this.salt()}|${platform}|${canonical}`;
     const digest: ArrayBuffer = await crypto.subtle.digest(
       "SHA-256",
       new TextEncoder().encode(material),
