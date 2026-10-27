@@ -6,8 +6,10 @@
  * X ships two user shapes side by side. The 2026 shape keeps identity under `core.*`, counts under
  * `relationship_counts` / `tweet_counts`, the bio under `profile_bio`, the avatar under `avatar`. The
  * older shape keeps all of that under `legacy.*`. The newer field wins whenever both are present.
+ * Posts keep their text under `legacy.full_text` and their author under `core.user_results.result`.
  */
 import type { AccountRef, PartialSignals, VerifiedKind } from "../../../core/types";
+import { MAX_POST_TEXT_LENGTH } from "../../../core/types";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -25,8 +27,22 @@ export interface ParsedAboutAccount {
   declaredAutomated?: boolean;
 }
 
+/** One post in a timeline body, attributed to its author. */
+export interface ParsedXPost {
+  id: string;
+  author: AccountRef;
+  text?: string;
+}
+
+export interface ParsedXBody {
+  users: ParsedXUser[];
+  posts: ParsedXPost[];
+}
+
 const MAX_WALK_NODES = 200_000;
 const MAX_USERS_PER_RESPONSE = 500;
+const MAX_POSTS_PER_RESPONSE = 500;
+const MAX_SINGLE_POST_TEXT_LENGTH = 1_000;
 const MAX_BIO_LENGTH = 500;
 const MAX_DISPLAY_NAME_LENGTH = 100;
 const MAX_COUNTRY_LENGTH = 64;
@@ -181,21 +197,59 @@ function asUser(node: UnknownRecord): ParsedXUser | undefined {
   return { ref: { platform: "x", handle: screenName.toLowerCase(), id: restId }, node };
 }
 
+// MARK: - Posts
+
+/** The text of a long post; `legacy.full_text` holds only its first 280 characters. */
+function longPostTextOf(node: UnknownRecord): string | undefined {
+  // GUESS: long posts carry their whole text at note_tweet.note_tweet_results.result.text, as X's
+  // public payloads have; no recorded body under tests/fixtures/x/graphql/ contains a long post yet.
+  const noteResult: UnknownRecord | undefined = readRecord(
+    readRecord(readRecord(node, "note_tweet"), "note_tweet_results"),
+    "result",
+  );
+  return readString(noteResult, "text");
+}
+
+/** A post object: its own `rest_id`, a `legacy` block, and its author under `core.user_results`. */
+function asPost(node: UnknownRecord): ParsedXPost | undefined {
+  const legacy: UnknownRecord | undefined = readRecord(node, "legacy");
+  const authorNode: UnknownRecord | undefined = readRecord(
+    readRecord(readRecord(node, "core"), "user_results"),
+    "result",
+  );
+  const id: string | undefined = readString(node, "rest_id");
+  const author: ParsedXUser | undefined = authorNode === undefined ? undefined : asUser(authorNode);
+  if (id === undefined || legacy === undefined || author === undefined) {
+    return undefined;
+  }
+  const post: ParsedXPost = { id, author: author.ref };
+  // A repost's text is the reposted author's words, and their language is not this account's; the
+  // reposted post itself is walked into and credited to its own author.
+  const isRepost: boolean = readRecord(legacy, "retweeted_status_result") !== undefined;
+  const text: string | undefined = isRepost
+    ? undefined
+    : (longPostTextOf(node) ?? readString(legacy, "full_text"));
+  if (text !== undefined) {
+    post.text = text.slice(0, MAX_SINGLE_POST_TEXT_LENGTH);
+  }
+  return post;
+}
+
+// MARK: - Walk
+
 /**
- * Finds every user object anywhere in a GraphQL body, in document order, deduplicated by `rest_id`.
- * The walk is iterative and bounded so a hostile or enormous body cannot stall the content script.
+ * Every user object and every post anywhere in a GraphQL body, in document order, each deduplicated
+ * by its `rest_id`. A post is walked into (its author, a quoted or reposted post), a user is not. The
+ * walk is iterative and bounded so a hostile or enormous body cannot stall the content script.
  */
-export function collectUsers(body: unknown): ParsedXUser[] {
+export function parseGraphqlBody(body: unknown): ParsedXBody {
   const users: ParsedXUser[] = [];
+  const posts: ParsedXPost[] = [];
   const seenIds = new Set<string>();
   const visited = new WeakSet<object>();
   const pending: unknown[] = [body];
   let visitedCount = 0;
-  while (
-    pending.length > 0 &&
-    visitedCount < MAX_WALK_NODES &&
-    users.length < MAX_USERS_PER_RESPONSE
-  ) {
+  while (pending.length > 0 && visitedCount < MAX_WALK_NODES) {
     const node: unknown = pending.pop();
     if (typeof node !== "object" || node === null || visited.has(node)) {
       continue;
@@ -208,9 +262,16 @@ export function collectUsers(body: unknown): ParsedXUser[] {
       if (user !== undefined) {
         if (user.ref.id !== undefined && !seenIds.has(user.ref.id)) {
           seenIds.add(user.ref.id);
-          users.push(user);
+          if (users.length < MAX_USERS_PER_RESPONSE) {
+            users.push(user);
+          }
         }
         continue;
+      }
+      const post: ParsedXPost | undefined = asPost(node);
+      if (post !== undefined && !seenIds.has(post.id) && posts.length < MAX_POSTS_PER_RESPONSE) {
+        seenIds.add(post.id);
+        posts.push(post);
       }
       children.push(...Object.values(node));
     }
@@ -218,8 +279,28 @@ export function collectUsers(body: unknown): ParsedXUser[] {
       pending.push(children[index]);
     }
   }
-  return users;
+  return { users, posts };
 }
+
+export function collectUsers(body: unknown): ParsedXUser[] {
+  return parseGraphqlBody(body).users;
+}
+
+/** Each author's post text in one body, joined in document order and capped for the detector. */
+export function postTextByHandle(posts: ParsedXPost[]): Map<string, string> {
+  const texts = new Map<string, string>();
+  for (const post of posts) {
+    if (post.text === undefined) {
+      continue;
+    }
+    const earlier: string | undefined = texts.get(post.author.handle);
+    const joined: string = earlier === undefined ? post.text : `${earlier}\n${post.text}`;
+    texts.set(post.author.handle, joined.slice(0, MAX_POST_TEXT_LENGTH));
+  }
+  return texts;
+}
+
+// MARK: - Signals
 
 export function toSignals(user: ParsedXUser): PartialSignals {
   const { node } = user;

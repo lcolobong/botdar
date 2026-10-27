@@ -3,8 +3,11 @@ import { readFileSync } from "node:fs";
 import {
   collectUsers,
   parseAboutAccount,
+  parseGraphqlBody,
   parseXTimestamp,
+  postTextByHandle,
   toSignals,
+  type ParsedXPost,
   type ParsedXUser,
 } from "../../../../src/platforms/x/parsers/graphqlUsers";
 
@@ -270,5 +273,107 @@ describe("collectUsers on mangled input", () => {
     const filler = Array.from({ length: 200_000 }, () => ({}));
     const body = { filler, late: { rest_id: "9", core: { screen_name: "too_late" } } };
     expect(collectUsers(body)).toEqual([]);
+  });
+});
+
+describe("parseGraphqlBody posts", () => {
+  const { users, posts } = parseGraphqlBody(loadFixture("home-timeline-core.json"));
+
+  it("finds the same users as collectUsers", () => {
+    expect(users).toEqual(collectUsers(loadFixture("home-timeline-core.json")));
+  });
+
+  it("attributes every post, quoted posts included, to its own author", () => {
+    expect(posts.map((post) => [post.author.handle, post.text])).toEqual([
+      ["alice_example", "This is worth a read."],
+      ["example_news", "Our live coverage starts now."],
+      ["kai09127364", "Agreed 💯"],
+      ["alice_example", "Repeated author, same rest_id."],
+      ["mila48213907", "Follow for daily picks 🔥"],
+    ]);
+  });
+
+  it("reads the legacy shape", () => {
+    const legacyPosts: ParsedXPost[] = parseGraphqlBody(
+      loadFixture("tweet-detail-legacy.json"),
+    ).posts;
+    expect(legacyPosts.map((post) => post.author.handle)).toContain("legacy_poster");
+    expect(legacyPosts.find((post) => post.author.handle === "legacy_poster")?.text).toBe(
+      "Thread: what the old user shape looks like.",
+    );
+  });
+
+  it("prefers a long post's full text and caps it", () => {
+    const longText: string = "word ".repeat(400);
+    const body = {
+      rest_id: "1",
+      core: { user_results: { result: { rest_id: "2", core: { screen_name: "long_poster" } } } },
+      legacy: { full_text: "word word…" },
+      note_tweet: { note_tweet_results: { result: { text: longText } } },
+    };
+    const [post] = parseGraphqlBody(body).posts;
+    expect(post?.text).toBe(longText.slice(0, 1000));
+  });
+
+  it("credits a repost's text to the reposted author, never to the account that reposted it", () => {
+    const user = (handle: string, id: string) => ({ rest_id: id, core: { screen_name: handle } });
+    const russianPost = {
+      rest_id: "20",
+      core: { user_results: { result: user("russian_author", "2") } },
+      legacy: { full_text: "Сегодня снова писала компилятор и думала об ошибках." },
+    };
+    const repost = {
+      rest_id: "10",
+      core: { user_results: { result: user("br_reader", "1") } },
+      legacy: {
+        full_text: "RT @russian_author: Сегодня снова писала компилятор",
+        retweeted_status_result: { result: russianPost },
+      },
+    };
+    const ownPost = {
+      rest_id: "11",
+      core: { user_results: { result: user("br_reader", "1") } },
+      legacy: { full_text: "Hoje eu li um livro muito bom sobre a nossa história." },
+    };
+    const texts: Map<string, string> = postTextByHandle(parseGraphqlBody([repost, ownPost]).posts);
+    expect(texts.get("br_reader")).toBe("Hoje eu li um livro muito bom sobre a nossa história.");
+    expect(texts.get("russian_author")).toBe(
+      "Сегодня снова писала компилятор и думала об ошибках.",
+    );
+  });
+
+  it("skips posts without a legacy block, an id or a readable author", () => {
+    const author = { rest_id: "2", core: { screen_name: "someone" } };
+    const body = [
+      { rest_id: "1", core: { user_results: { result: author } } },
+      { core: { user_results: { result: author } }, legacy: { full_text: "no id" } },
+      { rest_id: "3", core: { user_results: { result: {} } }, legacy: { full_text: "no author" } },
+    ];
+    expect(parseGraphqlBody(body).posts).toEqual([]);
+  });
+});
+
+describe("postTextByHandle", () => {
+  const post = (handle: string, text?: string): ParsedXPost => ({
+    id: `${handle}-${text ?? ""}`,
+    author: { platform: "x", handle },
+    ...(text === undefined ? {} : { text }),
+  });
+
+  it("joins each author's posts in order", () => {
+    const texts: Map<string, string> = postTextByHandle([
+      post("alice", "first"),
+      post("bob", "hello"),
+      post("alice", "second"),
+      post("carol"),
+    ]);
+    expect(Object.fromEntries(texts)).toEqual({ alice: "first\nsecond", bob: "hello" });
+  });
+
+  it("caps the sample per author", () => {
+    const texts: Map<string, string> = postTextByHandle(
+      Array.from({ length: 10 }, (_, index) => post("alice", `${index}`.repeat(500))),
+    );
+    expect(texts.get("alice")).toHaveLength(2000);
   });
 });

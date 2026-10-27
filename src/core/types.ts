@@ -55,6 +55,11 @@ export interface AccountSignals {
   appStore?: string;
   /** Only when a timeline was observable. */
   replyShare?: ReplyShare;
+  /**
+   * Text of the account's own posts, gathered across responses up to `MAX_POST_TEXT_LENGTH`; read
+   * only for the language the account writes in, and kept in memory like every other field.
+   */
+  postText?: string;
   /** Which tier last supplied each field; drives the source dots, not which tiers delivered. */
   provenance: Partial<Record<SignalField, SourceTier>>;
   /**
@@ -66,6 +71,9 @@ export interface AccountSignals {
   /** Epoch milliseconds of the newest observation merged in. */
   observedAt: number;
 }
+
+/** About a dozen posts: plenty for the language detector, which reads 4,000 characters at most. */
+export const MAX_POST_TEXT_LENGTH = 2_000;
 
 export type SignalField = Exclude<
   keyof AccountSignals,
