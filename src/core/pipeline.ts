@@ -8,6 +8,7 @@
 
 import type { TtlLruCache } from "./cache";
 import { LookupQueue } from "./lookupQueue";
+import type { PersistedLookup, PersistedLookupStore } from "./persistedLookups";
 import type { RateLimiter } from "./ratelimit";
 import { recordLookup } from "./diagnostics.ts";
 import { RateLimitedError } from "./ratelimit";
@@ -66,12 +67,19 @@ export interface BadgeHandle {
   lookupStatus: () => LookupStatus;
 }
 
+/** The on-device layer under the memory cache (ADR-0025); `enabled` is the user's persistLookups setting. */
+export interface LookupPersistence {
+  store: PersistedLookupStore;
+  enabled: () => boolean;
+}
+
 export interface AccountResolverOptions {
   adapter: PlatformAdapter;
   scorer: Scorer;
   config: EffectivePlatformConfig;
   limiter: RateLimiter;
   cache: TtlLruCache<string, PartialSignals>;
+  persistence?: LookupPersistence;
   now?: () => number;
 }
 
@@ -93,6 +101,8 @@ interface AccountEntry extends MergeableSignals {
   lookupRunning: boolean;
   /** A source got a rate-limit token and ran for this account at least once. */
   lookupAttempted: boolean;
+  /** Set by a hover while the on-sight lookup is still reading storage, before it can be queued. */
+  promoteWhenQueued: boolean;
   /** Value of the resolver's touch counter when the entry was last looked up; orders eviction. */
   touchedAt: number;
 }
@@ -178,6 +188,7 @@ export class AccountResolver {
   private readonly scorer: Scorer;
   private readonly limiter: RateLimiter;
   private readonly cache: TtlLruCache<string, PartialSignals>;
+  private readonly persistence: LookupPersistence | undefined;
   private readonly now: () => number;
   private readonly entries = new Map<string, AccountEntry>();
   private readonly attachedPosts = new Map<Element, AttachedPost>();
@@ -194,6 +205,7 @@ export class AccountResolver {
     this.config = options.config;
     this.limiter = options.limiter;
     this.cache = options.cache;
+    this.persistence = options.persistence;
     this.now = options.now ?? Date.now;
     this.onSightQueue = new LookupQueue({
       limiter: this.limiter,
@@ -258,6 +270,7 @@ export class AccountResolver {
     }
     const entry: AccountEntry = this.entryFor(ref);
     if (entry.pendingLookup !== null) {
+      entry.promoteWhenQueued = true;
       this.onSightQueue.promote(ref.handle);
       return entry.pendingLookup;
     }
@@ -266,6 +279,10 @@ export class AccountResolver {
       recordLookup("cached");
       this.absorb(entry, cached, 2);
       return;
+    }
+    if (this.persistenceActive()) {
+      this.trackPending(entry, this.lookupPersistedThenFetch(entry));
+      return entry.pendingLookup ?? undefined;
     }
     recordLookup("started");
     this.trackPending(entry, this.runActiveSources(entry));
@@ -291,8 +308,110 @@ export class AccountResolver {
       this.absorb(entry, cached, 2);
       return Promise.resolve();
     }
+    if (this.persistenceActive()) {
+      this.trackPending(entry, this.lookupPersistedThenQueue(entry));
+      return entry.pendingLookup ?? Promise.resolve();
+    }
     this.trackPending(entry, this.onSightQueue.enqueue(ref.handle));
     return entry.pendingLookup ?? Promise.resolve();
+  }
+
+  /** Memory missed: a storage hit settles the account without a platform call; a miss fetches. */
+  private async lookupPersistedThenFetch(entry: AccountEntry): Promise<void> {
+    if ((await this.settleFromPersisted(entry)) || !this.stillWorthFetching(entry)) {
+      return;
+    }
+    recordLookup("started");
+    await this.runActiveSources(entry);
+  }
+
+  /** The on-sight variant: a storage hit skips the queue, so it does not wait for a rate-limit token. */
+  private async lookupPersistedThenQueue(entry: AccountEntry): Promise<void> {
+    if ((await this.settleFromPersisted(entry)) || !this.stillWorthFetching(entry)) {
+      return;
+    }
+    const handle: string = entry.signals.ref.handle;
+    const queued: Promise<void> = this.onSightQueue.enqueue(handle);
+    // A hover that arrived during the storage read could not move the key before it was queued.
+    if (entry.promoteWhenQueued) {
+      this.onSightQueue.promote(handle);
+    }
+    entry.promoteWhenQueued = false;
+    await queued;
+  }
+
+  /**
+   * The storage read is asynchronous, so Tier 2 may have been switched off or the resolver disposed
+   * meanwhile. A lookup turned away that way settles the account (waiting badges leave "Checking")
+   * without a fetch, as the queued path does.
+   */
+  private stillWorthFetching(entry: AccountEntry): boolean {
+    if (this.disposed) {
+      return false;
+    }
+    if (!this.config.tiers.t2) {
+      this.absorb(entry, null, 2);
+      return false;
+    }
+    return true;
+  }
+
+  private async settleFromPersisted(entry: AccountEntry): Promise<boolean> {
+    const persisted: PersistedLookup | undefined = await this.readPersisted(entry);
+    if (persisted === undefined) {
+      return false;
+    }
+    recordLookup("cached");
+    this.absorb(entry, persisted.signals, 2, true);
+    return true;
+  }
+
+  /** Memory first (the caller's miss), then storage; a storage hit repopulates the memory cache. */
+  private async readPersisted(entry: AccountEntry): Promise<PersistedLookup | undefined> {
+    const persistence: LookupPersistence | undefined = this.persistence;
+    if (persistence === undefined) {
+      return undefined;
+    }
+    const handle: string = entry.signals.ref.handle;
+    entry.lookupRunning = true;
+    try {
+      const persisted: PersistedLookup | undefined = await persistence.store.read(
+        this.adapter.id,
+        handle,
+      );
+      if (persisted === undefined || !this.persistenceActive()) {
+        return undefined;
+      }
+      // The memory copy must not outlive the stored one's seven days, whatever its age.
+      this.cache.set(
+        handle,
+        persisted.signals,
+        Math.min(TIER2_CACHE_TTL_MS, persisted.remainingMs),
+      );
+      return persisted;
+    } catch {
+      return undefined;
+    } finally {
+      entry.lookupRunning = false;
+    }
+  }
+
+  /** Conservative mode (Tier 2 off) and the persistLookups setting both switch storage reads and writes off. */
+  private persistenceActive(): boolean {
+    return (
+      this.persistence !== undefined &&
+      !this.disposed &&
+      this.config.tiers.t2 &&
+      this.persistence.enabled()
+    );
+  }
+
+  private persist(handle: string, signals: PartialSignals): void {
+    if (this.persistence === undefined || !this.persistenceActive()) {
+      return;
+    }
+    // A failed write only means the next lookup is a fetch; nothing waits on it.
+    void this.persistence.store.write(this.adapter.id, handle, signals).catch(() => undefined);
   }
 
   private trackPending(entry: AccountEntry, lookup: Promise<unknown>): void {
@@ -305,6 +424,8 @@ export class AccountResolver {
       if (entry.pendingLookup === pending) {
         entry.pendingLookup = null;
       }
+      // A hover's promote request is only meant for the lookup that was pending when it arrived.
+      entry.promoteWhenQueued = false;
     });
   }
 
@@ -484,6 +605,7 @@ export class AccountResolver {
     }
     if (delivered) {
       this.cache.set(ref.handle, collected);
+      this.persist(ref.handle, collected);
     }
     // Rescore even when nothing arrived or nothing changed, so every badge of the account and a
     // waiting hover card leave their loading state.
@@ -541,6 +663,7 @@ export class AccountResolver {
         pendingLookup: null,
         lookupRunning: false,
         lookupAttempted: false,
+        promoteWhenQueued: false,
         touchedAt: 0,
       };
       this.entries.set(ref.handle, entry);

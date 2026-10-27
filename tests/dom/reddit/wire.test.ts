@@ -83,7 +83,12 @@ async function wire(
 ): Promise<Harness> {
   loadRedditFixture(fixture);
   // Likely human off unless a test asks, so the typical author draws nothing by default here.
-  const settings: Settings = { ...defaultSettings, showLikelyHuman: false, ...overrides.settings };
+  const settings: Settings = {
+    ...defaultSettings,
+    persistLookups: false,
+    showLikelyHuman: false,
+    ...overrides.settings,
+  };
   await fakeBrowser.storage.local.set({ [SETTINGS_STORAGE_KEY]: settings });
   const resolve = vi.fn(async (): Promise<PartialSignals | null> => ({ linkKarma: 5 }));
   const source: SignalSource = {
@@ -189,12 +194,14 @@ describe("wireReddit", () => {
   });
 
   it("draws Likely human with the default settings, and unmounts it when it is turned off", async () => {
-    const harness: Harness = await wire("feed.html", { settings: defaultSettings });
+    const harness: Harness = await wire("feed.html", {
+      settings: { ...defaultSettings, persistLookups: false },
+    });
     expect(badges()).toHaveLength(2);
     expect(buttonOf(badgeFor("quiet_lantern_4821")).textContent).toContain("Likely human");
 
     await fakeBrowser.storage.local.set({
-      [SETTINGS_STORAGE_KEY]: { ...defaultSettings, showLikelyHuman: false },
+      [SETTINGS_STORAGE_KEY]: { ...defaultSettings, persistLookups: false, showLikelyHuman: false },
     });
     await vi.waitFor(() => expect(badges()).toHaveLength(1));
 
@@ -203,7 +210,9 @@ describe("wireReddit", () => {
   });
 
   it("closes an open Likely human card when Likely human is turned off", async () => {
-    const harness: Harness = await wire("feed.html", { settings: defaultSettings });
+    const harness: Harness = await wire("feed.html", {
+      settings: { ...defaultSettings, persistLookups: false },
+    });
     buttonOf(badgeFor("quiet_lantern_4821")).dispatchEvent(
       new MouseEvent("mouseenter", { bubbles: true }),
     );
@@ -211,7 +220,7 @@ describe("wireReddit", () => {
     expect(card().style.getPropertyValue("--botdar-display")).toBe("block");
 
     await fakeBrowser.storage.local.set({
-      [SETTINGS_STORAGE_KEY]: { ...defaultSettings, showLikelyHuman: false },
+      [SETTINGS_STORAGE_KEY]: { ...defaultSettings, persistLookups: false, showLikelyHuman: false },
     });
     await vi.waitFor(() => expect(card().style.getPropertyValue("--botdar-display")).toBe("none"));
     harness.dispose();

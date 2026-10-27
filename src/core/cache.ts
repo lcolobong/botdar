@@ -43,9 +43,10 @@ export class TtlLruCache<K, V> {
     return this.liveEntry(key) !== undefined;
   }
 
-  set(key: K, value: V): void {
+  /** `ttlMs` overrides the cache's TTL for this entry, e.g. to cap a value that is already aged. */
+  set(key: K, value: V, ttlMs: number = this.ttlMs): void {
     this.entries.delete(key);
-    this.entries.set(key, { value, expiresAt: this.now() + this.ttlMs });
+    this.entries.set(key, { value, expiresAt: this.now() + ttlMs });
     if (this.entries.size > this.capacity) {
       this.evictLeastRecentlyUsed();
     }

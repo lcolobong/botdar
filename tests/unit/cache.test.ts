@@ -24,6 +24,15 @@ describe("TtlLruCache", () => {
     expect(cache.has("missing")).toBe(false);
   });
 
+  it("lets one entry carry its own shorter TTL", () => {
+    const cache = new TtlLruCache<string, number>(2, 1000);
+    cache.set("short", 1, 100);
+    cache.set("default", 2);
+    vi.advanceTimersByTime(100);
+    expect(cache.has("short")).toBe(false);
+    expect(cache.has("default")).toBe(true);
+  });
+
   it("expires entries on read once the TTL has elapsed", () => {
     const cache = new TtlLruCache<string, number>(2, 1000);
     cache.set("a", 1);
