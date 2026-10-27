@@ -4,6 +4,7 @@
  * live in the scoring weights and are handed to the merge at runtime.
  */
 import type { PlatformId, TierSwitches } from "../types.ts";
+import { PLATFORM_IDS } from "../types.ts";
 import { deepFreeze } from "./freeze.ts";
 
 export interface BuildPlatformDefaults {
@@ -15,12 +16,7 @@ export interface BuildPlatformDefaults {
 
 export type BuildDefaults = Record<PlatformId, BuildPlatformDefaults>;
 
-export const platformIds: readonly PlatformId[] = Object.freeze([
-  "x",
-  "reddit",
-  "bluesky",
-  "hackernews",
-]);
+export const platformIds: readonly PlatformId[] = PLATFORM_IDS;
 
 export function isPlatformId(value: string): value is PlatformId {
   return (platformIds as readonly string[]).includes(value);

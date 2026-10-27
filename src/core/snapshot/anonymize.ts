@@ -13,14 +13,12 @@ import {
   replaceHackerNewsHandles,
 } from "./hackerNews.ts";
 
-export type SnapshotPlatform = "x" | "reddit" | "bluesky" | "hackernews";
+import type { PlatformId } from "../types.ts";
+import { PLATFORM_IDS } from "../types.ts";
 
-export const SNAPSHOT_PLATFORMS: readonly SnapshotPlatform[] = [
-  "x",
-  "reddit",
-  "bluesky",
-  "hackernews",
-];
+export type SnapshotPlatform = PlatformId;
+
+export const SNAPSHOT_PLATFORMS: readonly SnapshotPlatform[] = PLATFORM_IDS;
 
 export interface AnonymizedSnapshot {
   html: string;
