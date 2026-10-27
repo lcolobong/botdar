@@ -23,6 +23,7 @@ than one.
 | R-14 | Extension fingerprinting by hostile sites | M | M | No `web_accessible_resources`, no page-visible globals from the isolated world, MAIN-world patch leaves no detectable marker beyond the wrapped functions | A platform begins blocking or degrading sessions with Botdar installed | maintainer |
 | R-15 | Evasion by operators erodes signal value over time | H | M | Cost-raising behavioural features over cheap-to-fake account attributes, chosen in [adversarial-evasion.md](adversarial-evasion.md) (v1.1 set of six local features); each new feature validated in the calibration pass every release, and the evasion analysis revisited every six months | The share of later-suspended accounts that Botdar read as `typical` rises release over release, or a platform changes default handles, payout rules or the About panel | maintainer |
 | R-16 | A shared signal cache, if built, becomes a poisonable, subpoenable list of named accounts and a server to pressure | L (not built) | H | Deferred by [ADR-0018](decisions/ADR-0018-no-shared-cache-yet.md) with three conditions; design in [shared-cache-exploration.md](shared-cache-exploration.md): signals not verdicts, one evidence group, stable-id keys, 30-day expiry, policy off plus server drain, disputes only reduce certainty, owner proof of control, no request logs pairing readers with accounts | Any work starting on Shapes B, C or D; a second maintainer joining; coordination signals proving impossible locally | maintainer |
+| R-17 | Hacker News Firebase API changes: CORS narrowed, a rate limit added, or the API retired | L | M | Content-script fetch with credentials omitted, limiter (30/min burst 10) and 24 h cache even though no limit is documented, policy switch for Hacker News Tier 2; Tier 0 (the username) stays | Firebase answers without `access-control-allow-origin` for the HN origin, 429s from `hacker-news.firebaseio.com`, or a Hacker News announcement about the API | maintainer |
 
 ## R-01 Platform pressure or public backlash from X
 
@@ -136,3 +137,13 @@ Not built. The exploration found the hosting bill small and the recurring hours 
 requests, takedowns, dispute adjudication) large for a solo maintainer, and the dataset itself to be the
 artefact most likely to draw pressure. If the ADR-0018 conditions are met, the design in
 [shared-cache-exploration.md](shared-cache-exploration.md) is the starting point, Bluesky first.
+
+## R-17 Hacker News Firebase API
+
+The API ([ADR-0026](decisions/ADR-0026-hacker-news-adapter.md)) is public, needs no login, documents no
+rate limit, and on 2026-10-27 echoed any `Origin` in `access-control-allow-origin`. Because the content
+script fetches it with the page's origin, a narrower CORS policy that still admits
+`news.ycombinator.com` changes nothing, while one that drops it would turn every Hacker News badge into
+No read; a host permission would not help a content-script fetch, so the fallback would be a
+background-worker fetch with a new `hacker-news.firebaseio.com` host permission and a store
+resubmission. Until then the policy can switch Hacker News Tier 2 off for everyone.

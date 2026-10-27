@@ -39,14 +39,22 @@ On X and Bluesky when you hover a badge, and on Reddit when a post comes into vi
 the platform for the same public profile information the page itself shows, using your existing session.
 On Reddit that is one request per author per page at most, and the cache answers repeats. On Bluesky
 a hover also asks Bluesky's public service, without your session, for that author's recent public
-posts, to read only when they post. These requests are rate-limited,
-cached, and can be turned off with "conservative mode" or per platform. The maintainer can also turn them
-off for everyone through the configuration file.
+posts, to read only when they post.
+
+On Hacker News, when a story or comment comes into view, the extension asks Hacker News's official public
+API at `hacker-news.firebaseio.com` (run by Y Combinator on Google's Firebase) for that author's public
+profile: join date, karma, how many items they have submitted, and their about text. The request names
+the author, as the profile link on the page does; it carries no cookies and nothing about you. It is one
+request per author per page at most, and the cache answers repeats.
+
+These requests are rate-limited, cached, and can be turned off with "conservative mode" or per platform.
+The maintainer can also turn them off for everyone through the configuration file.
 
 ## Permissions
 
-The extension asks for access to x.com, twitter.com, reddit.com and bsky.app only, plus local storage
-and a timer for the daily configuration fetch.
+The extension asks for access to x.com, twitter.com, reddit.com, bsky.app and news.ycombinator.com only,
+plus local storage and a timer for the daily configuration fetch. The Hacker News API needs no permission
+of its own: it is open to requests from the Hacker News page.
 
 ## Contact
 
