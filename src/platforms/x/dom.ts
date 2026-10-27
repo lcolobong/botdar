@@ -13,7 +13,7 @@ export const UNBADGED_POST_SELECTOR = `${POST_SELECTOR}:not([${BADGED_ATTRIBUTE}
 const USER_NAME_SELECTOR = '[data-testid="User-Name"]';
 const PROFILE_LINK_SELECTOR = 'a[href^="/"]';
 const AVATAR_IMAGE_SELECTOR = '[data-testid="Tweet-User-Avatar"] img';
-const POST_TEXT_SELECTOR = '[data-testid="tweetText"]';
+export const POST_TEXT_SELECTOR = '[data-testid="tweetText"]';
 const DEFAULT_AVATAR_PATH_SEGMENT = "default_profile_images";
 const HANDLE_TEXT_PATTERN = /^@([A-Za-z0-9_]{1,15})$/;
 /**
@@ -55,6 +55,11 @@ function handleLinkOf(article: Element): { link: HTMLAnchorElement; handle: stri
     }
   }
   return undefined;
+}
+
+/** The post author's lowercased handle, read from the "@handle" link in the author row. */
+export function authorHandleOf(article: Element): string | undefined {
+  return handleLinkOf(article)?.handle;
 }
 
 /** Spans outside the post text whose own text is the wanted label, case-insensitively. */
