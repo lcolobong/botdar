@@ -331,7 +331,7 @@ badge is removed, so a removed post is not kept alive by the context.
 2. Tier 1 emissions arrive asynchronously and trigger a rescore for every mounted badge of that handle,
    unless the emission changed no value or tier of an account that already has a verdict (a relayed
    body often repeats the previous one).
-3. Tier 2 goes through the cache and rate limiter, then rescoring. `lookup()` runs it now (hover, on
+3. Tier 2 goes through the memory cache, then the persisted cache (ADR-0025), then the rate limiter, then rescoring. `lookup()` runs it now (hover, on
    every platform); `lookupOnSight()` (Reddit's wiring calls it on attach) runs it at most once per
    account per page, waiting in `LookupQueue` for a limiter token instead of being refused, and skips
    an account already looked up, cached or behind a login wall. A queued run the limiter still turns
@@ -449,10 +449,16 @@ The result is frozen. Unit tests assert every "cannot enable" case. Settings the
 | Tier 1 and Tier 2 account signals | Memory, per tab | 24 h TTL, gone on tab close |
 | Verdicts | Memory, per tab | Recomputed on config change |
 | `policy.lkg`, `policy.lastAttempt` | `storage.local` | Until replaced |
+| `lookups.v1.<hash>` (Tier 2 snapshot, no display name, handle or bio text, fetch time, source tier), `lookups.salt.v1` and `lookups.index.v1` (entry key to fetch time) | `storage.local` | 7 days from the fetch; at most 5,000 entries; wiped by "Clear cache" (which rotates the salt) or by turning off `persistLookups` (ADR-0025) |
 | `settings.v1`, `onboarding.seen`, `notice.seenIds` | `storage.local` | Until changed |
 | `feedback.v1` ("This looks wrong") | `storage.local` | Until the user exports or clears it |
 
-Feedback is the only persisted data that references an account. It is created only by the user clicking
+The persisted lookup layer sits under the memory cache (`src/core/persistedLookups.ts`): a memory miss
+reads storage before the platform is called, a storage hit refills memory, and every successful Tier 2
+delivery is written back. It is skipped entirely while Tier 2 is off (conservative mode or policy) or
+`persistLookups` is off. A background sweep (install, browser start, daily alarm, and shortly after writes) drops expired and
+over-cap entries using the index, and wipes everything while `persistLookups` is off. Its keys are salted hashes, so it holds no readable account reference; feedback is the
+only store that does. Feedback is created only by the user clicking
 the button, never transmitted, and exportable as JSON from the options page. Nothing is sent to any
 server. The Chrome Web Store data-use disclosure reads: "nothing leaves the browser except a daily signed
 policy fetch from GitHub Pages".
