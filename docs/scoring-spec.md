@@ -54,7 +54,8 @@ file (see "Policy override semantics").
   - `bins`: `[lo, hi, logOdds]` triples, half-open `[lo, hi)`, `null` = unbounded. The first matching bin
     wins. A value matching no bin contributes 0.
   - `bool`: contributes `weight` when true, 0 when false.
-- `group`: one of `age`, `activity`, `graph`, `handle`, `profile`, `verification`, `content`, `geo`.
+- `group`: one of `age`, `activity`, `graph`, `handle`, `profile`, `verification`, `content`, `geo`,
+  `timing`.
 
 ## Default feature tables
 
@@ -77,8 +78,10 @@ follow ratios). They will move after the calibration pass.
 | `x.replyShare` | content | 0.8 | `replyShare.ratio` | `[0,0.9)→0` `[0.9,∞)→0.8` | `replyShare.n ≥ 20` |
 | `x.usernameChanges` | profile | 0.6 | count from About | `[0,3)→0` `[3,∞)→0.6` | Tier 2 delivered |
 | `x.countryLocaleMismatch` | geo | 0.4 | About country is not among the plausible regions of the language detected in the account's bio plus the post text Tier 1 carries for it (`src/core/text/`) | bool, 0.4 | About country known and resolved to a code; a language detected (≥ 12 words, confidence ≥ 0.5) that has a region table; never English. Weak and error-prone (VPNs, travel, second-language writers) |
+| `x.gapRegularity` | timing | 1.0 | coefficient of variation of the gaps between the newest ≤ 100 `postTimestamps`, gaps over 7 days dropped | `[0,0.5)→1.0` `[0.5,0.8)→0.5` `[0.8,∞)→0` | ≥ 30 gaps spanning ≥ 3 days; not verified `org` or `gov`, not declared automated. Post times come from Tier 1 `UserTweets` only (the posts tab of a profile visit), owned by the user the request names |
+| `x.noSleepWindow` | timing | 1.0 | longest run of empty hours in the circular UTC hour-of-day histogram of the newest ≤ 100 posts | `[0,2)→1.0` `[2,4)→0.5` `[4,∞)→0` | ≥ 100 posts over ≥ 7 days; not verified `org` or `gov`, not declared automated |
 
-Group caps: `handle` 1.2, `profile` 1.2, `geo` 0.4. Prior `-2.5`. Confidence weights `{0: 0.25, 1: 0.55, 2: 0.20}`.
+Group caps: `handle` 1.2, `profile` 1.2, `geo` 0.4, `timing` 1.5. Prior `-2.5`. Confidence weights `{0: 0.25, 1: 0.55, 2: 0.20}`.
 
 ### Reddit
 
@@ -105,8 +108,11 @@ Mirrors the X numbers where the signal is the same. All uncalibrated.
 | `bsky.handleDigitsOnBskySocial` | handle | 0.7 | handle ends in `.bsky.social` and local part matches `^[a-z]+\d{4,}$` | bool, 0.7 | always; custom-domain handles never fire |
 | `bsky.noAvatarEmptyBio` | profile | 1.0 | 0, 1 or 2 of {no avatar, empty description} | same bins as `x.defaultAvatarEmptyBio` | both known |
 | `bsky.declaredBot` | — | — | `labels[]` contains `val === 'bot'` with `src === did` | override → `declared` | always |
+| `bsky.gapRegularity` | timing | 1.0 | as `x.gapRegularity` | same bins as `x.gapRegularity` | as `x.gapRegularity`. Post times (AppView `indexedAt`, else the record's `createdAt`) from the Posts tab only (`filter=posts_and_author_threads`): Tier 1 page bodies with that filter, and the Tier 2 public `getAuthorFeed` on hover, whose set replaces Tier 1's |
+| `bsky.noSleepWindow` | timing | 1.0 | as `x.noSleepWindow` | same bins as `x.noSleepWindow` | as `x.noSleepWindow` |
 
-Prior `-2.5`. Confidence weights `{0: 0.20, 1: 0.40, 2: 0.40}`. Group caps as X.
+Prior `-2.5`. Confidence weights `{0: 0.20, 1: 0.40, 2: 0.40}`. Group caps `handle` 1.2, `profile` 1.2,
+`timing` 1.5.
 
 ### Gating rules
 
@@ -235,6 +241,27 @@ anything that costs per-account time, money or patience is skipped, and the skip
 - **Counter-case.** Expatriates, travellers, VPN users and people who write in a second language
   other than English; the platform's inference is also often wrong.
 
+### Posting cadence (`x.gapRegularity`, `bsky.gapRegularity`, `x.noSleepWindow`, `bsky.noSleepWindow`)
+
+- **Mechanism.** People post in bursts and sleep. The gaps between a person's posts are heavy-tailed
+  (a few minutes inside a burst, hours between them), so their standard deviation exceeds their mean,
+  and a person's day has a run of hours with no posts at all. A scheduler or a throttled script posts
+  on a clock, so its gaps barely vary, and software does not sleep, so it fills every hour. Unlike
+  every v1 feature this is behaviour, not an account attribute: to beat it an operator has to go quiet
+  for hours a day and post in bursts, which caps output per account and multiplies the accounts
+  needed (adversarial-evasion.md 5). The statistics are in `src/core/scoring/cadence.ts`.
+- **Evidence.** Human inter-event times are bursty with a coefficient of variation above 1 (Barabási
+  2005); uniform-jitter throttles sit below about 0.6. At 50 uniformly random posts about three hours
+  stay empty by chance, hence the 100-post gate for the sleep window. No measurement on Botdar's own
+  sample yet; the two share a `timing` cap of 1.5, and as one group they can never meet the two-group
+  rule for `many` on their own.
+- **Counter-case.** Newsrooms, brands and anyone who schedules posts with a publishing tool show the
+  same regularity; shared and team-run accounts, and some insomniacs, post around the clock. Accounts
+  verified as an organisation or a government are left out of timing for that reason, and so are
+  accounts that declared themselves automated, whose verdict the declaration already decided.
+  Post times are normalised once, in the pipeline: no time more than ten minutes in the future
+  (Bluesky's client-written `createdAt` can say 2099), distinct, the newest 100.
+
 ### Reddit karma shape (`reddit.postToCommentKarma`)
 
 - **Mechanism.** Karma farming reposts content that already did well; a repost earns post karma without
@@ -335,7 +362,8 @@ Input: `Feature[]` from the platform adapter, the effective platform config, and
    handle with no digit run, an account not verified early) renders nothing, and that item is skipped,
    also when filling up to two.
 10. **Caveat.** For `typical`, the ordinary-account line (below). Otherwise chosen by the group of the
-    largest positive contribution (table below).
+    largest positive contribution (table below), or by that feature itself where the table gives it a
+    caveat of its own (`x.noSleepWindow`, `bsky.noSleepWindow`).
 
 Everything after step 2 is pure and unit-tested against a golden table of synthetic accounts.
 
@@ -374,6 +402,8 @@ such a line once, from the stronger item.
 | `x.replyShare` | "{pct}% of recent posts are replies" | "it inserts itself into others' threads" / "starts its own threads too" | content: "Some people only ever reply; that is a style, not automation." |
 | `x.usernameChanges` | "Username changed {n} times" | "bought or repurposed accounts get renamed" / "too few renames to suggest a resale" | profile: as above |
 | `x.countryLocaleMismatch` | "Based in {country}, writes in {language}" / false: nothing | "a persona run from abroad" / none | geo: "Expats, travellers, VPN users and people writing in a second language look the same." |
+| `x.gapRegularity`, `bsky.gapRegularity` | "Posts at regular intervals" / no contribution: nothing | "scheduling tools post on a clock" / none | timing: "Accounts that schedule posts with a publishing tool show the same regularity." |
+| `x.noSleepWindow`, `bsky.noSleepWindow` | "Posts around the clock" / no contribution: nothing | "no daily quiet window" / none | this feature's own: "Shared and team-run accounts post around the clock." |
 | `reddit.karmaPerDay` | "~{rate} karma/day on a {age}-old account" | "karma-farming pattern" / "a pace ordinary use earns" | activity: as above |
 | `reddit.postToCommentKarma` | "Post karma {link}, comment karma {comment}" | "reposts earn it without conversation" / "it joins conversations" | content: as above |
 | `reddit.generatedName` | "Username matches Reddit's auto-generated pattern" / false: nothing | "kept as suggested" / none | handle: as above |

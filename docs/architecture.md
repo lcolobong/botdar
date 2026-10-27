@@ -124,7 +124,7 @@ botdar/
 export type PlatformId = 'x' | 'reddit' | 'bluesky' | 'youtube';
 export type SourceTier = 0 | 1 | 2;
 export type IndependenceGroup =
-  | 'age' | 'activity' | 'graph' | 'handle' | 'profile' | 'verification' | 'content' | 'geo';
+  | 'age' | 'activity' | 'graph' | 'handle' | 'profile' | 'verification' | 'content' | 'geo' | 'timing';
 
 export interface AccountRef {
   platform: PlatformId;
@@ -151,6 +151,7 @@ export interface AccountSignals {
   appStore?: string;
   replyShare?: { ratio: number; n: number };   // only when observable
   postText?: string;                  // own post text from Tier 1 bodies (reposts excluded), gathered ≤ 2,000 chars
+  postTimestamps?: number[];          // own post times, newest first, ≤ 100; a higher tier's set replaces
   provenance: Partial<Record<keyof AccountSignals, SourceTier>>;  // which tier set each field (source dots)
   tiersDelivered: SourceTier[];       // tiers that delivered data for this account (confidence)
   observedAt: number;
@@ -265,12 +266,16 @@ The isolated receiver in `src/core/relay.ts` accepts a message only when `event.
 are walked with type guards, never evaluated, and dropped above 5 MB. `CustomEvent` is avoided because
 Firefox requires `cloneInto` for cross-world `detail`.
 
+Two operations also carry the request's query string as `query` (capped, untrusted like the body):
+X's `UserTweets`, whose `variables.userId` names the profile the timeline belongs to, and Bluesky's
+`getAuthorFeed`, whose `filter` says which tab it is. The cadence features read them (ADR-0024).
+
 ### X (`x.com`, `twitter.com`)
 
 | Concern | Approach |
 |---|---|
 | Interceptor allowlist | `HomeTimeline`, `HomeLatestTimeline`, `SearchTimeline`, `UserTweets`, `UserTweetsAndReplies`, `TweetDetail`, `UserByScreenName`, `AboutAccountQuery`, `Followers`, `Following` under `/i/api/graphql/<queryId>/<op>` |
-| Tier 1 | `parsers/graphqlUsers.ts` walks any response for user objects and posts (each post's `legacy.full_text` is kept per author as `postText`, for `x.countryLocaleMismatch`): `core.screen_name`, `core.created_at`, `is_blue_verified`, `profile_bio.description`, `relationship_count`, `tweet_count`, `rest_id`, with `legacy.*` fallbacks. The X "Automated" label is expected in the user object (`legacy.automated` or `affiliates_highlighted_label`); confirm day one |
+| Tier 1 | `parsers/graphqlUsers.ts` walks any response for user objects and posts (each post's `legacy.full_text` is kept per author as `postText`, for `x.countryLocaleMismatch`; on `UserTweets` (the posts tab; the replies tab is a different population) the `legacy.created_at` values of the user the request's `variables.userId` names, relayed with the body as the request's query string, become `postTimestamps`, for the cadence features, and no active X request fetches a timeline, ADR-0024): `core.screen_name`, `core.created_at`, `is_blue_verified`, `profile_bio.description`, `relationship_count`, `tweet_count`, `rest_id`, with `legacy.*` fallbacks. The X "Automated" label is expected in the user object (`legacy.automated` or `affiliates_highlighted_label`); confirm day one |
 | Tier 0 | `article[data-testid="tweet"]:not([data-botdar])`; handle from `[data-testid="User-Name"] a[href^="/"]` whose text starts with `@`; default-avatar heuristic from `[data-testid="Tweet-User-Avatar"]` |
 | Tier 2 | `AboutAccountQuery` on hover only: country, username-change count, app store. queryId resolution: observed from page traffic > policy value > baked constant. Limiter 20/min, burst 3, backoff on `x-rate-limit-reset` / `retry-after`, 60 s fallback |
 | Observer | One `MutationObserver` on `document.body`, coalesced per pass via `requestIdleCallback` (150 ms timeout fallback); the analysis behind a pass runs in slices capped at the idle deadline or 8 ms, whichever is shorter, and yields between them (`src/core/idleSlices.ts`, the same for Reddit and Bluesky); a discovered post is only analysed once it comes within one screen of the viewport (`src/core/nearViewport.ts`, ADR-0019); `data-botdar="1"` set only after a badge mounts; `WeakMap<Element, BadgeHandle>`; removed nodes unmount (X virtualizes its list) |
@@ -298,9 +303,9 @@ on posts.
 | Concern | Approach |
 |---|---|
 | Interceptor allowlist | XRPC calls the web app makes for feeds and threads: `app.bsky.feed.getTimeline`, `app.bsky.feed.getFeed`, `app.bsky.feed.getPostThread`, `app.bsky.actor.getProfile(s)`, `app.bsky.feed.getAuthorFeed`. Exact set confirmed day one |
-| Tier 1 | Author objects in feed responses carry `did`, `handle`, `displayName`, `avatar`, `createdAt`, `labels` (a `bot` label with `src === did` is a self-label), `verification`, `associated`. No follower or post counts |
+| Tier 1 | Author objects in feed responses carry `did`, `handle`, `displayName`, `avatar`, `createdAt`, `labels` (a `bot` label with `src === did` is a self-label), `verification`, `associated`. No follower or post counts. A `getAuthorFeed` body requested with the Posts tab's filter (`posts_and_author_threads`, read from the query string the interceptor relays with it) also gives each author's post times (`indexedAt`, else the record's `createdAt`; reposts left out) as `postTimestamps` |
 | Tier 0 | Feed items are React-rendered; handle from the profile link in the post header; Bluesky's own robot badge as a backup for the declared state |
-| Tier 2 | `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfiles?actors=…` (public, CORS `*`, no auth): `followersCount`, `followsCount`, `postsCount`, `description`, `avatar`. Batched up to 25 handles per call, cached 24 h, limiter 30/min. Because this is a sanctioned public read, Tier 2 on Bluesky carries no rate-limit or lock risk to the user's account |
+| Tier 2 | `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfiles?actors=…` (public, CORS `*`, no auth): `followersCount`, `followsCount`, `postsCount`, `description`, `avatar`. Batched up to 25 handles per call, cached 24 h, limiter 30/min. Because this is a sanctioned public read, Tier 2 on Bluesky carries no rate-limit or lock risk to the user's account. Beside it, per hovered author, `app.bsky.feed.getAuthorFeed?actor=…&limit=100&filter=posts_and_author_threads` on the same host for the cadence features (ADR-0024). A lookup takes one limiter token per source, both up front (burst 6, so 15 hovered authors a minute sustained); a lookup in which one call failed is scored but not cached. Post times are never persisted, so a hover answered by a stored snapshot (ADR-0025) still runs `getAuthorFeed`, alone |
 | Native label | `bot` self-label → `declared`. Rendered alongside Bluesky's own robot badge, not instead of it |
 
 ### Badge and hover card mounting
@@ -346,8 +351,10 @@ badge is removed, so a removed post is not kept alive by the context.
 4. **Tier-merge rule:** a higher tier overwrites a lower tier's value for the same field; within the same
    tier, newer wins. `provenance` records the tier for each field (the source dots). Which tiers delivered is tracked
    separately in `tiersDelivered`, which the resolver maintains, because an overwritten field no longer
-   shows the tier that first supplied it; confidence reads `tiersDelivered`. `postText` gathers
-   within a tier instead of the newer body winning, up to 2,000 characters.
+   shows the tier that first supplied it; confidence reads `tiersDelivered`. Two fields gather within
+   a tier instead of the newer body winning: `postText` (up to 2,000 characters) and
+   `postTimestamps` (normalised: no future times, distinct, newest 100). A higher tier's value still
+   replaces a lower tier's, and a lower tier never adds to a higher one.
 5. `config.changed` from the background recomputes every verdict with the new effective config.
 6. The map holds at most 2,000 accounts per tab (`MAX_TRACKED_ACCOUNTS`); past that, the least
    recently touched accounts with no post on screen are evicted a batch at a time.
