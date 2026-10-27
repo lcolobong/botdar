@@ -57,11 +57,20 @@
       turned off with "conservative mode" or per platform. The maintainer can also turn them off for
       everyone through the configuration file.
     </p>
+    <p>
+      On Hacker News, when a story or comment comes into view, the extension asks Hacker News's
+      official public API at hacker-news.firebaseio.com (run by Y Combinator on Google's Firebase)
+      for that author's public profile: join date, karma, how many items they have submitted, and
+      their about text. The request names the author, as the profile link on the page does; it
+      carries no cookies and nothing about you, and the cache answers repeats.
+    </p>
 
     <h2>Permissions</h2>
     <p>
-      The extension asks for access to x.com, twitter.com, reddit.com and bsky.app only, plus local
-      storage and a timer for the daily configuration fetch.
+      The extension asks for access to x.com, twitter.com, reddit.com, bsky.app and
+      news.ycombinator.com only, plus local storage and a timer for the daily configuration fetch.
+      The Hacker News API needs no permission of its own: it is open to requests from the Hacker
+      News page.
     </p>
 
     <h2>Contact</h2>

@@ -44,10 +44,16 @@ The first release, covering the MVP.
   reads the profile timeline the page already loaded when you open a profile; on Bluesky a hover also
   asks Bluesky's public service for the author's last 100 posts.
 - Chrome and Firefox builds from one codebase. Firefox 128 or later.
+- Hacker News (front page, /newest, threads, /newcomments), pulled forward from v1.1: a badge after
+  every story and comment author, read from the public Firebase API's join date, karma, submission
+  count and about text as each row comes into view. The account on its own user page gets no badge
+  (ADR-0026).
 
 ### Privacy
 
 - Nothing about the accounts you see leaves the browser. The only request the extension makes on its
   own is the daily policy fetch, which carries no user data.
+- On Hacker News, the author's name goes to the official Hacker News API at
+  hacker-news.firebaseio.com, without cookies, to read their public profile.
 - Only the `storage` and `alarms` permissions, and host permissions for x.com, twitter.com,
-  www.reddit.com, old.reddit.com and bsky.app.
+  www.reddit.com, old.reddit.com, bsky.app and news.ycombinator.com.

@@ -15,14 +15,15 @@ characters and match the short description below.
 ### Short description (132 characters max)
 
 ```
-A badge on every author on X, Reddit and Bluesky for patterns common in automated accounts. Nothing leaves your browser.
+A badge on each author on X, Reddit, Bluesky and Hacker News for patterns common in automated accounts. Nothing leaves your browser.
 ```
 
 ### Full description
 
 ```
 Botdar adds a small badge next to the author of every post, saying whether that account shows patterns
-common in automated accounts, and a hover card that explains why. It works on X, Reddit and Bluesky.
+common in automated accounts, and a hover card that explains why. It works on X, Reddit, Bluesky and
+Hacker News.
 
 Botdar describes patterns, not people. The badge says that an account's public details look the way
 automated accounts often look, for example a very young account posting at a high rate, or a handle
@@ -65,8 +66,8 @@ Social & Communication
 ### Single-purpose statement
 
 ```
-Botdar has one purpose: to show, next to each post author on X, Reddit and Bluesky, a badge that says
-whether that account displays patterns common in automated accounts, with a hover card listing the
+Botdar has one purpose: to show, next to each post author on X, Reddit, Bluesky and Hacker News, a
+badge that says whether that account displays patterns common in automated accounts, with a hover card listing the
 observations behind it. All computation happens in the browser, and the extension has no other
 features.
 ```
@@ -112,6 +113,16 @@ profile information the page itself shows.
 ```
 Needed to run the content script that reads Bluesky feeds and threads, draws the badge next to each
 author and, on hover, may request the same public profile information the page itself shows.
+```
+
+**Host permission: https://news.ycombinator.com/\***
+
+```
+Needed to run the content script that reads Hacker News story lists and comment threads and draws the
+badge next to each author. As each story or comment comes into view it may request that author's
+public profile (join date, karma, submission count, about text) from the official Hacker News API at
+hacker-news.firebaseio.com, without cookies. That API allows requests from the Hacker News page, so it
+needs no host permission of its own.
 ```
 
 No other host permissions are requested. There is no `<all_urls>`, no `tabs`, no `webRequest`, and no
@@ -162,8 +173,8 @@ the Limited Use requirements.
 ### Summary (250 characters max)
 
 ```
-In-feed badges on X, Reddit and Bluesky when a post's author shows patterns common in automated
-accounts, with a hover card that lists the reasons. Everything is computed in your browser; nothing
+In-feed badges on X, Reddit, Bluesky and Hacker News when a post's author shows patterns common in
+automated accounts, with a hover card that lists the reasons. Everything is computed in your browser; nothing
 about the accounts you see leaves it.
 ```
 

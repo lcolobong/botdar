@@ -1,14 +1,14 @@
 # Botdar
 
 In-feed badges that show whether a post's author displays patterns common in automated accounts, with a
-hover card that explains why. For X, Reddit and Bluesky. Everything runs in your browser; nothing about
+hover card that explains why. For X, Reddit, Bluesky and Hacker News. Everything runs in your browser; nothing about
 the accounts you see leaves it.
 
 Working title. Status: pre-alpha, under construction.
 
 ## What it does
 
-On X, Reddit and Bluesky, Botdar draws a small badge next to the author of every post: "Likely bot"
+On X, Reddit, Bluesky and Hacker News, Botdar draws a small badge next to the author of every post: "Likely bot"
 when several independent signals common in automated accounts agree, "Unsure" when only one or two
 do, "Declared bot" when the platform's own automated label is set, "Likely human" when enough is
 visible and nothing stands out, and "No read" when there is too little to go on ("Checking" while

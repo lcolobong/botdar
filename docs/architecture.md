@@ -1,8 +1,8 @@
 # Architecture
 
-Botdar is a Manifest V3 browser extension that annotates post authors in-feed on X, Reddit and Bluesky
-with a tier describing how many patterns common in automated accounts the account shows, plus a hover
-card listing the reasons. Scoring detail lives in [scoring-spec.md](scoring-spec.md); this document covers
+Botdar is a Manifest V3 browser extension that annotates post authors in-feed on X, Reddit, Bluesky
+and Hacker News with a tier describing how many patterns common in automated accounts the account
+shows, plus a hover card listing the reasons. Scoring detail lives in [scoring-spec.md](scoring-spec.md); this document covers
 everything around it.
 
 ## Principles
@@ -26,7 +26,7 @@ everything around it.
 
 ```mermaid
 flowchart LR
-  subgraph Page["Platform page (x.com / reddit.com / bsky.app)"]
+  subgraph Page["Platform page (x.com / reddit.com / bsky.app / news.ycombinator.com)"]
     PJS["Page JS fetch / XHR"]
     DOM["Rendered DOM"]
     MAIN["MAIN-world interceptor<br/>(x-main.content.ts, bluesky-main.content.ts)"]
@@ -57,7 +57,7 @@ flowchart LR
   MAIN -- "window.postMessage" --> RELAY
   RELAY --> T1
   DOM --> OBS --> T0
-  OBS -.->|"on sight (Reddit), hover"| T2
+  OBS -.->|"on sight (Reddit, Hacker News), hover"| T2
   T0 --> RES
   T1 --> RES
   T2 --> RES
@@ -87,6 +87,7 @@ botdar/
 │  ├─ reddit.content.ts
 │  ├─ bluesky.content.ts
 │  ├─ bluesky-main.content.ts    # world: MAIN, XRPC interceptor
+│  ├─ hackernews.content.ts
 │  ├─ popup/  options/  onboarding/
 ├─ src/
 │  ├─ core/
@@ -100,7 +101,9 @@ botdar/
 │  ├─ platforms/
 │  │  ├─ x/        adapter, observer, dom, interceptor.main, parsers/, sources/, features, queryIds
 │  │  ├─ reddit/   adapter, observer, dom, parsers/, sources/, features, oldReddit
-│  │  └─ bluesky/  adapter, observer, dom, interceptor.main, parsers/, sources/, features
+│  │  ├─ bluesky/  adapter, observer, dom, interceptor.main, parsers/, sources/, features
+│  │  ├─ hackernews/ adapter, observer, dom, parsers/, sources/, features
+│  │  └─ onSightWire.ts          # content-script wiring shared by Reddit and Hacker News
 │  └─ ui/
 │     ├─ tokens.css  Badge.tsx  HoverCard.tsx  FeedbackButton.tsx  ConfidenceNote.tsx
 │     ├─ hoverController.ts  mount.ts
@@ -115,7 +118,7 @@ botdar/
 ├─ docs/                         # this folder
 └─ tests/
    ├─ unit/**  dom/**
-   └─ fixtures/{x,reddit,bluesky,policy}/
+   └─ fixtures/{x,reddit,bluesky,hackernews,policy}/
 ```
 
 ## Core type contracts
@@ -308,6 +311,24 @@ on posts.
 | Tier 2 | `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfiles?actors=…` (public, CORS `*`, no auth): `followersCount`, `followsCount`, `postsCount`, `description`, `avatar`. Batched up to 25 handles per call, cached 24 h, limiter 30/min. Because this is a sanctioned public read, Tier 2 on Bluesky carries no rate-limit or lock risk to the user's account. Beside it, per hovered author, `app.bsky.feed.getAuthorFeed?actor=…&limit=100&filter=posts_and_author_threads` on the same host for the cadence features (ADR-0024). A lookup takes one limiter token per source, both up front (burst 6, so 15 hovered authors a minute sustained); a lookup in which one call failed is scored but not cached. Post times are never persisted, so a hover answered by a stored snapshot (ADR-0025) still runs `getAuthorFeed`, alone |
 | Native label | `bot` self-label → `declared`. Rendered alongside Bluesky's own robot badge, not instead of it |
 
+### Hacker News (`news.ycombinator.com`)
+
+Every page is rendered on the server as a table of `tr.athing` rows, and navigation is a full page load
+([ADR-0026](decisions/ADR-0026-hacker-news-adapter.md); markup recorded 2026-10-27 under
+`tests/fixtures/hackernews/html/`). The content script runs the wiring Reddit uses
+(`src/platforms/onSightWire.ts`).
+
+| Concern | Approach |
+|---|---|
+| Rows and kinds | A story is `tr.athing.submission` (front page, `/newest`, a thread's head) with its author in the next row's `.subtext`; a comment is a `tr.athing.comtr` in a thread or a `tr.athing` with a `.comment` body on `/newcomments`, with its author link in its own `.comhead`. `classify(row)` sorts each row once into not a post, no author (job ads, deleted comments: skipped, not a miss), unreadable author (an anchor miss) or a post. A reply is a comment with `indent > 0` in a thread, or on `/newcomments` (whose `td.ind` is empty) one whose `parent` link is not its story |
+| Badge anchor | The `a.hnuser` link. WXT mounts before the link's next element, so the badge sits after the space that follows the name and carries its own right margin. Compact density (`hackernews`), Reddit-comment height, label shown |
+| User page | `/user?id=` renders the profile in a `tr.athing` with no comment body, so the account being viewed gets no badge; `/threads?id=` lists the account's comments and badges them |
+| Handle | The `id` of the `user?id=` link with its casing: Hacker News usernames are case-sensitive, and Firebase answers `null` for the wrong case |
+| Tier 0 | The username only; a last word of "bot" is a declaration. No avatars, join dates or counts on the page. The green name of a new account is not read until a recording shows one; `[dead]` and `[flagged]` are moderation, not evidence |
+| Tier 1 | None: the pages fetch no JSON of their own, and the build defaults declare `t1: false` |
+| Tier 2 | `https://hacker-news.firebaseio.com/v0/user/<id>.json` (public, no auth, credentials omitted; CORS admits the page's origin): `created`, `karma`, `submitted` (counted), `about`. On sight like Reddit, behind the same queue and limiter (30/min from the config, burst 10); cached 24 h; an unknown id (`null`) is cached as an empty stub; a 429 reaches the limiter, though the API documents no rate limit |
+| Native label | None. A first-person "I am a … bot" in `about` is a declaration (`declaredBy: "bio"`) |
+
 ### Badge and hover card mounting
 
 `src/ui/mount.ts` wraps WXT `createShadowRootUi(ctx, { name: 'botdar-badge', position: 'inline', anchor,
@@ -317,11 +338,11 @@ adopts (`src/ui/sharedStyles.ts`); only the host layout rules go through WXT's `
 `:host` reset. Where adoption is unavailable or refused, a root gets a `<style>` copy. The hover card
 is one singleton `botdar-card` on `document.body`, positioned from `getBoundingClientRect` and flipped at
 viewport edges; opens after 150 ms hover or on focus (`<button aria-describedby>`), closes 200 ms after
-leaving both badge and card. On X and Bluesky Tier 2 fires on open; on Reddit it has normally run on
+leaving both badge and card. On X and Bluesky Tier 2 fires on open; on Reddit and Hacker News it has normally run on
 sight already and the open is a cache hit. Every tier draws a badge (ADR-0020); only Likely human can be
 hidden, by the "Show Likely human" setting. While the account's lookup is queued or running
 (`BadgeHandle.lookupStatus()` is `pending`) an unknown badge reads "Checking" and the glyph pulses,
-except on Reddit, where every waiting badge but the hovered one holds a still, dimmed glyph
+except on Reddit and Hacker News, where every waiting badge but the hovered one holds a still, dimmed glyph
 (`stillWhileLoading`); the card shows the same loading state and re-renders when the lookup settles. A No read
 card takes its explanation from the lookup status (`src/ui/noRead.ts`), shared by the three wirings. All
 timers and observers register on `ctx` so an extension update invalidates cleanly. WXT registers one
@@ -439,7 +460,7 @@ The result is frozen. Unit tests assert every "cannot enable" case. Settings the
   "host_permissions": [
     "https://x.com/*", "https://twitter.com/*",
     "https://www.reddit.com/*", "https://old.reddit.com/*",
-    "https://bsky.app/*"
+    "https://bsky.app/*", "https://news.ycombinator.com/*"
   ]
 }
 ```
@@ -447,8 +468,8 @@ The result is frozen. Unit tests assert every "cannot enable" case. Settings the
 - No `<all_urls>`, no `tabs`, no `webRequest`.
 - No `web_accessible_resources`: LinkedIn-style pages probe for extensions by loading bundled files. If one
   is ever needed, use `use_dynamic_url`.
-- The policy fetch and the Bluesky public AppView need no host permission; both send
-  `access-control-allow-origin: *`.
+- The policy fetch, the Bluesky public AppView and the Hacker News Firebase API need no host
+  permission: the first two send `access-control-allow-origin: *` and Firebase echoes the page's origin (ADR-0026).
 - Firefox: `browser_specific_settings.gecko.data_collection_permissions.required = ["none"]`.
 - No remote code. The policy file is data; the logic that interprets it ships in the package.
 
@@ -526,13 +547,13 @@ Results of these can change the design; they run before the X platform PR.
 | Scoring | Vitest (node) | Bins, caps, group caps; independence rule; confidence; low-confidence cap; `declared` override; golden table of synthetic accounts → expected tier |
 | Handle shape | Vitest | Digit patterns, Reddit generated-name regex, bigram log-likelihood on random vs natural handles |
 | Policy | Vitest | Validator per field; restrict-only merge matrix; verify with a test keypair (valid, tampered, wrong key, bad base64, rollback) |
-| Parsers | Vitest + fixtures | X GraphQL in `core` and `legacy` shapes plus a mangled one; Reddit about.json normal, suspended, HTML redirect; Bluesky feed and `getProfiles` responses |
-| DOM | Vitest + happy-dom | Badge mounts on saved tweet, shreddit and Bluesky snippets; idempotent on double pass; unmount on removal; route-change reset |
+| Parsers | Vitest + fixtures | X GraphQL in `core` and `legacy` shapes plus a mangled one; Reddit about.json normal, suspended, HTML redirect; Bluesky feed and `getProfiles` responses; Hacker News Firebase `user` recordings (established, day-old) plus malformed bodies |
+| DOM | Vitest + happy-dom | Badge mounts on saved tweet, shreddit and Bluesky snippets and the recorded Hacker News front page, thread, `/newcomments`, `/newest` and user page; idempotent on double pass; unmount on removal; route-change reset |
 | Rate limiter, cache | Vitest fake timers | Bucket refill, backoff ladder, circuit open → `sourcesMissing` |
 | Background | Vitest + WXT fake browser | Alarm registration, LKG untouched on failure, `config.changed` broadcast |
 | Smoke and PR media | Playwright (`scripts/smoke/run.ts`, not a CI gate) | Built extension loaded against saved fixture pages; screenshots of each tier and the hover card |
 | Live recording | Playwright over CDP (`scripts/capture/run.ts`, manual) | Attaches to the maintainer's signed-in Chrome, serialises a live page with shadow roots, anonymises it into `tests/fixtures/`, screenshots it with the extension running (ADR-0021) |
 
-Not automatable: live X/Reddit/Bluesky end to end, GraphQL schema rotation (mitigated by a fixture
+Not automatable: live X/Reddit/Bluesky/Hacker News end to end, GraphQL schema rotation (mitigated by a fixture
 re-record checklist and parsers that degrade to partials), store review, Firefox MAIN-world timing, visual
 regression against platform UI changes.

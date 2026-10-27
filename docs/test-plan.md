@@ -26,8 +26,8 @@ Date: 2026-10-22. Architecture context in [architecture.md](architecture.md); sc
 | Scoring engine | Vitest (node) | bin lookup, per-feature caps, group caps, logistic, confidence, bucketing, independence rule, low-confidence cap, declared and unknown states, golden table |
 | Handle shape | Vitest | digit and pattern features, Reddit generated-name detector positives and negatives, bigram log-likelihood on random vs natural handles |
 | Policy | Vitest | validator (every field, wrong types), restrict-only merge matrix, settings overlay, signature verify with a test keypair (valid, tampered payload, wrong key, bad base64, version rollback) |
-| Parsers | Vitest + fixtures | X GraphQL user objects in `core.*` and `legacy.*` shapes plus a mangled one; Reddit `about.json` normal, suspended, HTML redirect; Bluesky `getProfiles` and feed author objects incl. `bot` self-label |
-| DOM mounting | Vitest, happy-dom | badge mounts on saved tweet, shreddit and bsky snippets; idempotent on a second pass; unmounts on node removal; per-page state resets on route change |
+| Parsers | Vitest + fixtures | X GraphQL user objects in `core.*` and `legacy.*` shapes plus a mangled one; Reddit `about.json` normal, suspended, HTML redirect; Bluesky `getProfiles` and feed author objects incl. `bot` self-label; Hacker News Firebase `user` recordings and malformed bodies |
+| DOM mounting | Vitest, happy-dom | badge mounts on saved tweet, shreddit and bsky snippets and on the recorded Hacker News pages; idempotent on a second pass; unmounts on node removal; per-page state resets on route change |
 | Rate limiter and cache | Vitest fake timers | token refill, backoff ladder, circuit open reports the source as missing; TTL expiry and LRU eviction |
 | Background | Vitest + WXT fake browser | alarm registration, last-known-good untouched on every failure mode, config broadcast after refresh and after settings change |
 | Smoke and media | Playwright script, not a CI gate | built extension loaded against fixture pages served locally; screenshots of each tier and the hover card on each platform, light and dark. `pnpm smoke` runs it; see [scripts/smoke/README.md](../scripts/smoke/README.md) |
@@ -55,20 +55,24 @@ PR test plan records the check as done or skipped with the reason.
    answer.
 3. Bluesky: scroll the Discover feed and a thread. A self-labeled bot shows the declared state alongside
    Bluesky's own robot badge.
-4. Conservative mode: turn it on; confirm no active lookups happen (network panel) and confidence drops.
-5. Platform toggle: turn X off; confirm no badges and no interceptor messages on X.
-6. Policy: flip a value in `policy/src/v1.json`, re-sign, publish, force the alarm from the service
+4. Hacker News: open the front page, a thread with replies, `/newcomments` and a `user?id=` page. Every
+   story and comment author has a badge right after the name; the user page has none; the network panel
+   shows at most one `hacker-news.firebaseio.com/v0/user/<name>.json` per author, without cookies, and
+   none in conservative mode.
+5. Conservative mode: turn it on; confirm no active lookups happen (network panel) and confidence drops.
+6. Platform toggle: turn X off; confirm no badges and no interceptor messages on X.
+7. Policy: flip a value in `policy/src/v1.json`, re-sign, publish, force the alarm from the service
    worker console; confirm the change is live. Publish a tampered file; confirm it is rejected and the
    last-known-good stays.
-7. Data egress: with the network panel open on each platform for five minutes of normal browsing, the
+8. Data egress: with the network panel open on each platform for five minutes of normal browsing, the
    only extension-originated request is the policy fetch.
-8. Feedback: click "This looks wrong", export from the options page, confirm the JSON contains only
+9. Feedback: click "This looks wrong", export from the options page, confirm the JSON contains only
    what the card showed.
 
 ## Calibration pass
 
 Before the first store submission, a dev-only build logs feature vectors locally for about 200 accounts
-across the three platforms. Check the tier distribution (expect most accounts "typical"), review every
+across the four platforms. Check the tier distribution (expect most accounts "typical"), review every
 "many" by hand, and adjust prior and thresholds through the policy file rather than a release.
 
 ## What cannot be automated
