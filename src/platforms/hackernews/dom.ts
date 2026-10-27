@@ -19,6 +19,8 @@ export type HackerNewsPostKind = "post" | "comment";
 
 export interface HackerNewsPostRef extends PostRef {
   kind: HackerNewsPostKind;
+  /** The item a comment answers, when its row links one (`parentItemIdOf`). */
+  parentId?: string;
 }
 
 export const FEED_ITEM_SELECTOR = "tr.athing";
@@ -93,19 +95,27 @@ function itemIdOf(link: Element | null): string | undefined {
 }
 
 /**
+ * The item a comment answers, from its "parent" link: an in-page anchor (`#<id>`) in a thread, an
+ * `item?id=<id>` link on /newcomments. Undefined for a top-level comment in a thread, which has none.
+ */
+export function parentItemIdOf(row: Element): string | undefined {
+  const parentLink: Element | undefined = [...row.querySelectorAll(NAV_LINK_SELECTOR)].find(
+    (link) => link.textContent?.trim() === PARENT_LINK_TEXT,
+  );
+  const href: string = parentLink?.getAttribute("href") ?? "";
+  return /^#(\d+)$/.exec(href)?.[1] ?? itemIdOf(parentLink ?? null);
+}
+
+/**
  * A thread gives each comment its depth in `td.ind[indent]`. /newcomments leaves `td.ind` empty,
  * but every row there links its parent and its story, and a reply's parent is another comment.
  */
-function isReply(row: Element, kind: HackerNewsPostKind): boolean {
+function isReply(row: Element, kind: HackerNewsPostKind, parent: string | undefined): boolean {
   if (kind !== "comment") return false;
   const indent: string | null | undefined = row
     .querySelector(INDENT_SELECTOR)
     ?.getAttribute("indent");
   if (indent !== null && indent !== undefined) return Number(indent) > 0;
-  const parentLink: Element | undefined = [...row.querySelectorAll(NAV_LINK_SELECTOR)].find(
-    (link) => link.textContent?.trim() === PARENT_LINK_TEXT,
-  );
-  const parent: string | undefined = itemIdOf(parentLink ?? null);
   const story: string | undefined = itemIdOf(row.querySelector(STORY_LINK_SELECTOR));
   return parent !== undefined && parent !== story;
 }
@@ -119,6 +129,7 @@ export function classify(row: Element): HackerNewsRow {
   if (anchor === null) return { status: "noAuthor", kind };
   const author: string | undefined = usernameOfLink(anchor);
   if (author === undefined) return { status: "unreadableAuthor", kind };
+  const parentId: string | undefined = kind === "comment" ? parentItemIdOf(row) : undefined;
   return {
     status: "post",
     post: {
@@ -126,7 +137,8 @@ export function classify(row: Element): HackerNewsRow {
       ref: { platform: "hackernews", handle: author },
       anchor,
       kind,
-      isReply: isReply(row, kind),
+      isReply: isReply(row, kind, parentId),
+      ...(parentId === undefined ? {} : { parentId }),
     },
   };
 }

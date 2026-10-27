@@ -1,0 +1,185 @@
+<!doctype html>
+<!--
+  Hand-written, in the shape of comments.html: a post page whose comment thread carries copied
+  replies. Mossy_Teapot asks a question first (15:12); the OP answers in a reply that quotes it in a
+  blockquote; Quick_Fern_2291 (16:05) and Bright_Sail_8803 (16:30) post near copies of the question
+  as their own top-level comments; Deal_Scout_90210 writes something else. The page lists the copies
+  above the original, as a "best" sort can. Times are each comment's faceplate-timeago[ts].
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>reddit</title>
+  </head>
+  <body>
+    <shreddit-app>
+      <shreddit-post
+        id="t3_1k9x2ab"
+        author="Quiet_Lantern_4821"
+        created-timestamp="2026-10-26T14:03:11.000+0000"
+        subreddit-prefixed-name="r/woodworking"
+        post-title="Finished the walnut side table"
+        permalink="/r/woodworking/comments/1k9x2ab/finished_the_walnut_side_table/"
+      >
+        <template shadowrootmode="open">
+          <div class="post-container">
+            <slot name="credit-bar"></slot><slot name="title"></slot>
+          </div>
+        </template>
+        <div slot="credit-bar">
+          <a href="/r/woodworking/">r/woodworking</a>
+          <a href="/user/Quiet_Lantern_4821/">u/Quiet_Lantern_4821</a>
+        </div>
+        <a slot="title" href="/r/woodworking/comments/1k9x2ab/">Finished the walnut side table</a>
+      </shreddit-post>
+      <shreddit-comment-tree id="comment-tree">
+        <shreddit-comment
+          author="Bright_Sail_8803"
+          thingid="t1_mx2bb04"
+          postid="t3_1k9x2ab"
+          parentid=""
+          depth="0"
+          score="88"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Bright_Sail_8803/" class="author-name flex items-center">
+                <img
+                  src="https://www.redditstatic.com/avatars/avatar_default_05_24A0ED.png"
+                  alt="u/Bright_Sail_8803 avatar"
+                />
+                Bright_Sail_8803
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T16:30:00.000+0000">16 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              the grain on that walnut top is lovely, what finish did you use and how many coats did
+              it take 😍
+            </p>
+          </div>
+        </shreddit-comment>
+        <shreddit-comment
+          author="Mossy_Teapot"
+          thingid="t1_mx2bb01"
+          postid="t3_1k9x2ab"
+          parentid=""
+          depth="0"
+          score="58"
+        >
+          <template shadowrootmode="open">
+            <div class="comment">
+              <slot name="commentMeta"></slot>
+              <slot name="comment"></slot>
+              <slot name="children"></slot>
+            </div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Mossy_Teapot/" class="author-name flex items-center">
+                <img
+                  src="https://styles.redditmedia.com/t5_9z8y7x/styles/profileIcon_example.png"
+                  alt="u/Mossy_Teapot avatar"
+                />
+                Mossy_Teapot
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T15:12:00.000+0000">17 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              The grain on that walnut top is lovely. What finish did you use, and how many coats
+              did it take?
+            </p>
+          </div>
+          <shreddit-comment
+            slot="children"
+            author="Quiet_Lantern_4821"
+            thingid="t1_mx2bb02"
+            postid="t3_1k9x2ab"
+            parentid="t1_mx2bb01"
+            depth="1"
+            score="31"
+          >
+            <template shadowrootmode="open">
+              <div class="comment">
+                <slot name="commentMeta"></slot><slot name="comment"></slot>
+              </div>
+            </template>
+            <div slot="commentMeta" class="flex items-center">
+              <faceplate-hovercard>
+                <a href="/user/Quiet_Lantern_4821/" class="author-name">Quiet_Lantern_4821</a>
+              </faceplate-hovercard>
+              <span class="op-tag">OP</span>
+              <faceplate-timeago ts="2026-10-26T15:40:00.000+0000">17 hr. ago</faceplate-timeago>
+            </div>
+            <div slot="comment">
+              <blockquote>
+                <p>
+                  The grain on that walnut top is lovely. What finish did you use, and how many
+                  coats did it take?
+                </p>
+              </blockquote>
+              <p>Hardwax oil, two coats, then a light buff with a soft cloth.</p>
+            </div>
+          </shreddit-comment>
+        </shreddit-comment>
+        <shreddit-comment
+          author="Quick_Fern_2291"
+          thingid="t1_mx2bb03"
+          postid="t3_1k9x2ab"
+          parentid=""
+          depth="0"
+          score="12"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Quick_Fern_2291/" class="author-name flex items-center">
+                <img
+                  src="https://www.redditstatic.com/avatars/avatar_default_03_FFB000.png"
+                  alt="u/Quick_Fern_2291 avatar"
+                />
+                Quick_Fern_2291
+              </a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T16:05:00.000+0000">16 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>
+              The grain on that walnut top is lovely! What finish did you use, and how many coats
+              did it take?? https://example.com/finishes
+            </p>
+          </div>
+        </shreddit-comment>
+        <shreddit-comment
+          author="Deal_Scout_90210"
+          thingid="t1_mx2bb05"
+          postid="t3_1k9x2ab"
+          parentid=""
+          depth="0"
+          score="2"
+        >
+          <template shadowrootmode="open">
+            <div class="comment"><slot name="commentMeta"></slot><slot name="comment"></slot></div>
+          </template>
+          <div slot="commentMeta" class="flex items-center">
+            <faceplate-hovercard>
+              <a href="/user/Deal_Scout_90210/" class="author-name">Deal_Scout_90210</a>
+            </faceplate-hovercard>
+            <faceplate-timeago ts="2026-10-26T17:00:00.000+0000">15 hr. ago</faceplate-timeago>
+          </div>
+          <div slot="comment">
+            <p>Nice table. Did you cut the breadboard ends by hand or on the router table?</p>
+          </div>
+        </shreddit-comment>
+      </shreddit-comment-tree>
+    </shreddit-app>
+  </body>
+</html>

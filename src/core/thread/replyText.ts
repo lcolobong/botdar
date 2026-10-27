@@ -1,8 +1,40 @@
 /**
- * Reading a reply's own words from the page for the thread index (ADR-0027). Quoted text is
- * someone else's words: a reply that quotes another in full before answering it is not a copy, so
- * each platform names what it renders quotes as and that part is left out.
+ * Reading a reply from the page for the thread index (ADR-0027): its own words, and its time. Quoted
+ * text is someone else's words: a reply that quotes another in full before answering it is not a
+ * copy, so each platform names what it renders quotes as and that part is left out.
  */
+import type { ThreadReply } from "./threadIndex";
+
+/**
+ * A reply whose markup has not finished rendering (Reddit slots a comment's body in after the
+ * element): the caller reads the element again on a later pass. Every other failure to read a reply
+ * is structural (the root, an ancestor, a post with no text, another page) and final.
+ */
+export const NOT_YET_READABLE = "notYetReadable";
+
+/** What a platform's reader makes of one post element; undefined when it is not a reply. */
+export type ReplyReading = ThreadReply | undefined | typeof NOT_YET_READABLE;
+
+const EXPLICIT_ZONE_PATTERN = /(?:Z|[+-]\d\d:?\d\d)$/i;
+const COLONLESS_OFFSET_PATTERN = /([+-]\d\d)(\d\d)$/;
+
+/**
+ * An ISO 8601 time as a page renders it, with the zone ECMAScript's date format requires: none
+ * means UTC, and a colon-less offset ("+0000", Reddit's form) gains its colon. Only V8's legacy
+ * fallback parses "+0000"; an engine that follows the specification answers NaN.
+ */
+export function withExplicitZone(isoTime: string): string {
+  if (!EXPLICIT_ZONE_PATTERN.test(isoTime)) {
+    return `${isoTime}Z`;
+  }
+  return isoTime.replace(COLONLESS_OFFSET_PATTERN, "$1:$2");
+}
+
+/** Epoch milliseconds of a time the page renders, or undefined when it does not parse. */
+export function pageTimestampMillis(isoTime: string): number | undefined {
+  const millis: number = Date.parse(withExplicitZone(isoTime.trim()));
+  return Number.isNaN(millis) ? undefined : millis;
+}
 
 const TEXT_NODE_FILTER = 4; // NodeFilter.SHOW_TEXT, spelled out so the module loads without a DOM.
 
