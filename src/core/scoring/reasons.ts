@@ -298,6 +298,17 @@ const REASON_TEMPLATES: Readonly<Record<FeatureId, ReasonTemplate>> = {
   "hn.karmaPerDay": karmaPerDayReason,
   "hn.submissionsPerDay": submissionsReason,
   "hn.hasAbout": ({ value }) => (value === true ? "Has an about section" : NO_REASON),
+  "youtube.channelAgeDays": joinedReason,
+  "youtube.hasVideos": ({ value, signals }) =>
+    value === true ? `Has ${pluralize(signals.postCount ?? 0, "public video")}` : NO_REASON,
+  "youtube.hasDescription": ({ value }) =>
+    value === true ? "Has a channel description" : NO_REASON,
+  "youtube.assignedHandle": ({ value }) =>
+    value === true ? "Handle is one YouTube assigned" : NO_REASON,
+  "youtube.imitatesCreator": ({ detail }) =>
+    detail === "name"
+      ? "Channel name imitates this video's creator"
+      : "Handle imitates this video's creator",
 };
 
 export function templatedFeatureIds(): FeatureId[] {

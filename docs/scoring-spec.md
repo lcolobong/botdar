@@ -136,6 +136,30 @@ Prior `-2.8`. Confidence weights `{0: 0.30, 1: 0.0, 2: 0.70}` (Hacker News has n
 The green name Hacker News gives new accounts is not read until a recording shows one, and `[dead]` and
 `[flagged]` are moderation outcomes, not evidence about the account, so neither is a feature.
 
+### YouTube
+
+Comment authors on a watch page ([ADR-0030](decisions/ADR-0030-youtube-adapter.md)). A comment
+shows a handle and nothing else about the account; the channel's About panel, read on
+hover through the page's own innertube API, adds its join date, video count and description and the
+channel's name. Whether a handle or name poses as the video's creator is read from the page. Counts
+come from the About panels of 57 commenters on the recorded BBC News video, sampled on 2026-10-27
+shortly before the recording. All uncalibrated.
+
+| Feature | Group | Cap | Input | Bins / weight | Gate |
+|---|---|---|---|---|---|
+| `youtube.channelAgeDays` | age | 1.2 | days since the About panel's join date | same bins as `reddit.accountAgeDays` | join date read (Tier 2) |
+| `youtube.hasVideos` | profile | 0.3 | the channel has public videos | bool, −0.3 | Tier 2 delivered (no video count in the panel means none) |
+| `youtube.hasDescription` | profile | 0.3 | the channel description is non-empty | bool, −0.3 | Tier 2 delivered |
+| `youtube.assignedHandle` | handle | 0.3 | the handle is one YouTube assigned: name, "-" and a 3–5 character code with a digit, or `user-` and a random string | bool, 0.3 | always |
+| `youtube.imitatesCreator` | handle | 2.0 | the handle, or once read the channel name, is the video creator's name or handle alone or with digits, an assigned code or an impersonator's word (`official`, `support`, `tm`, …), after folding case, separators, accents and look-alike letters | bool, 2.0 | the creator's name or handle is known and at least 4 characters; never for the creator's own account (its handle, or any comment author carrying the creator chip) |
+| Declared (handle, description) | — | — | a handle whose last word is "bot", or a first-person "I am a … bot" in the description | override → `declared` | always |
+
+Prior `-2.5`. Confidence weights `{0: 0.30, 1: 0.0, 2: 0.70}` (YouTube has no Tier 1). Group caps
+`handle` 2.0, `profile` 1.2, `coordination` 1.5.
+The subscriber count is parsed but not scored (most commenters have a handful, and a hidden count is
+indistinguishable from none), and neither are the country, a comment's likes or its reply count, which
+describe one comment, not the account.
+
 ### Every platform
 
 Two features read the thread on the page rather than the account
@@ -195,7 +219,7 @@ anything that costs per-account time, money or patience is skipped, and the skip
   karma rate therefore keeps Reddit's bin edges at about half the weight (cap 0.8), so a launch plus a
   join date stays below `some`.
 
-### Account age (`x.accountAgeDays`, `reddit.accountAgeDays`, `bsky.accountAgeDays`, `hn.accountAgeDays`)
+### Account age (`x.accountAgeDays`, `reddit.accountAgeDays`, `bsky.accountAgeDays`, `hn.accountAgeDays`, `youtube.channelAgeDays`)
 
 - **Mechanism.** Automated accounts get banned and are replaced, so a fleet skews young at any moment.
   Aged accounts exist but cost money on the resale market, so the cheap end of automation is new. The
@@ -206,6 +230,9 @@ anything that costs per-account time, money or patience is skipped, and the skip
   account age is in every metadata feature set reviewed.
 - **Counter-case.** Every account was new once. A recent join date therefore never carries enough
   weight to cross a threshold without a second group.
+- **On YouTube.** Every Google account can comment, so a channel's join date is when its owner first
+  used YouTube, often years before they comment; 53 of 57 sampled commenters joined more than two
+  years ago. A weeks-old channel commenting is therefore the rarer case, and Reddit's bins apply.
 
 ### Following ratio (`x.followingRatio`, `bsky.followsRatio`)
 
@@ -219,7 +246,7 @@ anything that costs per-account time, money or patience is skipped, and the skip
   (one at 3,949 following, 15 followers) show the same shape on another platform.
 - **Counter-case.** New users who follow widely before anyone follows back, and lurkers who never post.
 
-### Handle shape (`x.handleNameDigits`, `x.handleTrailingDigits`, `x.handleBigramLL`, `bsky.handleDigitsOnBskySocial`, `reddit.generatedName`)
+### Handle shape (`x.handleNameDigits`, `x.handleTrailingDigits`, `x.handleBigramLL`, `bsky.handleDigitsOnBskySocial`, `reddit.generatedName`, `youtube.assignedHandle`)
 
 - **Mechanism.** Creating accounts in bulk means naming them in bulk. Either the platform's suggested
   handle is accepted as-is (name plus digits on X and `bsky.social`, `Adjective_Noun_1234` on Reddit)
@@ -232,8 +259,13 @@ anything that costs per-account time, money or patience is skipped, and the skip
 - **Counter-case.** Many people accept the suggested handle and never change it, so these features
   share one group cap of 1.2 (they all measure the same decision) and `reddit.generatedName` alone is
   worth 0.4. A Bluesky custom-domain handle never fires because setting one is itself an investment.
+- **On YouTube.** A channel that never chose a handle gets its name, a hyphen and a short code
+  ("@LarryH-h6q"), or `user-` and a random string; 8 of the 56 commenters on the recorded page had
+  one. It weighs 0.3.
+  The handles YouTube gave every existing channel in 2022 (the name and four digits) are not read:
+  they mark a channel older than handles, not one left as created.
 
-### Profile completeness (`x.defaultAvatarEmptyBio`, `bsky.noAvatarEmptyBio`, `reddit.noAvatar`, `reddit.noVerifiedEmail`, `hn.hasAbout`)
+### Profile completeness (`x.defaultAvatarEmptyBio`, `bsky.noAvatarEmptyBio`, `reddit.noAvatar`, `reddit.noVerifiedEmail`, `hn.hasAbout`, `youtube.hasVideos`, `youtube.hasDescription`)
 
 - **Mechanism.** A photo and a bio cost per-account effort, so a fleet skips them unless it is building
   a persona. Both missing weighs far more than one missing because the pair is the fleet default,
@@ -246,6 +278,32 @@ anything that costs per-account time, money or patience is skipped, and the skip
 - **On Hacker News.** The profile is a single free-text `about` field, and most people never fill it
   in (22 of the 25 thread authors checked on 2026-10-27 had none), so an empty one is the norm and
   weighs nothing. Only a filled one counts, towards ordinary, as effort spent on this one account.
+- **On YouTube.** A commenting channel is mostly an account that watches: 44 of 57 sampled commenters
+  had no public videos and 48 no description, so their absence weighs nothing, and having either
+  counts towards ordinary (−0.3 each). The avatar is not a feature on YouTube: a path under `ytc/`
+  serves both the letter YouTube draws for a channel without an avatar and the Google account's photo
+  (25 letters and 7 photos among 32 on the recorded page), so the URL cannot tell a default avatar
+  from a chosen one, and an uploaded one would only ever weigh nothing.
+
+### Creator imitation (`youtube.imitatesCreator`)
+
+- **Mechanism.** Scam comment campaigns pose as the video's creator: a channel named after the
+  creator, often with an assigned code or "official" tacked on, replies to commenters with a lure
+  ("message me on Telegram, you won"), and the creator's name lends it the trust the channel's own
+  history could not. Posing as someone else costs a fleet nothing per account, because the name is
+  copied from the page; a person picks a name of their own. The feature compares names only, never
+  what a comment says: the handle the page shows, then the channel name once the About panel is
+  read, with case, separators, accents and look-alike letters folded so "BBC Nеws" with a Cyrillic
+  "е" still matches.
+- **Evidence.** Scam comments made up 2.34% of 8.8M comments studied, posted by about 10,000 accounts
+  abusing account names and look-alike characters (NDSS 2024); scam bots ran on 31.73% of crawled
+  videos (IMC 2023); both in [research/heuristics.md](research/heuristics.md). No measurement on
+  Botdar's own sample yet: no comment on the recorded page imitated its creator.
+- **Counter-case.** Fan, tribute and reaction channels use the creator's name too. A name with any
+  word other than an impersonator's ("bbcnewsfan", "ilovebbcnews") never matches, nor does a creator
+  name under four characters, and the creator's own replies never count (its handle, or the creator
+  chip on its comment). Alone it reaches `some` from the page (prior −2.5 + 2.0 gives p ≈ 0.38); with
+  a weeks-old channel it reaches `many`, two groups agreeing.
 
 ### Verification timing (`x.newAndBlue`)
 
@@ -386,7 +444,7 @@ anything that costs per-account time, money or patience is skipped, and the skip
 
 ### Why the pieces combine the way they do
 
-- **The prior** (`-2.5` on X, `-2.8` on Reddit and Hacker News) encodes the base rate: most accounts are people, so an
+- **The prior** (`-2.5` on X, Bluesky and YouTube, `-2.8` on Reddit and Hacker News) encodes the base rate: most accounts are people, so an
   account starts well below the thresholds and has to earn its way up.
 - **Independence groups** exist because features inside a group measure one decision (how the account
   was named, whether the profile was filled in), so two of them are one piece of evidence, not two.
@@ -510,6 +568,11 @@ such a line once, from the stronger item.
 | `reddit.karmaSinceFirstActivity` | "~{rate} karma/day since first activity {age} ago" ({age} counted from the oldest visible item; "today" under a day) | "karma-farming pattern" / "a pace ordinary use earns" | this feature's own: "Long-time readers who start posting in large communities can earn karma quickly. Accounts that delete their old posts keep their karma, so the rate can look inflated." |
 | `hn.submissionsPerDay` | "{n} posts and comments in {age}" (a rate under one a day reads better as a count) | "prolonged hyperactivity" / "a pace a person keeps up" | activity: as above |
 | `hn.hasAbout` | "Has an about section" / false: nothing | "left as created" / "effort spent on this one account" | profile: as above |
+| `youtube.channelAgeDays` | as `x.accountAgeDays` | as `x.accountAgeDays` | age: as above |
+| `youtube.hasVideos` | "Has {n} public videos" / false: nothing | "left as created" / "effort spent on this one account" | profile: as above |
+| `youtube.hasDescription` | "Has a channel description" / false: nothing | as above | profile: as above |
+| `youtube.assignedHandle` | "Handle is one YouTube assigned" / false: nothing | "unchanged suggested handle" / none | handle: as above |
+| `youtube.imitatesCreator` | "Handle imitates this video's creator" / from the name: "Channel name imitates this video's creator" | "posing as the creator draws trusting replies" / none | this feature's own: "Fan and tribute channels often use the creator's name too." |
 | `reddit.postToCommentKarma` | "Post karma {link}, comment karma {comment}" | "reposts earn it without conversation" / "it joins conversations" | content: as above |
 | `reddit.generatedName` | "Username matches Reddit's auto-generated pattern" / false: nothing | "kept as suggested" / none | handle: as above |
 | `reddit.noAvatar` | "Default avatar" / false: "Custom avatar" | "left as created" / "effort spent on this one account" | profile: as above |

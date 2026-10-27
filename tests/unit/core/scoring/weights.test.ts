@@ -7,7 +7,7 @@ import type { PlatformId, Verdict } from "@/src/core/types";
 import malformedWeights from "../../../fixtures/scoring/weights.malformed.json";
 import { ALL_TIERS, NOW, feature, signalsWith } from "./testWeights";
 
-const PLATFORMS: PlatformId[] = ["x", "reddit", "bluesky", "hackernews"];
+const PLATFORMS: PlatformId[] = ["x", "reddit", "bluesky", "hackernews", "youtube"];
 
 function validFile(): Record<string, unknown> {
   return structuredClone({ schema: 1, platforms: defaultWeights });
@@ -36,6 +36,9 @@ describe("defaultWeights", () => {
     // Hacker News mirrors Reddit: no Tier 1, and the lookup carries most of the confidence.
     expect(defaultWeights.hackernews.prior).toBe(-2.8);
     expect(defaultWeights.hackernews.confidenceWeights).toEqual({ 0: 0.3, 1: 0, 2: 0.7 });
+    // YouTube has no Tier 1 either, and starts from X's prior (docs/scoring-spec.md, "YouTube").
+    expect(defaultWeights.youtube.prior).toBe(-2.5);
+    expect(defaultWeights.youtube.confidenceWeights).toEqual({ 0: 0.3, 1: 0, 2: 0.7 });
   });
 
   it("caps handle, profile and timing on X and Bluesky, geo on X, and coordination everywhere", () => {
@@ -54,6 +57,11 @@ describe("defaultWeights", () => {
     });
     expect(defaultWeights.reddit.groupCaps).toEqual({ coordination: 1.5 });
     expect(defaultWeights.hackernews.groupCaps).toEqual({ coordination: 1.5 });
+    expect(defaultWeights.youtube.groupCaps).toEqual({
+      handle: 2.0,
+      profile: 1.2,
+      coordination: 1.5,
+    });
   });
 
   it("weighs near-duplicate replies the same on every platform, capped at 1.5", () => {
@@ -161,6 +169,7 @@ describe("defaultWeights", () => {
     expect(Object.keys(defaultWeights.reddit.features)).toHaveLength(9);
     expect(Object.keys(defaultWeights.bluesky.features)).toHaveLength(9);
     expect(Object.keys(defaultWeights.hackernews.features)).toHaveLength(6);
+    expect(Object.keys(defaultWeights.youtube.features)).toHaveLength(7);
   });
 
   it("has a reason template for every feature id it defines", () => {

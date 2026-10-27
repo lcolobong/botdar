@@ -6,6 +6,7 @@ export const PLATFORM_NAMES: Record<PlatformId, string> = {
   reddit: "Reddit",
   bluesky: "Bluesky",
   hackernews: "Hacker News",
+  youtube: "YouTube",
 };
 
 /** The hosts each toggle covers, as the options page captions them. */
@@ -14,4 +15,5 @@ export const PLATFORM_DOMAINS: Record<PlatformId, string> = {
   reddit: "reddit.com and old.reddit.com",
   bluesky: "bsky.app",
   hackernews: "news.ycombinator.com",
+  youtube: "www.youtube.com comments",
 };

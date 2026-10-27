@@ -25,13 +25,9 @@ import {
 import type { PlatformId } from "../types.ts";
 import { PLATFORM_IDS } from "../types.ts";
 
-/**
- * YouTube is recorded before its adapter exists (ADR-0021); it joins PLATFORM_IDS with its scoring
- * table, and this list goes back to being PLATFORM_IDS.
- */
-export type SnapshotPlatform = PlatformId | "youtube";
+export type SnapshotPlatform = PlatformId;
 
-export const SNAPSHOT_PLATFORMS: readonly SnapshotPlatform[] = [...PLATFORM_IDS, "youtube"];
+export const SNAPSHOT_PLATFORMS: readonly SnapshotPlatform[] = PLATFORM_IDS;
 
 export interface AnonymizedSnapshot {
   html: string;

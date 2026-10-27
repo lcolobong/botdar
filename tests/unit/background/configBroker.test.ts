@@ -55,7 +55,7 @@ describe("config.changed", () => {
   it("broadcasts the recomputed configs after a settings change", async () => {
     await saveSettings({
       ...defaultSettings,
-      platforms: { x: false, reddit: true, bluesky: true, hackernews: true },
+      platforms: { x: false, reddit: true, bluesky: true, hackernews: true, youtube: true },
     });
     await vi.waitFor(() => expect(broadcasts()).toHaveLength(1));
     const [broadcast] = broadcasts();

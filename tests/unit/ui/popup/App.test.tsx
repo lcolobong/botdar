@@ -73,6 +73,7 @@ describe("popup App", () => {
       "Badges on · lookups on",
       "Badges on · lookups on",
       "Badges on · lookups on",
+      "Badges on · lookups on",
       "Never ask a platform for a profile",
       PRIVACY_SENTENCE,
     ]);
@@ -136,13 +137,14 @@ describe("popup App", () => {
       reddit: true,
       bluesky: true,
       hackernews: true,
+      youtube: true,
     });
 
     switchNamed(container, "Conservative mode").click();
     await vi.waitFor(() => expect(rowCaptions(container)[1]).toBe("Badges on · lookups off"));
     expect(await storedSettings()).toEqual({
       ...defaultSettings,
-      platforms: { x: false, reddit: true, bluesky: true, hackernews: true },
+      platforms: { x: false, reddit: true, bluesky: true, hackernews: true, youtube: true },
       conservativeMode: true,
     });
   });

@@ -4,7 +4,13 @@
  */
 
 /** Every supported platform; the one list the union, settings, policy, weights and snapshots derive from. */
-export const PLATFORM_IDS = Object.freeze(["x", "reddit", "bluesky", "hackernews"] as const);
+export const PLATFORM_IDS = Object.freeze([
+  "x",
+  "reddit",
+  "bluesky",
+  "hackernews",
+  "youtube",
+] as const);
 
 export type PlatformId = (typeof PLATFORM_IDS)[number];
 
@@ -29,7 +35,8 @@ export interface AccountRef {
   platform: PlatformId;
   /**
    * Without a leading "@" or "u/", and lowercased where the platform ignores case. Hacker News
-   * usernames are case-sensitive, so its handles keep the casing the page renders.
+   * usernames are case-sensitive, so its handles keep the casing the page renders. A YouTube handle
+   * may be in any script and is lowercased like the rest.
    */
   handle: string;
   /** Platform-native id when known (X rest_id, Bluesky DID, Reddit fullname). */

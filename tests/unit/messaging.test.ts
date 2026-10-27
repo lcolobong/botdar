@@ -24,6 +24,7 @@ const configs: EffectiveConfigByPlatform = {
   reddit: { ...xConfig, platform: "reddit" },
   bluesky: { ...xConfig, platform: "bluesky" },
   hackernews: { ...xConfig, platform: "hackernews" },
+  youtube: { ...xConfig, platform: "youtube" },
 };
 
 describe("messaging type guards", () => {
