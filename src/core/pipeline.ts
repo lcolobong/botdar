@@ -8,7 +8,7 @@
 
 import type { TtlLruCache } from "./cache";
 import { LookupQueue } from "./lookupQueue";
-import type { LookupFacet, PersistedLookup } from "./persistedLookups";
+import type { PersistedLookup } from "./persistedLookups";
 import type { RateLimiter } from "./ratelimit";
 import { recordLookup } from "./diagnostics.ts";
 import { RateLimitedError } from "./ratelimit";
@@ -26,13 +26,13 @@ import type {
 import type {
   AccountResolverOptions,
   BadgeHandle,
-  LookupPersistence,
   LookupStatus,
   Scorer,
   VerdictListener,
 } from "./pipeline/types";
 import type { AccountEntry } from "./pipeline/trackedAccounts";
 import { TrackedAccounts } from "./pipeline/trackedAccounts";
+import { LookupStorage, hoverCacheKey } from "./pipeline/lookupStorage";
 import { markDelivered, mergeSignals } from "./pipeline/mergeSignals";
 
 export type {
@@ -46,9 +46,7 @@ export type {
 export type { MergeableSignals } from "./pipeline/mergeSignals";
 export { mergeSignals } from "./pipeline/mergeSignals";
 export { MAX_TRACKED_ACCOUNTS } from "./pipeline/trackedAccounts";
-
-/** ADR-0012 ceiling for Tier 2 results held in memory; callers size their cache with it. */
-export const TIER2_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+export { TIER2_CACHE_TTL_MS } from "./pipeline/lookupStorage";
 
 interface ActiveRunOptions {
   settleWhenTurnedAway: boolean;
@@ -75,7 +73,7 @@ export class AccountResolver {
   private readonly scorer: Scorer;
   private readonly limiter: RateLimiter;
   private readonly cache: TtlLruCache<string, PartialSignals>;
-  private readonly persistence: LookupPersistence | undefined;
+  private readonly storage: LookupStorage;
   private readonly now: () => number;
   private readonly accounts = new TrackedAccounts();
   private readonly attachedPosts = new Map<Element, AttachedPost>();
@@ -92,7 +90,12 @@ export class AccountResolver {
     this.config = options.config;
     this.limiter = options.limiter;
     this.cache = options.cache;
-    this.persistence = options.persistence;
+    this.storage = new LookupStorage({
+      persistence: options.persistence,
+      adapter: this.adapter,
+      cache: this.cache,
+      lookupsLive: () => !this.disposed && this.config.tiers.t2,
+    });
     this.now = options.now ?? Date.now;
     this.onSightQueue = new LookupQueue({
       // A queued lookup is ready only when every call it makes can be paid for.
@@ -194,7 +197,7 @@ export class AccountResolver {
       return mainLookup;
     }
     entry.hoverLookupActive = (settledCandidates ?? this.hoverOnlySources()).some(
-      (source) => this.cache.get(this.hoverCacheKey(ref.handle, source)) === undefined,
+      (source) => this.cache.get(hoverCacheKey(ref.handle, source)) === undefined,
     );
     const hoverLookup: Promise<void> = mainLookup.then(() =>
       this.runHoverSources(entry, settledCandidates),
@@ -228,7 +231,7 @@ export class AccountResolver {
       this.absorb(entry, cached, 2);
       return Promise.resolve();
     }
-    if (this.persistenceActive()) {
+    if (this.storage.active()) {
       this.trackPending(entry, this.lookupPersistedThenFetch(entry));
       return entry.pendingLookup ?? Promise.resolve();
     }
@@ -256,7 +259,7 @@ export class AccountResolver {
       this.absorb(entry, cached, 2);
       return Promise.resolve();
     }
-    if (this.persistenceActive()) {
+    if (this.storage.active()) {
       this.trackPending(entry, this.lookupPersistedThenQueue(entry));
       return entry.pendingLookup ?? Promise.resolve();
     }
@@ -316,87 +319,13 @@ export class AccountResolver {
   }
 
   private async settleFromPersisted(entry: AccountEntry): Promise<boolean> {
-    const persisted: PersistedLookup | undefined = await this.readPersisted(entry);
+    const persisted: PersistedLookup | undefined = await this.storage.read(entry);
     if (persisted === undefined) {
       return false;
     }
     recordLookup("cached");
     this.absorb(entry, persisted.signals, 2, true);
     return true;
-  }
-
-  /** Memory first (the caller's miss), then storage; a storage hit repopulates the memory cache. */
-  private async readPersisted(
-    entry: AccountEntry,
-    source?: SignalSource,
-  ): Promise<PersistedLookup | undefined> {
-    const persistence: LookupPersistence | undefined = this.persistence;
-    if (persistence === undefined) {
-      return undefined;
-    }
-    const handle: string = entry.signals.ref.handle;
-    // A facet read runs beside the main lookup, whose own read owns this flag.
-    const ownsRunningFlag: boolean = source === undefined;
-    if (ownsRunningFlag) {
-      entry.lookupRunning = true;
-    }
-    try {
-      const persisted: PersistedLookup | undefined = await persistence.store.read(
-        this.adapter.id,
-        handle,
-        source === undefined ? undefined : this.facetOf(source),
-      );
-      if (persisted === undefined || !this.persistenceActive()) {
-        return undefined;
-      }
-      // The memory copy must not outlive the stored one's expiry, whatever its age.
-      this.cache.set(
-        source === undefined ? handle : this.hoverCacheKey(handle, source),
-        persisted.signals,
-        Math.min(TIER2_CACHE_TTL_MS, persisted.remainingMs),
-      );
-      return persisted;
-    } catch {
-      return undefined;
-    } finally {
-      if (ownsRunningFlag) {
-        entry.lookupRunning = false;
-      }
-    }
-  }
-
-  /** Conservative mode (Tier 2 off) and the persistLookups setting both switch storage reads and writes off. */
-  private persistenceActive(): boolean {
-    return (
-      this.persistence !== undefined &&
-      !this.disposed &&
-      this.config.tiers.t2 &&
-      this.persistence.enabled()
-    );
-  }
-
-  private persist(handle: string, signals: PartialSignals, source?: SignalSource): void {
-    if (this.persistence === undefined || !this.persistenceActive()) {
-      return;
-    }
-    // A failed write only means the next lookup is a fetch; nothing waits on it.
-    void this.persistence.store
-      .write(
-        this.adapter.id,
-        handle,
-        signals,
-        source === undefined ? undefined : this.facetOf(source),
-      )
-      .catch(() => undefined);
-  }
-
-  private facetOf(source: SignalSource): LookupFacet {
-    return { id: source.id, ttlMs: TIER2_CACHE_TTL_MS };
-  }
-
-  /** Reddit and Hacker News handles never contain ":", so a source id prefix cannot meet a plain handle. */
-  private hoverCacheKey(handle: string, source: SignalSource): string {
-    return `${source.id}:${handle}`;
   }
 
   private trackPending(entry: AccountEntry, lookup: Promise<unknown>): void {
@@ -532,14 +461,14 @@ export class AccountResolver {
     source: SignalSource,
   ): Promise<PartialSignals | null> {
     const handle: string = entry.signals.ref.handle;
-    const cacheKey: string = this.hoverCacheKey(handle, source);
+    const cacheKey: string = hoverCacheKey(handle, source);
     const cached: PartialSignals | undefined = this.cache.get(cacheKey);
     if (cached !== undefined) {
       recordLookup("cached");
       return cached;
     }
-    if (this.persistenceActive()) {
-      const persisted: PersistedLookup | undefined = await this.readPersisted(entry, source);
+    if (this.storage.active()) {
+      const persisted: PersistedLookup | undefined = await this.storage.read(entry, source);
       if (persisted !== undefined) {
         recordLookup("cached");
         return persisted.signals;
@@ -564,7 +493,7 @@ export class AccountResolver {
     }
     recordLookup("delivered");
     this.cache.set(cacheKey, partial);
-    this.persist(handle, partial, source);
+    this.storage.write(handle, partial, source);
     return partial;
   }
 
@@ -713,7 +642,7 @@ export class AccountResolver {
     // stored entry's expiry, and the topped-up fields live on the account for this tab.
     if (delivered && whole && !topUp) {
       this.cache.set(ref.handle, collected);
-      this.persist(ref.handle, collected);
+      this.storage.write(ref.handle, collected);
     }
     // Rescore even when nothing arrived or nothing changed, so every badge of the account and a
     // waiting hover card leave their loading state.
