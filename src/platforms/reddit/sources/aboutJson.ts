@@ -5,7 +5,7 @@
  * HTML login page; after one of those the source pauses itself, since every further lookup would
  * get the same answer and add nothing but traffic to the user's session.
  */
-import { RateLimitedError } from "../../../core/ratelimit";
+import { RateLimitedError, retryAfterMsFrom } from "../../../core/ratelimit";
 import type { AccountRef, PartialSignals, ResolveContext, SignalSource } from "../../../core/types";
 import type { AboutParseResult } from "../parsers/about";
 import { parseAboutResponse } from "../parsers/about";
@@ -31,11 +31,6 @@ export interface AboutJsonSource extends SignalSource {
 
 export function aboutJsonPath(handle: string): string {
   return `/user/${encodeURIComponent(handle)}/about.json?raw_json=1`;
-}
-
-function retryAfterMs(response: Response): number | undefined {
-  const seconds = Number(response.headers.get("retry-after"));
-  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : undefined;
 }
 
 function isHtml(response: Response): boolean {
@@ -68,7 +63,10 @@ export function createAboutJsonSource(options: AboutJsonSourceOptions = {}): Abo
       return null;
     }
     if (response.status === HTTP_TOO_MANY_REQUESTS) {
-      throw new RateLimitedError("Reddit rate-limited about.json", retryAfterMs(response));
+      throw new RateLimitedError(
+        "Reddit rate-limited about.json",
+        retryAfterMsFrom(response.headers, now()),
+      );
     }
     if (
       response.status === HTTP_UNAUTHORIZED ||

@@ -78,6 +78,7 @@ const PERSISTED_FIELD_CHECKS: Record<string, FieldCheck> = {
   postCount: isNumber,
   linkKarma: isNumber,
   commentKarma: isNumber,
+  karma: isNumber,
   bioEmpty: isBoolean,
   hasDefaultAvatar: isBoolean,
   verified: oneOf(VERIFIED_KINDS),
