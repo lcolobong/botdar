@@ -249,6 +249,11 @@ export interface PlatformAdapter {
   extractDomSignals: (post: PostRef) => PartialSignals;
   sources: SignalSource[];
   toFeatures: (signals: AccountSignals) => Feature[];
+  /**
+   * Evidence `toFeatures` reads from the page rather than from the account's signals (the thread
+   * index, ADR-0027) changed for these handles; the resolver rescores them. Returns an unsubscribe.
+   */
+  onEvidenceChanged?: (listener: (handles: readonly string[]) => void) => () => void;
   badgeDensity: BadgeDensity;
 }
 

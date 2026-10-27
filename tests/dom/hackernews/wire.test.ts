@@ -112,6 +112,10 @@ describe("wireOnSight on a recorded Hacker News thread", () => {
       expect(labelOf(firstCommenter?.nextElementSibling ?? undefined)).toBe("Likely human"),
     );
     expect(storyAuthor?.textContent).toBe(UNKNOWN_AUTHOR);
-    expect(labelOf(storyAuthor?.nextElementSibling ?? undefined)).toBe("No read");
+    // The two lookups run side by side and their response bodies are read asynchronously, so under
+    // a loaded test run the OP's can settle after the commenter's.
+    await vi.waitFor(() =>
+      expect(labelOf(storyAuthor?.nextElementSibling ?? undefined)).toBe("No read"),
+    );
   });
 });

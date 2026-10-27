@@ -12,13 +12,15 @@ import type { NearViewportGate } from "@/src/core/nearViewport";
 import { createNearViewportGate } from "@/src/core/nearViewport";
 import type { PostRef } from "@/src/core/types";
 import { kindOfPost, recordAnchorMiss, recordSeen } from "../../core/diagnostics.ts";
-import { POST_SELECTOR, findUnbadgedPosts, toPostRef } from "./dom";
+import { POST_SELECTOR, UNBADGED_POST_SELECTOR, toPostRef } from "./dom";
 
 export interface FeedObserverOptions {
   onPost: (post: PostRef) => void;
   onRemoved: (element: Element) => void;
   /** Called with the new URL before the first pass on it; per-page state resets here. */
   onRouteChange?: (href: string) => void;
+  /** Every post found by a discovery pass, near the viewport or not (the thread index, ADR-0027). */
+  onDiscovered?: (article: Element) => void;
   root?: Document;
 }
 
@@ -67,8 +69,11 @@ export function observeFeed(options: FeedObserverOptions): () => void {
       lastHref = view.location.href;
       options.onRouteChange?.(lastHref);
     }
-    for (const article of findUnbadgedPosts(root)) {
-      if (!tracked.has(article)) {
+    for (const article of root.querySelectorAll(POST_SELECTOR)) {
+      // Every post goes to the thread index, badged or not: the index forgets the page on navigation
+      // and a reinjected script starts empty, while the badge marks survive both.
+      options.onDiscovered?.(article);
+      if (!tracked.has(article) && article.matches(UNBADGED_POST_SELECTOR)) {
         gate.watch(article);
       }
     }

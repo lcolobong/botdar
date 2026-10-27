@@ -24,10 +24,6 @@ const AUTOMATED_LABEL_TEXT = "automated";
 const REPLYING_TO_TEXT = "replying to";
 const MAX_DISPLAY_NAME_LENGTH = 100;
 
-export function findUnbadgedPosts(root: ParentNode): Element[] {
-  return Array.from(root.querySelectorAll(UNBADGED_POST_SELECTOR));
-}
-
 export function markBadged(post: Element): void {
   post.setAttribute(BADGED_ATTRIBUTE, "1");
 }

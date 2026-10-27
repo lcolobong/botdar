@@ -264,6 +264,7 @@ export class AccountResolver {
   private readonly abortController = new AbortController();
   private readonly onSightQueue: LookupQueue;
   private stopPassiveSources: Array<() => void> = [];
+  private readonly stopPageEvidence: () => void;
   private config: EffectivePlatformConfig;
   private disposed = false;
   private touchCounter = 0;
@@ -285,6 +286,22 @@ export class AccountResolver {
       run: (handle) => this.runQueuedLookup(handle),
     });
     this.startPassiveSources();
+    this.stopPageEvidence =
+      this.adapter.onEvidenceChanged?.((handles) => this.rescorePageEvidence(handles)) ??
+      (() => undefined);
+  }
+
+  /**
+   * Page evidence (a copy of an account's reply found further down the thread) changed for these
+   * accounts after they were scored; only accounts with a post on screen are worth a rescore.
+   */
+  private rescorePageEvidence(handles: readonly string[]): void {
+    for (const handle of handles) {
+      const entry: AccountEntry | undefined = this.entries.get(handle);
+      if (!this.disposed && entry !== undefined && entry.posts.size > 0) {
+        this.recompute(entry);
+      }
+    }
   }
 
   /** Accounts currently tracked in this tab; never exceeds `MAX_TRACKED_ACCOUNTS`. */
@@ -589,6 +606,7 @@ export class AccountResolver {
     this.disposed = true;
     this.onSightQueue.clear();
     this.stopPassive();
+    this.stopPageEvidence();
     this.abortController.abort();
     this.attachedPosts.clear();
     this.entries.clear();

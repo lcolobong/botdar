@@ -17,6 +17,11 @@ import { FEED_ITEM_SELECTOR, classify } from "./dom";
 export interface HackerNewsFeedObserverOptions {
   onPost: (post: HackerNewsPostRef) => void;
   onRemoved: (element: Element) => void;
+  /**
+   * Every row found by a discovery pass, near the viewport or not (the thread index, ADR-0027),
+   * with the classification the badge will use, so a row is classified once.
+   */
+  onDiscovered?: (row: Element, classified: HackerNewsRow) => void;
 }
 
 export { IDLE_TIMEOUT_MS };
@@ -31,6 +36,8 @@ function* rowsWithin(subtree: Element, selector: string): Generator<Element> {
 
 export function observeHackerNewsFeed(options: HackerNewsFeedObserverOptions): () => void {
   const reported = new WeakSet<Element>();
+  /** Each row's classification from its discovery, reused when it comes near the viewport. */
+  const classifiedRows = new WeakMap<Element, HackerNewsRow>();
   /** Near the viewport but not analysed yet, in the order they came near. */
   const queue = new Set<Element>();
   let pendingSubtrees: Element[] = [document.documentElement];
@@ -38,7 +45,7 @@ export function observeHackerNewsFeed(options: HackerNewsFeedObserverOptions): (
 
   const report = (row: Element): void => {
     if (reported.has(row) || !row.isConnected) return;
-    const classified: HackerNewsRow = classify(row);
+    const classified: HackerNewsRow = classifiedRows.get(row) ?? classify(row);
     // A job ad or a deleted comment has no author link and the user page's row is no post; only an
     // author link whose username could not be read is a miss.
     if (classified.status === "unreadableAuthor") recordAnchorMiss(classified.kind, row);
@@ -61,7 +68,14 @@ export function observeHackerNewsFeed(options: HackerNewsFeedObserverOptions): (
     pendingSubtrees = [];
     for (const subtree of subtrees) {
       if (!subtree.isConnected) continue;
-      for (const row of rowsWithin(subtree, UNDISCOVERED_SELECTOR)) gate.watch(row);
+      for (const row of rowsWithin(subtree, FEED_ITEM_SELECTOR)) {
+        // Every row goes to the thread index, badged or not: a reinjected script starts with an
+        // empty index while the badge marks survive.
+        const classified: HackerNewsRow = classify(row);
+        classifiedRows.set(row, classified);
+        options.onDiscovered?.(row, classified);
+        if (row.matches(UNDISCOVERED_SELECTOR)) gate.watch(row);
+      }
     }
   };
 

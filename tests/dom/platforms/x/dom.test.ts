@@ -4,8 +4,8 @@
 import type { PostRef } from "@/src/core/types";
 import {
   BADGED_ATTRIBUTE,
+  UNBADGED_POST_SELECTOR,
   extractDomSignals,
-  findUnbadgedPosts,
   markBadged,
   toPostRef,
   unmarkBadged,
@@ -23,17 +23,19 @@ beforeEach(() => {
   loadTimeline();
 });
 
-describe("findUnbadgedPosts and the badged mark", () => {
-  it("finds every tweet article and skips the ones already badged", () => {
+describe("the badged mark", () => {
+  const unbadgedPosts = (): Element[] => [...document.querySelectorAll(UNBADGED_POST_SELECTOR)];
+
+  it("leaves a badged tweet article out of the unbadged selector", () => {
     const articles: Element[] = timelineArticles();
-    expect(findUnbadgedPosts(document)).toEqual(articles);
+    expect(unbadgedPosts()).toEqual(articles);
     const [first] = articles;
     if (first === undefined) throw new Error("fixture has no posts");
     markBadged(first);
     expect(first.getAttribute(BADGED_ATTRIBUTE)).toBe("1");
-    expect(findUnbadgedPosts(document)).toEqual(articles.slice(1));
+    expect(unbadgedPosts()).toEqual(articles.slice(1));
     unmarkBadged(first);
-    expect(findUnbadgedPosts(document)).toHaveLength(4);
+    expect(unbadgedPosts()).toHaveLength(4);
   });
 });
 
