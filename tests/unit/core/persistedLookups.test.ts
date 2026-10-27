@@ -136,6 +136,47 @@ describe("PersistedLookupStore", () => {
     expect(await lookupKeys()).toHaveLength(0);
   });
 
+  it("keeps a facet beside the account's snapshot, each on its own key and clock", async () => {
+    const lookups: PersistedLookupStore = store();
+    const facet = { id: "reddit.overviewJson", ttlMs: 24 * 60 * 60 * 1000 };
+    await lookups.write("reddit", "someone", { linkKarma: 5 });
+    await lookups.write(
+      "reddit",
+      "someone",
+      { oldestItemAt: 1_700_000_000_000, visibleItemCount: 7 },
+      facet,
+    );
+
+    expect(await lookupKeys()).toHaveLength(2);
+    expect((await lookups.read("reddit", "someone"))?.signals).toEqual({ linkKarma: 5 });
+    expect((await lookups.read("reddit", "someone", facet))?.signals).toEqual({
+      oldestItemAt: 1_700_000_000_000,
+      visibleItemCount: 7,
+    });
+
+    clock = START + facet.ttlMs - 1;
+    expect((await lookups.read("reddit", "someone", facet))?.remainingMs).toBe(1);
+    clock = START + facet.ttlMs;
+    expect(await lookups.read("reddit", "someone", facet)).toBeUndefined();
+    expect((await lookups.read("reddit", "someone"))?.signals).toEqual({ linkKarma: 5 });
+  });
+
+  it("stores only the two numbers an overview delivers, nothing else it was handed", async () => {
+    const lookups: PersistedLookupStore = store();
+    const facet = { id: "reddit.overviewJson", ttlMs: 1_000 };
+    const handed = {
+      oldestItemAt: 1_700_000_000_000,
+      visibleItemCount: 7,
+      postText: "a comment body",
+    };
+    await lookups.write("reddit", "someone", handed, facet);
+
+    expect((await lookups.read("reddit", "someone", facet))?.signals).toEqual({
+      oldestItemAt: 1_700_000_000_000,
+      visibleItemCount: 7,
+    });
+  });
+
   it("treats a fetch time in the future as expired", async () => {
     const lookups: PersistedLookupStore = store();
     await lookups.write("x", "someone", { followers: 12 });
@@ -215,6 +256,26 @@ describe("PersistedLookupStore.sweep", () => {
     expect(await signalsFor(lookups, "fresh")).toEqual({ followers: 2 });
     expect(await lookupKeys()).toHaveLength(1);
     expect((await fakeBrowser.storage.local.get("settings.v1"))["settings.v1"]).toEqual({ a: 1 });
+  });
+
+  it("sweeps a facet at its own lifetime, from the index and from a rebuilding scan", async () => {
+    const facet = { id: "reddit.overviewJson", ttlMs: 24 * 60 * 60 * 1000 };
+    const lookups: PersistedLookupStore = store();
+    await lookups.write("reddit", "someone", { linkKarma: 5 });
+    await lookups.write("reddit", "someone", { visibleItemCount: 3 }, facet);
+    await lookups.sweep();
+    expect(await lookupKeys()).toHaveLength(2);
+
+    clock = START + facet.ttlMs + 1;
+    await lookups.sweep();
+    expect(await lookupKeys()).toHaveLength(1);
+    expect((await lookups.read("reddit", "someone"))?.signals).toEqual({ linkKarma: 5 });
+
+    await lookups.write("reddit", "other", { visibleItemCount: 1 }, facet);
+    await fakeBrowser.storage.local.remove(LOOKUP_INDEX_KEY);
+    clock += facet.ttlMs + 1;
+    await store().sweep();
+    expect(await lookupKeys()).toHaveLength(1);
   });
 
   it("keeps the newest entries when over the cap", async () => {

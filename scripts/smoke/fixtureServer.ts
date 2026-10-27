@@ -228,6 +228,13 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
     path: `/user/${handle}/about.json`,
     file: `tests/fixtures/smoke/reddit-about-${handle}.json`,
   })),
+  // The same OP's overview, asked for on hover: a hand-written listing of three items, the oldest
+  // from October 2025, so the card gains the karma-since-first-activity line.
+  {
+    platform: "reddit",
+    path: "/user/quiet_lantern_4821/overview.json",
+    file: "tests/fixtures/reddit/overview/short.json",
+  },
   // Three authors on the first screens of the recorded thread and front page, with bodies
   // hand-written in the recorded shape; every other author answers null, as an unknown id does.
   ...["tomas_bakes28", "jonas_draws01", "priya_draws51"].map((handle): ApiFixtureRoute => ({

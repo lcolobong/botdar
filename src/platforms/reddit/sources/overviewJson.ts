@@ -6,7 +6,14 @@
  * listing to read and is kept as an empty one.
  * Only the oldest item's timestamp and the item count leave the parser (ADR-0025, ADR-0028).
  */
-import type { AccountRef, PartialSignals, ResolveContext, SignalSource } from "../../../core/types";
+import { DAY_MILLIS, KARMA_RATE_MAX_AGE_DAYS } from "../../../core/scoring/featureSupport";
+import type {
+  AccountRef,
+  AccountSignals,
+  PartialSignals,
+  ResolveContext,
+  SignalSource,
+} from "../../../core/types";
 import { OVERVIEW_PAGE_LIMIT } from "../conventions";
 import type { OverviewParseResult } from "../parsers/overview";
 import { parseOverviewResponse } from "../parsers/overview";
@@ -56,12 +63,18 @@ export function createOverviewJsonSource(options: OverviewJsonSourceOptions = {}
     return result.status === "ok" ? result.signals : null;
   };
 
+  /** Only accounts past the karma-rate age gate use the answer; a younger one is scored by karmaPerDay. */
+  const worthResolving = (signals: AccountSignals): boolean =>
+    signals.createdAt !== undefined &&
+    (now() - signals.createdAt) / DAY_MILLIS >= KARMA_RATE_MAX_AGE_DAYS;
+
   return {
     id: OVERVIEW_JSON_SOURCE_ID,
     platform: "reddit",
     tier: 2,
     kind: "active",
     hoverOnly: true,
+    worthResolving,
     resolve,
   };
 }

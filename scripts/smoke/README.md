@@ -58,11 +58,14 @@ returns 404 for every other API path:
 | `https://bsky.app/xrpc/app.bsky.feed.getAuthorFeed`            | `tests/fixtures/smoke/bluesky-author-feed.json` (hand-written) |
 | `https://www.reddit.com/user/quiet_lantern_4821/about.json`    | `tests/fixtures/reddit/about/normal.json`       |
 | `https://www.reddit.com/user/<name>/about.json` for `quick_fern_2291`, `bright_sail_8803` | `tests/fixtures/smoke/reddit-about-<name>.json` (hand-written) |
+| `https://www.reddit.com/user/quiet_lantern_4821/overview.json` | `tests/fixtures/reddit/overview/short.json` (hand-written) |
 | `https://hacker-news.firebaseio.com/v0/user/<name>.json` for `tomas_bakes28`, `jonas_draws01`, `priya_draws51` | `tests/fixtures/hackernews/firebase/smoke/<name>.json` |
 
-The Reddit route answers the extension's own Tier 2 lookup for the recorded thread's OP, matched
-on the path alone (the `?raw_json=1` query is ignored); every other author's lookup gets the 404,
-so the comments scene shows a profile that was read next to ones that returned nothing.
+The Reddit routes answer the extension's own Tier 2 lookups for the recorded thread's OP, matched
+on the path alone (the query is ignored); every other author's lookup gets the 404, so the
+comments scene shows a profile that was read next to ones that returned nothing. The overview is
+asked for on hover only, so it shows in the `comments-hover` capture, where the OP's card gains a
+karma-per-day line since the oldest item in the listing (October 2025).
 
 The Hacker News routes answer the Firebase lookup cross-origin, with the
 `access-control-allow-origin` the real API sends, from hand-written bodies in the recorded shape:

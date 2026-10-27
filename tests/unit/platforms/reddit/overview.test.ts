@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { RateLimitedError } from "@/src/core/ratelimit";
-import type { AccountRef, ResolveContext } from "@/src/core/types";
+import type { AccountRef, AccountSignals, ResolveContext } from "@/src/core/types";
 import { parseOverviewResponse } from "@/src/platforms/reddit/parsers/overview";
 import { createLoginPause } from "@/src/platforms/reddit/sources/redditJson";
 import {
@@ -97,6 +97,23 @@ describe("overview.json source", () => {
       kind: "active",
       hoverOnly: true,
     });
+  });
+
+  it("is worth a request only for an account past the karma-rate age gate", () => {
+    const now = 1_800_000_000_000;
+    const source = createOverviewJsonSource({ now: () => now });
+    const signalsAged = (days: number): AccountSignals => ({
+      ref,
+      createdAt: now - days * 86_400_000,
+      provenance: {},
+      tiersDelivered: [],
+      observedAt: now,
+    });
+    expect(source.worthResolving?.(signalsAged(179))).toBe(false);
+    expect(source.worthResolving?.(signalsAged(180))).toBe(true);
+    expect(
+      source.worthResolving?.({ ref, provenance: {}, tiersDelivered: [], observedAt: now }),
+    ).toBe(false);
   });
 
   it("asks for the newest 100 items with the user's cookies", () => {
