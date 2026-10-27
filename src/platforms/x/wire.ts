@@ -263,9 +263,11 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
     options.ctx,
     (container) => {
       cardContainer = container;
-      container.addEventListener("mouseenter", () => hover.holdOpen());
-      container.addEventListener("mouseleave", () => hover.requestClose());
-      return () => render(null, container);
+      const unbindCard: () => void = hover.bindCard(container);
+      return () => {
+        unbindCard();
+        render(null, container);
+      };
     },
     theme(),
     options.shadowCss,

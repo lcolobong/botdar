@@ -135,16 +135,54 @@ export async function wireReddit(
 
   // MARK: - Hover card
 
-  const card: MountedUi = await mountCard(
+  // Set once the card has mounted. The controller is created before that, so the mount callback
+  // can bind the card's container to it, and its callbacks guard for a card not mounted yet.
+  let card: MountedUi | undefined = undefined;
+  const controller: HoverController = createHoverController({
+    render: (host) => {
+      const slot: BadgeSlot | undefined = slotByHost.get(host);
+      if (slot === undefined || card === undefined) return 0;
+      openSlot = slot;
+      renderCard();
+      legendShown = true;
+      card.setTheme(theme());
+      card.setVisible(true);
+      if (runtime.config.tiers.t2) {
+        // Usually a cache hit: the author was looked up on sight. An author still waiting in the
+        // on-sight queue moves to its front (the resolver promotes it), and one already running
+        // shares that lookup. The closing rescore redraws the badge and the card.
+        void slot.handle.lookup();
+        renderBadge(slot);
+        renderCard();
+      }
+      return cardContainer?.getBoundingClientRect().height ?? 0;
+    },
+    hide: () => {
+      const closedSlot: BadgeSlot | null = openSlot;
+      openSlot = null;
+      card?.setVisible(false);
+      if (closedSlot !== null) renderBadge(closedSlot);
+    },
+    place: ({ top, left }) => {
+      card?.setPlacement({ top, left });
+    },
+  });
+
+  const mountedCard: MountedUi = await mountCard(
     ctx,
     (container) => {
       cardContainer = container;
-      return () => render(null, container);
+      const unbindCard: () => void = controller.bindCard(container);
+      return () => {
+        unbindCard();
+        render(null, container);
+      };
     },
     theme(),
     shadowCss,
   );
-  card.setVisible(false);
+  card = mountedCard;
+  mountedCard.setVisible(false);
 
   const toggleFeedback = (slot: BadgeSlot): void => {
     const handle: string = slot.post.ref.handle;
@@ -194,38 +232,6 @@ export async function wireReddit(
       cardContainer,
     );
   };
-
-  const controller: HoverController = createHoverController({
-    render: (host) => {
-      const slot: BadgeSlot | undefined = slotByHost.get(host);
-      if (slot === undefined) return 0;
-      openSlot = slot;
-      renderCard();
-      legendShown = true;
-      card.setTheme(theme());
-      card.setVisible(true);
-      if (runtime.config.tiers.t2) {
-        // Usually a cache hit: the author was looked up on sight. An author still waiting in the
-        // on-sight queue moves to its front (the resolver promotes it), and one already running
-        // shares that lookup. The closing rescore redraws the badge and the card.
-        void slot.handle.lookup();
-        renderBadge(slot);
-        renderCard();
-      }
-      return cardContainer?.getBoundingClientRect().height ?? 0;
-    },
-    hide: () => {
-      const closedSlot: BadgeSlot | null = openSlot;
-      openSlot = null;
-      card.setVisible(false);
-      if (closedSlot !== null) renderBadge(closedSlot);
-    },
-    place: ({ top, left }) => {
-      card.setPlacement({ top, left });
-    },
-  });
-  ctx.addEventListener(card.shadowHost, "mouseenter", () => controller.holdOpen());
-  ctx.addEventListener(card.shadowHost, "mouseleave", () => controller.requestClose());
 
   // MARK: - Badges
 
@@ -382,7 +388,7 @@ export async function wireReddit(
     stopObserving = null;
     for (const element of [...slots.keys()]) detachElement(element);
     controller.dispose();
-    card.remove();
+    mountedCard.remove();
     resolver.dispose();
   };
   ctx.onInvalidated(dispose);

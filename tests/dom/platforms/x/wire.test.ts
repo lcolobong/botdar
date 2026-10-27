@@ -268,6 +268,35 @@ describe("wirePlatform hover card", () => {
     }
   });
 
+  it("keeps the card open when a click on its text takes the focus from the badge", async () => {
+    await badgesSettled(3);
+    await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());
+    const cardHost: HTMLElement | null = document.querySelector(CARD_ELEMENT_NAME);
+    const [, many] = badgeHosts();
+    if (cardHost === null || many === undefined) throw new Error("fixture missing");
+
+    vi.useFakeTimers();
+    try {
+      badgeButton(many).dispatchEvent(new Event("mouseenter"));
+      await vi.advanceTimersByTimeAsync(150);
+      const caveat: Element | null | undefined =
+        cardHost.shadowRoot?.querySelector(".bd-card__caveat");
+      const container: Element | null | undefined =
+        cardHost.shadowRoot?.querySelector(".bd-card")?.parentElement;
+      // The press lands on text, which takes no focus; the focused badge still blurs.
+      caveat?.dispatchEvent(new Event("pointerdown", { bubbles: true, composed: true }));
+      badgeButton(many).dispatchEvent(new Event("blur"));
+      await vi.advanceTimersByTimeAsync(400);
+      expect(cardHost.style.getPropertyValue("--botdar-display")).toBe("block");
+
+      container?.dispatchEvent(new Event("mouseleave"));
+      await vi.advanceTimersByTimeAsync(200);
+      expect(cardHost.style.getPropertyValue("--botdar-display")).toBe("none");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("reads Checking while an unknown account's lookup runs, then explains the No read", async () => {
     await badgesSettled(3);
     await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());
