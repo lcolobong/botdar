@@ -40,7 +40,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** Join dates this recent read as "3 weeks ago"; older ones as "March 2019". */
 const RELATIVE_JOIN_DATE_LIMIT_DAYS = 90;
 const LONG_LIVED_ACCOUNT_DAYS = 2 * 365;
-const REASON_MIN_ABSOLUTE_CONTRIBUTION = 0.3;
+/**
+ * A reason is listed on its own merit from this contribution up; below it, it only pads the card
+ * to two reasons. The card's strength bar calls that padding range "weak" (strength.ts).
+ */
+export const REASON_MIN_ABSOLUTE_CONTRIBUTION = 0.3;
 const MIN_REASONS = 2;
 const MAX_REASONS = 4;
 

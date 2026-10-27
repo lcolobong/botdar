@@ -22,6 +22,7 @@ import {
   selectReasons,
 } from "./reasons";
 import type { ConfidenceWeights, FeatureSpec, PlatformWeights, TierThresholds } from "./types";
+import { STRONG_CONTRIBUTION } from "./strength";
 import { DECLARED_WHY } from "./whyClauses";
 
 export interface ScoreOptions {
@@ -34,8 +35,6 @@ export interface ScoreOptions {
 
 const ALL_TIERS: readonly SourceTier[] = [0, 1, 2];
 
-/** An evidence item counts towards the independence rule from this contribution upwards. */
-const STRONG_CONTRIBUTION = 0.6;
 const MANY_MIN_CONFIDENCE = 0.5;
 /**
  * A typical read is reported as Likely human only from this confidence up; below it the verdict is
