@@ -2,7 +2,7 @@
  * Records a live page from the user's own Chrome as an anonymised fixture, with a screenshot of
  * the page as the extension rendered it.
  *
- *   pnpm capture -- --url <url> --platform x|reddit|bluesky|hackernews --name <scene>
+ *   pnpm capture -- --url <url> --platform x|reddit|bluesky|hackernews|youtube --name <scene>
  *                   [--cdp http://127.0.0.1:9222] [--wait <ms>] [--no-anonymize] [--out <dir>] [--force]
  *
  * Chrome must be running with a DevTools port on a dedicated profile (`pnpm capture:chrome`);
@@ -41,6 +41,7 @@ const countedSelectors: Readonly<Record<string, string>> = {
   "bluesky posts": '[data-testid^="feedItem-by-"], [data-testid^="postThreadItem-by-"]',
   "hacker news stories": "tr.athing.submission",
   "hacker news comments": "tr.athing:has(.comment)",
+  "youtube comments": "ytd-comment-view-model",
   "botdar-badge hosts": "botdar-badge",
 };
 
@@ -59,7 +60,7 @@ interface CaptureOptions {
 function usage(message: string): never {
   process.stderr.write(`${message}\n\n`);
   process.stderr.write(
-    "usage: pnpm capture -- --url <url> --platform x|reddit|bluesky|hackernews --name <scene>\n" +
+    "usage: pnpm capture -- --url <url> --platform x|reddit|bluesky|hackernews|youtube --name <scene>\n" +
       "                      [--cdp http://127.0.0.1:9222] [--wait <ms>] [--no-anonymize] [--out <dir>] [--force]\n",
   );
   process.exit(2);
@@ -74,7 +75,7 @@ function parseOptions(argv: readonly string[]): CaptureOptions {
   const platform: string | undefined = flagValue(argv, "--platform");
   const name: string | undefined = flagValue(argv, "--name");
   if (url === undefined) usage("--url is required");
-  if (!isPlatform(platform)) usage("--platform must be x, reddit, bluesky or hackernews");
+  if (!isPlatform(platform)) usage("--platform must be x, reddit, bluesky, hackernews or youtube");
   if (name === undefined || !/^[a-z0-9-]+$/.test(name)) usage("--name must be a lowercase slug");
   const wait: string | undefined = flagValue(argv, "--wait");
   return {
