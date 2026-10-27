@@ -8,7 +8,7 @@
 
 import type { TtlLruCache } from "./cache";
 import { LookupQueue } from "./lookupQueue";
-import type { LookupFacet, PersistedLookup, PersistedLookupStore } from "./persistedLookups";
+import type { LookupFacet, PersistedLookup } from "./persistedLookups";
 import type { RateLimiter } from "./ratelimit";
 import { recordLookup } from "./diagnostics.ts";
 import { RateLimitedError } from "./ratelimit";
@@ -27,6 +27,23 @@ import type {
   SourceTier,
   Verdict,
 } from "./types";
+import type {
+  AccountResolverOptions,
+  BadgeHandle,
+  LookupPersistence,
+  LookupStatus,
+  Scorer,
+  VerdictListener,
+} from "./pipeline/types";
+
+export type {
+  AccountResolverOptions,
+  BadgeHandle,
+  LookupPersistence,
+  LookupStatus,
+  Scorer,
+  VerdictListener,
+} from "./pipeline/types";
 
 /** ADR-0012 ceiling for Tier 2 results held in memory; callers size their cache with it. */
 export const TIER2_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -38,52 +55,6 @@ export const TIER2_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 export const MAX_TRACKED_ACCOUNTS = 2000;
 /** Evicting a batch at a time keeps the sort of idle entries off the hot path of every emission. */
 const EVICTION_BATCH_SIZE = MAX_TRACKED_ACCOUNTS / 10;
-
-export type Scorer = (
-  features: Feature[],
-  signals: AccountSignals,
-  sourcesAvailable: SourceTier[],
-) => Verdict;
-
-export type VerdictListener = (verdict: Verdict) => void;
-
-/**
- * Where an account's Tier 2 lookup stands, for the badge's loading state and the No read card.
- * `off`: the effective config has no Tier 2. `pending`: a lookup is queued or running.
- * `delivered`: one returned data. `loginRequired`: an active source paused itself after a
- * logged-out answer. `empty`: a lookup ran and returned nothing. `idle`: none has run for this
- * account yet.
- */
-export type LookupStatus = "off" | "idle" | "pending" | "delivered" | "empty" | "loginRequired";
-
-export interface BadgeHandle {
-  subscribe: (listener: VerdictListener) => () => void;
-  current: () => Verdict;
-  /** Runs the Tier 2 lookup now (hover), ahead of any queued on-sight lookup; resolves after rescoring. */
-  lookup: () => Promise<void>;
-  /**
-   * Queues the Tier 2 lookup when the post comes into view: at most one attempt per account per
-   * page, and none while a source needs a login. Resolves after rescoring, or at once when skipped.
-   */
-  lookupOnSight: () => Promise<void>;
-  lookupStatus: () => LookupStatus;
-}
-
-/** The on-device layer under the memory cache (ADR-0025); `enabled` is the user's persistLookups setting. */
-export interface LookupPersistence {
-  store: PersistedLookupStore;
-  enabled: () => boolean;
-}
-
-export interface AccountResolverOptions {
-  adapter: PlatformAdapter;
-  scorer: Scorer;
-  config: EffectivePlatformConfig;
-  limiter: RateLimiter;
-  cache: TtlLruCache<string, PartialSignals>;
-  persistence?: LookupPersistence;
-  now?: () => number;
-}
 
 interface ActiveRunOptions {
   settleWhenTurnedAway: boolean;
