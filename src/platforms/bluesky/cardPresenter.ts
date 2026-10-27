@@ -150,9 +150,9 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
       options.ctx,
       (mountedContainer: HTMLElement): (() => void) => {
         container = mountedContainer;
-        mountedContainer.addEventListener("mouseenter", controller.holdOpen);
-        mountedContainer.addEventListener("mouseleave", controller.requestClose);
+        const unbindCard: () => void = controller.bindCard(mountedContainer);
         return () => {
+          unbindCard();
           render(null, mountedContainer);
           container = undefined;
         };
