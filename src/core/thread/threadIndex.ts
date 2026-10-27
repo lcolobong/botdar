@@ -12,6 +12,8 @@
  * that arrived later changed it.
  */
 import { areNearDuplicates, comparableWords } from "../text/replySimilarity";
+import type { AuthorsChangedListener } from "./answeredCounts";
+import { AnsweredCounts, appendTo } from "./answeredCounts";
 
 export interface ThreadReply {
   /** The thread the reply belongs to, normally its root post's id. */
@@ -27,17 +29,15 @@ export interface ThreadReply {
   parentId?: string;
 }
 
-interface IndexedReply {
-  threadKey: string;
-  replyId: string;
-  author: string;
-  postedAt: number;
-  parentId: string | undefined;
+/** Where a reply sits in its thread: what deciding whether one reply is another's source needs. */
+export type ReplyPlacement = Pick<
+  ThreadReply,
+  "threadKey" | "replyId" | "author" | "postedAt" | "parentId"
+>;
+
+interface IndexedReply extends ReplyPlacement {
   words: ReadonlySet<string>;
 }
-
-/** Called with the authors whose count changed after they were last asked for it. */
-export type CopiedReplyListener = (authors: readonly string[]) => void;
 
 /**
  * A ceiling on the replies one page holds. Past it new replies are not recorded: the feature then
@@ -49,13 +49,7 @@ export class ThreadIndex {
   private readonly repliesByThread = new Map<string, IndexedReply[]>();
   private readonly repliesByAuthor = new Map<string, IndexedReply[]>();
   private readonly recordedKeys = new Set<string>();
-  /**
-   * Answers handed out, kept current as replies arrive. An author asked about before any reply of
-   * theirs could be compared is held with `undefined`, so a comparable reply recorded later still
-   * reaches the listeners.
-   */
-  private readonly answeredCounts = new Map<string, number | undefined>();
-  private readonly listeners = new Set<CopiedReplyListener>();
+  private readonly answered = new AnsweredCounts();
 
   /** Replies held, for the memory ceiling and the tests. */
   get size(): number {
@@ -72,17 +66,10 @@ export class ThreadIndex {
       return;
     }
     this.recordedKeys.add(key);
-    const indexed: IndexedReply = {
-      threadKey: reply.threadKey,
-      replyId: reply.replyId,
-      author: reply.author,
-      postedAt: reply.postedAt,
-      parentId: reply.parentId,
-      words,
-    };
+    const indexed: IndexedReply = { ...placementOf(reply), words };
     appendTo(this.repliesByThread, indexed.threadKey, indexed);
     appendTo(this.repliesByAuthor, indexed.author, indexed);
-    this.notify(this.refreshCountsAffectedBy(indexed));
+    this.answered.refresh(this.authorsAffectedBy(indexed), (author) => this.countFor(author));
   }
 
   /**
@@ -91,34 +78,26 @@ export class ThreadIndex {
    * is long enough to compare.
    */
   copiedReplyCount(author: string): number | undefined {
-    if (this.answeredCounts.has(author)) {
-      return this.answeredCounts.get(author);
-    }
-    const count: number | undefined = this.repliesByAuthor.has(author)
-      ? this.countFor(author)
-      : undefined;
-    this.answeredCounts.set(author, count);
-    return count;
+    return this.answered.answer(author, () => this.countFor(author));
   }
 
-  subscribe(listener: CopiedReplyListener): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+  subscribe(listener: AuthorsChangedListener): () => void {
+    return this.answered.subscribe(listener);
   }
 
   /** Navigation: forgets every reply, and tells the authors who had a count above 0. */
   clear(): void {
-    const flagged: string[] = [...this.answeredCounts]
-      .filter(([, count]) => count !== undefined && count > 0)
-      .map(([author]) => author);
     this.repliesByThread.clear();
     this.repliesByAuthor.clear();
     this.recordedKeys.clear();
-    this.answeredCounts.clear();
-    this.notify(flagged);
+    this.answered.clear();
   }
 
-  private countFor(author: string): number {
+  /** Undefined when none of the author's replies on the page is long enough to compare. */
+  private countFor(author: string): number | undefined {
+    if (!this.repliesByAuthor.has(author)) {
+      return undefined;
+    }
     let mostSources = 0;
     for (const reply of this.repliesByAuthor.get(author) ?? []) {
       mostSources = Math.max(mostSources, this.earlierSourceAuthors(reply).size);
@@ -146,42 +125,23 @@ export class ThreadIndex {
    * earlier source for a later reply by an answered author. Authors never asked about are left
    * alone, which keeps a thread's first discovery pass free of comparisons.
    */
-  private refreshCountsAffectedBy(reply: IndexedReply): string[] {
-    if (this.answeredCounts.size === 0) {
-      return [];
-    }
+  private authorsAffectedBy(reply: IndexedReply): Set<string> {
     const affected = new Set<string>();
-    if (this.answeredCounts.has(reply.author)) {
-      affected.add(reply.author);
+    if (this.answered.isEmpty) {
+      return affected;
     }
+    affected.add(reply.author);
     for (const later of this.repliesByThread.get(reply.threadKey) ?? []) {
       if (
         !affected.has(later.author) &&
-        this.answeredCounts.has(later.author) &&
+        this.answered.has(later.author) &&
         isEarlierSourceFor(reply, later) &&
         areNearDuplicates(reply.words, later.words)
       ) {
         affected.add(later.author);
       }
     }
-    const changed: string[] = [];
-    for (const author of affected) {
-      const count: number = this.countFor(author);
-      if (count !== this.answeredCounts.get(author)) {
-        this.answeredCounts.set(author, count);
-        changed.push(author);
-      }
-    }
-    return changed;
-  }
-
-  private notify(authors: readonly string[]): void {
-    if (authors.length === 0) {
-      return;
-    }
-    for (const listener of this.listeners) {
-      listener(authors);
-    }
+    return affected;
   }
 }
 
@@ -189,7 +149,7 @@ export class ThreadIndex {
  * Strictly earlier, by someone else, and not the reply's own parent. Two replies with the same time
  * are neither's source, so a tie never flags anyone.
  */
-function isEarlierSourceFor(source: IndexedReply, reply: IndexedReply): boolean {
+export function isEarlierSourceFor(source: ReplyPlacement, reply: ReplyPlacement): boolean {
   return (
     source.author !== reply.author &&
     source.postedAt < reply.postedAt &&
@@ -197,11 +157,10 @@ function isEarlierSourceFor(source: IndexedReply, reply: IndexedReply): boolean 
   );
 }
 
-function appendTo<Key>(map: Map<Key, IndexedReply[]>, key: Key, reply: IndexedReply): void {
-  const existing: IndexedReply[] | undefined = map.get(key);
-  if (existing === undefined) {
-    map.set(key, [reply]);
-  } else {
-    existing.push(reply);
-  }
+/** The reply without its text, which an index never keeps. */
+export function placementOf(reply: ThreadReply): ReplyPlacement {
+  const { threadKey, replyId, author, postedAt, parentId } = reply;
+  return parentId === undefined
+    ? { threadKey, replyId, author, postedAt }
+    : { threadKey, replyId, author, postedAt, parentId };
 }
