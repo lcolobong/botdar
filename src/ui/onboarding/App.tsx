@@ -73,8 +73,8 @@ function PrivacyPanel() {
       <div class="bd-panel__body">
         <div class="bd-block">
           <strong>What it reads:</strong> the handle, join date, follower counts and bio that the
-          page already shows or already loaded, and the public profile: on Reddit when a post comes
-          into view, elsewhere when you hover a badge.
+          page already shows or already loaded, and the public profile: on Reddit and Hacker News
+          when a post comes into view, elsewhere when you hover a badge.
         </div>
         <div class="bd-block">
           <strong>What leaves your browser:</strong> nothing about the accounts you see. Once a day
@@ -113,7 +113,7 @@ function ControlsPanel({ settings }: { settings: Settings | null }) {
         <div class="bd-block">
           <p>Per platform</p>
           <span class="bd-caption">
-            Turn X, Reddit or Bluesky off from the toolbar popup any time.
+            Turn X, Reddit, Bluesky or Hacker News off from the toolbar popup any time.
           </span>
         </div>
         <p class="bd-caption">

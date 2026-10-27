@@ -72,7 +72,9 @@ describe("onboarding App", () => {
 
     await advance(container);
     expect(headline(container)).toBe("Turn it down any time");
-    expect(container.textContent).toContain("Turn X, Reddit or Bluesky off from the toolbar popup");
+    expect(container.textContent).toContain(
+      "Turn X, Reddit, Bluesky or Hacker News off from the toolbar popup",
+    );
     expect(primaryButton(container).textContent).toBe("Done");
     expect(activeDot(container)).toBe(2);
   });

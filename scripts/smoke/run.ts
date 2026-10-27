@@ -3,7 +3,7 @@
  * the feed fixtures served by fixtureServer.ts, light and dark. It builds nothing: run
  * `pnpm build` first. Output is one PNG per scene plus a manifest.json; see scripts/smoke/README.md.
  *
- *   pnpm smoke -- [--out <dir>] [--theme light|dark|both] [--only x|reddit|bluesky|pages|store]
+ *   pnpm smoke -- [--out <dir>] [--theme light|dark|both] [--only x|reddit|bluesky|hackernews|pages|store]
  *                [--viewport <width>x<height>] [--headed]
  *
  * One-time setup: `pnpm smoke:setup` (installs Playwright's Chromium).

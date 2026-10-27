@@ -93,11 +93,20 @@
   font-size: 10px;
   line-height: 12px;
 }
-.bd-badge--reddit-comment {
+/* Hacker News sets its rows in 7–9pt Verdana; its badges keep their label at the comment size. */
+.bd-badge--reddit-comment,
+.bd-badge--hackernews {
   height: var(--badge-height-reddit-comment);
   padding: 0 6px;
   font-size: 10px;
   line-height: 12px;
+}
+/*
+ * The badge mounts before the author link's next element, so on Hacker News it lands after the
+ * space that separated the name from the age; it carries that gap on its other side itself.
+ */
+.bd-badge--hackernews {
+  margin-right: 4px;
 }
 .bd-badge--glyph-only {
   padding: 0 4px;
