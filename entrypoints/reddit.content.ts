@@ -3,7 +3,8 @@ import badgeCss from "../src/ui/badge.css?inline";
 import cardCss from "../src/ui/card.css?inline";
 import { shadowStyles } from "../src/ui/mount";
 import { registerDiagnosticsHandlers } from "../src/core/diagnosticsHandlers.ts";
-import { wireReddit } from "../src/platforms/reddit/wire.ts";
+import { redditOnSight } from "../src/platforms/reddit/adapter.ts";
+import { wireOnSight } from "../src/platforms/onSightWire.ts";
 
 export default defineContentScript({
   matches: ["https://www.reddit.com/*", "https://old.reddit.com/*"],
@@ -13,6 +14,6 @@ export default defineContentScript({
   runAt: "document_idle",
   async main(ctx) {
     ctx.onInvalidated(registerDiagnosticsHandlers("reddit"));
-    await wireReddit(ctx, shadowStyles(tokensCss, badgeCss, cardCss));
+    await wireOnSight(ctx, shadowStyles(tokensCss, badgeCss, cardCss), redditOnSight);
   },
 });

@@ -7,10 +7,10 @@ import type { Scorer } from "@/src/core/pipeline";
 import { SETTINGS_STORAGE_KEY, defaultSettings } from "@/src/core/settings";
 import { defaultWeights } from "@/src/core/scoring/weights";
 import type { PartialSignals, SignalSource, Verdict } from "@/src/core/types";
-import { createRedditAdapter } from "@/src/platforms/reddit/adapter";
+import { createRedditAdapter, redditOnSight } from "@/src/platforms/reddit/adapter";
 import { IDLE_TIMEOUT_MS } from "@/src/platforms/reddit/observer";
-import type { RedditRuntime } from "@/src/platforms/reddit/wire";
-import { wireReddit } from "@/src/platforms/reddit/wire";
+import type { OnSightRuntime } from "@/src/platforms/onSightWire";
+import { wireOnSight } from "@/src/platforms/onSightWire";
 import { BADGE_ELEMENT_NAME } from "@/src/ui/mount";
 
 /** These tests count platform calls under fake timers; storage hashing is covered in the core tests. */
@@ -83,7 +83,7 @@ async function wire(initialT2: boolean, options: WireOptions = {}): Promise<Harn
     addEventListener: (target: EventTarget, type: string, handler: EventListener) =>
       target.addEventListener(type, handler),
   } as unknown as ContentScriptContext;
-  const loadRuntime = async (): Promise<RedditRuntime> => ({
+  const loadRuntime = async (): Promise<OnSightRuntime> => ({
     config: {
       platform: "reddit",
       enabled: true,
@@ -94,7 +94,7 @@ async function wire(initialT2: boolean, options: WireOptions = {}): Promise<Harn
     weights: defaultWeights.reddit,
     settings: onSightSettings,
   });
-  const dispose: () => void = await wireReddit(ctx, "", {
+  const dispose: () => void = await wireOnSight(ctx, "", redditOnSight, {
     adapter: createRedditAdapter({ sources: [source] }),
     loadRuntime,
     scorer: () => scorer,
@@ -124,7 +124,7 @@ function badgeButtons(): HTMLButtonElement[] {
   return hosts.flatMap((host) => host.shadowRoot?.querySelector("button") ?? []);
 }
 
-describe("wireReddit on-sight lookups", () => {
+describe("wireOnSight on Reddit on-sight lookups", () => {
   beforeEach(() => {
     fakeBrowser.reset();
     vi.useFakeTimers();

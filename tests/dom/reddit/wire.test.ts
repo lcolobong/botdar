@@ -14,10 +14,10 @@ import type {
   Verdict,
   VerdictTier,
 } from "@/src/core/types";
-import { createRedditAdapter } from "@/src/platforms/reddit/adapter";
+import { createRedditAdapter, redditOnSight } from "@/src/platforms/reddit/adapter";
 import { IDLE_TIMEOUT_MS } from "@/src/platforms/reddit/observer";
-import type { RedditRuntime } from "@/src/platforms/reddit/wire";
-import { wireReddit } from "@/src/platforms/reddit/wire";
+import type { OnSightRuntime } from "@/src/platforms/onSightWire";
+import { wireOnSight } from "@/src/platforms/onSightWire";
 import { defaultWeights } from "@/src/core/scoring/weights";
 import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME } from "@/src/ui/mount";
 import { adoptedCssOf } from "../adoptedCss";
@@ -108,14 +108,14 @@ async function wire(
     addEventListener: (target: EventTarget, type: string, handler: EventListener) =>
       target.addEventListener(type, handler),
   } as unknown as ContentScriptContext;
-  const loadRuntime = async (): Promise<RedditRuntime> => ({
+  const loadRuntime = async (): Promise<OnSightRuntime> => ({
     config: config({ t1: false, t2: overrides.t2 ?? true }),
     weights: defaultWeights.reddit,
     settings: (await fakeBrowser.storage.local.get(SETTINGS_STORAGE_KEY))[
       SETTINGS_STORAGE_KEY
     ] as Settings,
   });
-  const dispose: () => void = await wireReddit(ctx, SHADOW_CSS, {
+  const dispose: () => void = await wireOnSight(ctx, SHADOW_CSS, redditOnSight, {
     adapter: createRedditAdapter({ sources: [source] }),
     loadRuntime,
     scorer: () => fakeScorer,
@@ -156,7 +156,7 @@ function card(): HTMLElement {
   return host;
 }
 
-describe("wireReddit", () => {
+describe("wireOnSight on Reddit", () => {
   beforeEach(() => {
     fakeBrowser.reset();
     vi.useFakeTimers();

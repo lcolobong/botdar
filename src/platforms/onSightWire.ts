@@ -1,58 +1,69 @@
 /**
- * Orchestration for the Reddit content script: effective config and settings, the AccountResolver
- * with the real scorer, one badge per discovered post and the single hover card. The entrypoint
- * only calls wireReddit with the shadow-root stylesheet text it bundled; everything with a side
- * effect is injectable so the wiring is testable against fixture pages with a fake scorer.
+ * Orchestration for the content scripts of platforms that look every author up on sight (ADR-0020)
+ * and have no Tier 1: Reddit and Hacker News. It holds the effective config and settings, the
+ * AccountResolver with the real scorer, one badge per discovered post and the single hover card.
+ * An entrypoint only calls wireOnSight with its platform and the shadow-root stylesheet text it
+ * bundled; everything with a side effect is injectable so the wiring is testable against fixture
+ * pages with a fake scorer.
  */
 import { h, render } from "preact";
-import { kindOfPost, recordBadged } from "../../core/diagnostics.ts";
+import { kindOfPost, recordBadged } from "../core/diagnostics.ts";
 import { browser } from "wxt/browser";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
-import { TtlLruCache } from "../../core/cache";
-import { PersistedLookupStore } from "../../core/persistedLookups";
-import type { FeedbackEntry } from "../../core/feedback";
-import { recordFeedback, removeFeedback } from "../../core/feedback";
-import { onRequest, sendRequest } from "../../core/messaging";
-import type { BadgeHandle, Scorer } from "../../core/pipeline";
-import { AccountResolver, TIER2_CACHE_TTL_MS } from "../../core/pipeline";
-import { buildDefaults } from "../../core/policy/defaults";
-import { loadLastKnownGood } from "../../core/policy/loader";
-import { applyPolicy } from "../../core/policy/merge";
-import { RateLimiter } from "../../core/ratelimit";
-import { scoreAccount } from "../../core/scoring/engine";
-import type { PlatformWeights } from "../../core/scoring/types";
-import { defaultWeights } from "../../core/scoring/weights";
-import type { Settings } from "../../core/settings";
-import { applySettings, loadSettings, onSettingsChanged } from "../../core/settings";
+import { TtlLruCache } from "../core/cache";
+import { PersistedLookupStore } from "../core/persistedLookups";
+import type { FeedbackEntry } from "../core/feedback";
+import { recordFeedback, removeFeedback } from "../core/feedback";
+import { onRequest, sendRequest } from "../core/messaging";
+import type { BadgeHandle, Scorer } from "../core/pipeline";
+import { AccountResolver, TIER2_CACHE_TTL_MS } from "../core/pipeline";
+import { buildDefaults } from "../core/policy/defaults";
+import { loadLastKnownGood } from "../core/policy/loader";
+import { applyPolicy } from "../core/policy/merge";
+import { RateLimiter } from "../core/ratelimit";
+import { scoreAccount } from "../core/scoring/engine";
+import type { PlatformWeights } from "../core/scoring/types";
+import { defaultWeights } from "../core/scoring/weights";
+import type { Settings } from "../core/settings";
+import { applySettings, loadSettings, onSettingsChanged } from "../core/settings";
 import type {
   EffectivePlatformConfig,
   PartialSignals,
   PlatformAdapter,
+  PlatformId,
   PostRef,
   SourceTier,
   Verdict,
-} from "../../core/types";
-import { Badge } from "../../ui/Badge";
-import { HoverCard } from "../../ui/HoverCard";
-import type { HoverController } from "../../ui/hoverController";
-import { createHoverController } from "../../ui/hoverController";
-import { shouldDrawBadge } from "../../ui/labels";
-import type { MountedUi } from "../../ui/mount";
-import { detectHostTheme, mountBadge, mountCard } from "../../ui/mount";
-import { noReadCardProps } from "../../ui/noRead";
-import { redditAdapter } from "./adapter";
+} from "../core/types";
+import { Badge } from "../ui/Badge";
+import { HoverCard } from "../ui/HoverCard";
+import type { HoverController } from "../ui/hoverController";
+import { createHoverController } from "../ui/hoverController";
+import { shouldDrawBadge } from "../ui/labels";
+import type { MountedUi } from "../ui/mount";
+import { detectHostTheme, mountBadge, mountCard } from "../ui/mount";
+import { noReadCardProps } from "../ui/noRead";
 
-export interface RedditRuntime {
+export interface OnSightRuntime {
   config: EffectivePlatformConfig;
   weights: PlatformWeights;
   settings: Settings;
 }
 
-export type ScorerFactory = (runtime: () => RedditRuntime) => Scorer;
+export type ScorerFactory = (runtime: () => OnSightRuntime) => Scorer;
 
-export interface WireRedditOptions {
+/** What a platform hands the shared wiring. */
+export interface OnSightPlatform {
+  platform: PlatformId;
+  adapter: PlatformAdapter;
+  /** How the hover card names the account, such as "u/name" on Reddit. */
+  cardHandle: (handle: string) => string;
+}
+
+export interface WireOnSightOptions {
+  /** Replaces the platform's adapter, so tests can hand it fake sources. */
   adapter?: PlatformAdapter;
-  loadRuntime?: () => Promise<RedditRuntime>;
+  loadRuntime?: () => Promise<OnSightRuntime>;
   scorer?: ScorerFactory;
   openSettings?: () => void;
 }
@@ -67,20 +78,20 @@ const CACHE_CAPACITY = 500;
 const LOOKUP_BURST = 10;
 
 /** Build defaults narrowed by the cached policy and the settings; the background's answer wins for the config. */
-export async function loadRedditRuntime(): Promise<RedditRuntime> {
+export async function loadOnSightRuntime(platform: PlatformId): Promise<OnSightRuntime> {
   const [cached, settings] = await Promise.all([loadLastKnownGood(), loadSettings()]);
   const effective = applySettings(
     applyPolicy(buildDefaults, defaultWeights, cached?.policy ?? null),
     settings,
   );
-  let config: EffectivePlatformConfig = effective.platforms.reddit;
+  let config: EffectivePlatformConfig = effective.platforms[platform];
   try {
-    config = (await sendRequest({ type: "config.get", platform: "reddit" })).config;
+    config = (await sendRequest({ type: "config.get", platform })).config;
   } catch {
     // The background broker is the authority once it serves config.get; until then the local
     // merge above is the same computation on the same stored policy.
   }
-  return { config, weights: effective.weights.reddit, settings };
+  return { config, weights: effective.weights[platform], settings };
 }
 
 function allowedTiers(config: EffectivePlatformConfig): SourceTier[] {
@@ -106,17 +117,19 @@ interface BadgeSlot {
   unsubscribe: () => void;
 }
 
-export async function wireReddit(
+export async function wireOnSight(
   ctx: ContentScriptContext,
   shadowCss: string,
-  options: WireRedditOptions = {},
+  platform: OnSightPlatform,
+  options: WireOnSightOptions = {},
 ): Promise<() => void> {
-  const adapter: PlatformAdapter = options.adapter ?? redditAdapter;
-  const loadRuntime: () => Promise<RedditRuntime> = options.loadRuntime ?? loadRedditRuntime;
+  const adapter: PlatformAdapter = options.adapter ?? platform.adapter;
+  const loadRuntime: () => Promise<OnSightRuntime> =
+    options.loadRuntime ?? ((): Promise<OnSightRuntime> => loadOnSightRuntime(platform.platform));
   const openSettings: () => void =
     options.openSettings ?? ((): void => void browser.runtime.openOptionsPage());
-  let runtime: RedditRuntime = await loadRuntime();
-  const theme = (): "light" | "dark" => detectHostTheme("reddit");
+  let runtime: OnSightRuntime = await loadRuntime();
+  const theme = (): "light" | "dark" => detectHostTheme(platform.platform);
 
   const resolver = new AccountResolver({
     adapter,
@@ -200,7 +213,7 @@ export async function wireReddit(
       feedbackByHandle.set(
         handle,
         recordFeedback({
-          platform: "reddit",
+          platform: platform.platform,
           handle,
           tier,
           reasons: reasons.map((reason) => reason.text),
@@ -223,7 +236,7 @@ export async function wireReddit(
         opening: controller.openings(),
         tier: verdict.tier,
         labelStyle: runtime.settings.labelStyle,
-        handle: `u/${slot.post.ref.handle}`,
+        handle: platform.cardHandle(slot.post.ref.handle),
         reasons: verdict.reasons,
         ...(verdict.confidenceNote === undefined ? {} : { confidenceNote: verdict.confidenceNote }),
         caveat: verdict.caveat,
@@ -363,7 +376,7 @@ export async function wireReddit(
     }
   };
 
-  const applyRuntime = (next: RedditRuntime): void => {
+  const applyRuntime = (next: OnSightRuntime): void => {
     runtime = next;
     resolver.updateConfig(next.config);
     observeIfEnabled();
@@ -379,7 +392,9 @@ export async function wireReddit(
   };
 
   const stopConfigChanges: () => void = onRequest("config.changed", (message) => {
-    void loadRuntime().then((fresh) => applyRuntime({ ...fresh, config: message.configs.reddit }));
+    void loadRuntime().then((fresh) =>
+      applyRuntime({ ...fresh, config: message.configs[platform.platform] }),
+    );
     return undefined;
   });
   const stopSettingsChanges: () => void = onSettingsChanged(() => {
