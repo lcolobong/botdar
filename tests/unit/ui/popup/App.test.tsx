@@ -130,13 +130,18 @@ describe("popup App", () => {
     switchNamed(container, "X").click();
     await vi.waitFor(() => expect(rowCaptions(container)[0]).toBe("Badges off"));
     expect(switchNamed(container, "X").getAttribute("aria-checked")).toBe("false");
-    expect((await storedSettings()).platforms).toEqual({ x: false, reddit: true, bluesky: true });
+    expect((await storedSettings()).platforms).toEqual({
+      x: false,
+      reddit: true,
+      bluesky: true,
+      hackernews: true,
+    });
 
     switchNamed(container, "Conservative mode").click();
     await vi.waitFor(() => expect(rowCaptions(container)[1]).toBe("Badges on · lookups off"));
     expect(await storedSettings()).toEqual({
       ...defaultSettings,
-      platforms: { x: false, reddit: true, bluesky: true },
+      platforms: { x: false, reddit: true, bluesky: true, hackernews: true },
       conservativeMode: true,
     });
   });

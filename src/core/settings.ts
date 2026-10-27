@@ -31,7 +31,7 @@ const LABEL_STYLES: readonly LabelStyle[] = ["plain", "sus", "icon"];
 const REDDIT_COMMENT_LABELS: readonly RedditCommentLabels[] = ["glyph", "label"];
 
 export const defaultSettings: Settings = deepFreeze({
-  platforms: { x: true, reddit: true, bluesky: true },
+  platforms: { x: true, reddit: true, bluesky: true, hackernews: true },
   conservativeMode: false,
   labelStyle: "plain",
   showLikelyHuman: true,

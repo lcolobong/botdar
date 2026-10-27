@@ -25,4 +25,6 @@ export const buildDefaults: BuildDefaults = deepFreeze({
   x: { enabled: true, tiers: { t1: true, t2: true }, rateLimitPerMinute: 20 },
   reddit: { enabled: true, tiers: { t1: true, t2: true }, rateLimitPerMinute: 30 },
   bluesky: { enabled: true, tiers: { t1: true, t2: true }, rateLimitPerMinute: 30 },
+  // Hacker News pages fetch no JSON of their own, so there is no Tier 1 to switch on.
+  hackernews: { enabled: true, tiers: { t1: false, t2: true }, rateLimitPerMinute: 30 },
 });

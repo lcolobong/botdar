@@ -3,7 +3,7 @@
  * See docs/architecture.md ("Core type contracts") and docs/scoring-spec.md.
  */
 
-export type PlatformId = "x" | "reddit" | "bluesky";
+export type PlatformId = "x" | "reddit" | "bluesky" | "hackernews";
 
 /** 0 = rendered DOM only, 1 = passive interception of the page's own responses, 2 = active lookups. */
 export type SourceTier = 0 | 1 | 2;
@@ -22,7 +22,10 @@ export type IndependenceGroup =
 
 export interface AccountRef {
   platform: PlatformId;
-  /** Lowercased, without a leading "@" or "u/". */
+  /**
+   * Without a leading "@" or "u/", and lowercased where the platform ignores case. Hacker News
+   * usernames are case-sensitive, so its handles keep the casing the page renders.
+   */
   handle: string;
   /** Platform-native id when known (X rest_id, Bluesky DID, Reddit fullname). */
   id?: string;

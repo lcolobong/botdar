@@ -80,6 +80,14 @@ describe("PersistedLookupStore", () => {
     expect(await lookups.read("reddit", "same")).toBeUndefined();
   });
 
+  it("keeps the case of a Hacker News handle, where it tells two accounts apart", async () => {
+    const lookups: PersistedLookupStore = store();
+    await lookups.write("hackernews", "CamelCase", { postCount: 3 });
+
+    expect((await lookups.read("hackernews", "CamelCase"))?.signals).toEqual({ postCount: 3 });
+    expect(await lookups.read("hackernews", "camelcase")).toBeUndefined();
+  });
+
   it("generates the salt once, reuses it and reads it from storage once per instance", async () => {
     const lookups: PersistedLookupStore = store();
     await lookups.write("x", "a", { followers: 1 });

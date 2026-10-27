@@ -23,6 +23,7 @@ const configs: EffectiveConfigByPlatform = {
   x: xConfig,
   reddit: { ...xConfig, platform: "reddit" },
   bluesky: { ...xConfig, platform: "bluesky" },
+  hackernews: { ...xConfig, platform: "hackernews" },
 };
 
 describe("messaging type guards", () => {
