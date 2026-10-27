@@ -3,6 +3,7 @@
  * runs, whether one is paused behind a login wall, and one call to a source with its failure
  * classified for the rate limiter.
  */
+import type { TtlLruCache } from "../cache";
 import type { RateLimiter } from "../ratelimit";
 import { RateLimitedError } from "../ratelimit";
 import type {
@@ -12,7 +13,10 @@ import type {
   PartialSignals,
   PlatformAdapter,
   SignalSource,
+  SourceTier,
 } from "../types";
+import type { LookupStorage } from "./lookupStorage";
+import type { AccountEntry } from "./trackedAccounts";
 
 /** What one call to a source came to: its signals, or how it failed. */
 export interface SourceResult {
@@ -25,6 +29,23 @@ export interface SourceCaller {
   limiter: RateLimiter;
   signal: AbortSignal;
   config: () => EffectivePlatformConfig;
+}
+
+/** What a lookup needs from the resolver; the getters read its state when called. */
+export interface LookupContext extends SourceCaller {
+  sources: LookupSourceSet;
+  cache: TtlLruCache<string, PartialSignals>;
+  storage: LookupStorage;
+  disposed: () => boolean;
+  /** Not disposed and Tier 2 on; the same gate the storage bridge reads. */
+  lookupsLive: () => boolean;
+  /** Merges a lookup's result (null: it found nothing) and rescores; `AccountResolver.absorb`. */
+  absorb: (
+    entry: AccountEntry,
+    partial: PartialSignals | null,
+    tier: SourceTier,
+    alwaysRescore?: boolean,
+  ) => void;
 }
 
 /** An active Tier 2 source a lookup or a hover can call. */
