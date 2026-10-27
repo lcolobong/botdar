@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  Hand-written, in the shape of feed.html: the thread page
+  https://bsky.app/profile/citypaper.example.com/post/3mytupxwd222b. An ancestor post (08:55) sits
+  above the root (09:00); below it alice.example.com replies first (09:02), kai.bsky.social (09:07)
+  and mila48213907.bsky.social (09:12) post near copies of her reply, and maria.example.com writes
+  something else (09:09). Record keys are TIDs of those times. The `postText` test id and the
+  timestamp link to `/profile/<handle>/post/<rkey>` are unconfirmed guesses.
+-->
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <title>Bluesky</title>
+  </head>
+  <body>
+    <div data-testid="postThreadItem-by-citypaper.example.com">
+      <a href="/profile/citypaper.example.com"><span>City Paper</span></a>
+      <a href="/profile/citypaper.example.com"><span>@citypaper.example.com</span></a>
+      <a href="/profile/citypaper.example.com/post/3mytugzt2c22b">5m</a>
+      <div data-testid="postText">
+        The council votes tonight on extending the Main Street bike lanes.
+      </div>
+    </div>
+    <div data-testid="postThreadItem-by-citypaper.example.com">
+      <a href="/profile/citypaper.example.com"><span>City Paper</span></a>
+      <a href="/profile/citypaper.example.com"><span>@citypaper.example.com</span></a>
+      <div data-testid="postText">
+        Update: the council voted to extend the Main Street bike lanes to the river.
+      </div>
+      <a href="/profile/citypaper.example.com/post/3mytupxwd222b">October 27, 2026 at 9:00 AM</a>
+    </div>
+    <div data-testid="postThreadItem-by-alice.example.com">
+      <a href="/profile/alice.example.com"><span>Alice Example</span></a>
+      <a href="/profile/alice.example.com"><span>@alice.example.com</span></a>
+      <a href="/profile/alice.example.com/post/3mytutkegk22b">2m</a>
+      <div data-testid="postText">
+        Honestly the new bike lanes on Main Street made my commute safer and faster, great work by
+        the council.
+      </div>
+    </div>
+    <div data-testid="postThreadItem-by-kai.bsky.social">
+      <a href="/profile/kai.bsky.social"><span>Kai</span></a>
+      <a href="/profile/kai.bsky.social"><span>@kai.bsky.social</span></a>
+      <a href="/profile/kai.bsky.social/post/3mytv4ihpc22b">7m</a>
+      <div data-testid="postText">
+        Honestly the new bike lanes on Main Street made my commute safer and faster. Great work by
+        the council!!
+      </div>
+    </div>
+    <div data-testid="postThreadItem-by-maria.example.com">
+      <a href="/profile/maria.example.com"><span>Maria</span></a>
+      <a href="/profile/maria.example.com"><span>@maria.example.com</span></a>
+      <a href="/profile/maria.example.com/post/3mytva2vss22b">9m</a>
+      <div data-testid="postText">
+        Parking got harder on Elm Street though, I wonder whether anyone at the council looked at
+        that.
+      </div>
+    </div>
+    <div data-testid="postThreadItem-by-mila48213907.bsky.social">
+      <a href="/profile/mila48213907.bsky.social"><span>Mila</span></a>
+      <a href="/profile/mila48213907.bsky.social"><span>@mila48213907.bsky.social</span></a>
+      <a href="/profile/mila48213907.bsky.social/post/3mytvfgky222b">12m</a>
+      <div data-testid="postText">
+        @citypaper.example.com Honestly the new bike lanes on Main Street made my commute safer and
+        quicker, great work by the council 👏
+      </div>
+    </div>
+  </body>
+</html>
