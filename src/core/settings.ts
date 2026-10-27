@@ -19,6 +19,8 @@ export interface Settings {
   /** On by default (ADR-0020); off brings back the quiet feed of ADR-0017. */
   showLikelyHuman: boolean;
   redditCommentLabels: RedditCommentLabels;
+  /** Keeps Tier 2 lookups on this device for seven days (ADR-0025); off wipes them and stops writing. */
+  persistLookups: boolean;
   /** Shows the popup's diagnostics section: per-page counts and the page snapshot export. */
   developerMode: boolean;
 }
@@ -34,6 +36,7 @@ export const defaultSettings: Settings = deepFreeze({
   labelStyle: "plain",
   showLikelyHuman: true,
   redditCommentLabels: "glyph",
+  persistLookups: true,
   developerMode: false,
 });
 
@@ -73,6 +76,7 @@ export function parseSettings(stored: unknown): Settings {
       REDDIT_COMMENT_LABELS,
       defaultSettings.redditCommentLabels,
     ),
+    persistLookups: booleanOr(record.persistLookups, defaultSettings.persistLookups),
     developerMode: booleanOr(record.developerMode, defaultSettings.developerMode),
   });
 }
