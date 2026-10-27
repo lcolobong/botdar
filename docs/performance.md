@@ -380,6 +380,21 @@ lookups turned off, and one with the pulse removed, dropped none. Waiting badges
 a still, dimmed glyph and only the badge under the pointer pulses (`stillWhileLoading` in
 `src/ui/Badge.tsx`); the tables above are measured with that change.
 
+## Near-duplicate replies (2026-10-27)
+
+ADR-0027 reads every post's text once when it is discovered, so the thread index sees the whole thread,
+not only the part near the viewport. On `reddit-comments-1500` at 4x CPU throttling (three runs each,
+medians, the commit before against the commit that wires the index), the extension's script time over
+bare went from +52.0 to +95 ms and the first badge from 105 to 139 ms after load; Total Blocking Time
+stayed at 0, there were no long tasks while scrolling, and the heap grew by 0.5 MB. A CPU profile puts
+about 38 ms of the 4x figure in the discovery hook: reading each comment's own body and time (about
+19 ms, DOM access per element even with a walk that skips nested replies) and normalising its text
+(about 8 ms). The first discovery pass is not sliced, so this adds to the one task that already scans
+the page; it stays under the 50 ms long-task line on this fixture but a thread several times larger
+would cross it. Slicing the recording through the observers' idle-slice scheduler is the fix if a
+recording shows that. Feeds other than thread pages pay almost nothing: the X, Bluesky and Hacker News
+readers return before touching the DOM when the URL is not a thread, and Reddit's reads only comments.
+
 ## Measurement caveats
 
 - **Fast machine.** An M5 Pro is several times faster than a typical laptop. The 4x CDP throttle

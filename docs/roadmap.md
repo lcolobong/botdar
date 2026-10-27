@@ -20,12 +20,13 @@ and the evidence is in [research/platforms.md](research/platforms.md) and
 | YouTube comment authors | Commenters expose nothing in the DOM; one innertube `browse` per channel for join date and video count. Scam-comment bots impersonate the creator. Client-side only; the Data API bans derived metrics. |
 
 Scoring in v1.1 adds the remaining local countermeasures recommended in
-[adversarial-evasion.md](adversarial-evasion.md#5-cost-raising-framing): `thread.nearDuplicateReply`,
-`thread.sharedRareDomain`, `x.agedRepurposed` and `reddit.karmaSinceFirstActivity`, each gated on its
-calibration result. The timing pair from the same set, `x.gapRegularity` and `x.noSleepWindow` with
-their Bluesky twins, moved into v1 on 2026-10-26
-([decisions/ADR-0024](decisions/ADR-0024-posting-cadence-features.md)); `reddit.gapRegularity` waits
-for its measurement.
+[adversarial-evasion.md](adversarial-evasion.md#5-cost-raising-framing): `thread.sharedRareDomain`,
+`x.agedRepurposed` and `reddit.karmaSinceFirstActivity`, each gated on its calibration result. The
+timing pair from the same set, `x.gapRegularity` and `x.noSleepWindow` with their Bluesky twins, moved
+into v1 on 2026-10-26 ([decisions/ADR-0024](decisions/ADR-0024-posting-cadence-features.md));
+`reddit.gapRegularity` waits for its measurement. `thread.nearDuplicateReply` moved into v1 on
+2026-10-27 on all four platforms ([decisions/ADR-0027](decisions/ADR-0027-near-duplicate-reply.md));
+its calibration and recordings of X, Reddit and Bluesky thread pages are still owed.
 
 ## v1.2
 

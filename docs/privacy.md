@@ -33,6 +33,11 @@ Nothing else. No account names, no scores, no browsing history, no analytics, no
 
 Scores for accounts are kept in memory while a tab is open and discarded afterwards.
 
+To notice replies copied across accounts in one thread, the extension keeps, in memory, the set of
+words each reply on the current page uses, with its author and time, never the text itself. The page
+already shows these replies; nothing is requested for them, nothing is stored on disk, and the list is
+dropped when you move to another page.
+
 ## Requests to platforms
 
 On X and Bluesky when you hover a badge, and on Reddit when a post comes into view, the extension may ask

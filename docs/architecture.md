@@ -94,15 +94,16 @@ botdar/
 │  │  ├─ types.ts                # contracts below
 │  │  ├─ scoring/                # engine, weights.default.json, reasons
 │  │  ├─ handle/                 # shape.ts, bigram.ts, bigrams.json
-│  │  ├─ text/                   # language.ts + stopwords.json, languageRegions, countryNames
+│  │  ├─ text/                   # language.ts + stopwords.json, languageRegions, countryNames, replySimilarity
+│  │  ├─ thread/                 # threadIndex, pageThreads, replyText: the page's thread replies (ADR-0027)
 │  │  ├─ policy/                 # schema, merge, verify, publicKey, loader
 │  │  ├─ pipeline.ts             # AccountResolver
 │  │  ├─ cache.ts  ratelimit.ts  settings.ts  messaging.ts  feedback.ts  relay.ts
 │  ├─ platforms/
-│  │  ├─ x/        adapter, observer, dom, interceptor.main, parsers/, sources/, features, queryIds
-│  │  ├─ reddit/   adapter, observer, dom, parsers/, sources/, features, oldReddit
-│  │  ├─ bluesky/  adapter, observer, dom, interceptor.main, parsers/, sources/, features
-│  │  ├─ hackernews/ adapter, observer, dom, parsers/, sources/, features
+│  │  ├─ x/        adapter, observer, dom, interceptor.main, parsers/, sources/, features, queryIds, threadReply
+│  │  ├─ reddit/   adapter, observer, dom, parsers/, sources/, features, oldReddit, threadReply
+│  │  ├─ bluesky/  adapter, observer, dom, interceptor.main, parsers/, sources/, features, threadReply
+│  │  ├─ hackernews/ adapter, observer, dom, parsers/, sources/, features, threadReply
 │  │  └─ onSightWire.ts          # content-script wiring shared by Reddit and Hacker News
 │  └─ ui/
 │     ├─ tokens.css  Badge.tsx  HoverCard.tsx  FeedbackButton.tsx  ConfidenceNote.tsx
@@ -379,6 +380,13 @@ badge is removed, so a removed post is not kept alive by the context.
 5. `config.changed` from the background recomputes every verdict with the new effective config.
 6. The map holds at most 2,000 accounts per tab (`MAX_TRACKED_ACCOUNTS`); past that, the least
    recently touched accounts with no post on screen are evicted a batch at a time.
+7. **Page evidence** (ADR-0027): `thread.nearDuplicateReply` does not come from `AccountSignals`. Each
+   adapter owns a `PageThreads` index (`src/core/thread/`) that its observer feeds with every post a
+   discovery pass finds, near the viewport or not and badged or not, through the platform's
+   `threadReply.ts` reader, reading each element once to a final answer; the platform's `toFeatures`
+   stays account-only and the adapter appends the count (`PageThreads.withPageEvidence`). When a reply recorded later changes the count of an
+   account already scored, the adapter's `onEvidenceChanged` tells the resolver, which rescores that
+   account if it has a post on screen. An in-place navigation clears the index.
 
 ## Policy system
 
@@ -479,6 +487,7 @@ The result is frozen. Unit tests assert every "cannot enable" case. Settings the
 |---|---|---|
 | Tier 1 and Tier 2 account signals | Memory, per tab | 24 h TTL, gone on tab close |
 | Verdicts | Memory, per tab | Recomputed on config change |
+| Thread index: each reply's word set, author, id, parent id and time, never its text (ADR-0027) | Memory, per page | Cleared on in-place navigation and page load; at most 5,000 replies |
 | `policy.lkg`, `policy.lastAttempt` | `storage.local` | Until replaced |
 | `lookups.v1.<hash>` (Tier 2 snapshot, no display name, handle or bio text, fetch time, source tier), `lookups.salt.v1` and `lookups.index.v1` (entry key to fetch time) | `storage.local` | 7 days from the fetch; at most 5,000 entries; wiped by "Clear cache" (which rotates the salt) or by turning off `persistLookups` (ADR-0025) |
 | `settings.v1`, `onboarding.seen`, `notice.seenIds` | `storage.local` | Until changed |
