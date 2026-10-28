@@ -21,7 +21,7 @@ import type { FixtureServer } from "../smoke/fixtureServer.ts";
 import { startFixtureServer } from "../smoke/fixtureServer.ts";
 import { smokeHostnames } from "../smoke/sceneTable.ts";
 import { buildDir, flagValue, launchChrome, resolveExtensionId } from "../smoke/run.ts";
-import { redditFeedPosts } from "./generateFixtures.ts";
+import { redditFeedPosts } from "./fixtures/reddit.ts";
 import type { MeasureOptions, RunResult } from "./measure.ts";
 import { measureRun } from "./measure.ts";
 import type { Condition, PerfScene } from "./perfScenes.ts";
