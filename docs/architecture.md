@@ -100,7 +100,7 @@ botdar/
 │  │  ├─ text/                   # language.ts + stopwords.json, languageRegions, countryNames, replySimilarity
 │  │  ├─ thread/                 # threadIndex, sharedDomainIndex, pageThreads, replyText: the page's thread replies (ADR-0027, ADR-0029)
 │  │  ├─ links/                  # registrableDomain, topDomains + topDomains.json (Tranco top 1,000)
-│  │  ├─ policy/                 # schema (validator; re-exports policyDocument), merge, verify,
+│  │  ├─ policy/                 # schema (re-exports policyDocument, validatePolicy), merge, verify,
 │  │  │                          #   publicKey, loader
 │  │  ├─ pipeline.ts             # AccountResolver: attach, passive sources, rescoring
 │  │  ├─ pipeline/               # types, mergeSignals (tier-merge rule), trackedAccounts (store,
