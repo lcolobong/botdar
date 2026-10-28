@@ -94,7 +94,8 @@ botdar/
 ├─ src/
 │  ├─ core/
 │  │  ├─ types.ts                # contracts below
-│  │  ├─ scoring/                # engine, weights.default.json, reasons
+│  │  ├─ scoring/                # engine, weights.default.json, reasons (re-exports reasonTemplates,
+│  │  │                          #   reasonFormat, reasonSelection, caveats)
 │  │  ├─ handle/                 # shape.ts, bigram.ts, bigrams.json
 │  │  ├─ text/                   # language.ts + stopwords.json, languageRegions, countryNames, replySimilarity
 │  │  ├─ thread/                 # threadIndex, sharedDomainIndex, pageThreads, replyText: the page's thread replies (ADR-0027, ADR-0029)

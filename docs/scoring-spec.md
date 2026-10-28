@@ -503,7 +503,7 @@ Input: `Feature[]` from the platform adapter, the effective platform config, and
      since most ordinary observations sit in a zero bin, unless the feature has no ordinary reading
      (a country mismatch a policy weighs at 0): the card shows such an item pointing towards automated,
      so it cannot vouch for the account (ADR-0022). The rule, the card's arrow and the Likely human
-     counter-case share one test, `isOrdinaryEvidence` in `src/core/scoring/reasons.ts`. With little data the low prior
+     counter-case share one test, `isOrdinaryEvidence` in `src/core/scoring/reasonSelection.ts`. With little data the low prior
      alone lands an account in `typical`: on Reddit's page an obvious self-declared bot scored
      `typical` from one non-signal (a username outside the suggested pattern). On Reddit the
      confidence bar means a Tier 2 lookup delivered. Every adapter scores the handle's shape from the
@@ -654,7 +654,7 @@ the reason there is nothing to read.
 Amendment 2026-10-25 ([ADR-0022](decisions/ADR-0022-reasons-say-why.md)): every reason line carries a
 direction arrow and a why clause, and the caveat sits under "Why this could be wrong". The rules below
 cover the why clauses as reason text: they describe the pattern, never the person, and never contain
-"bot". `allFixedStrings()` in `src/core/scoring/reasons.ts` includes every clause, so the wording-rule
+"bot". `allFixedStrings()` in `src/core/scoring/caveats.ts` includes every clause, so the wording-rule
 test checks them.
 
 Amendment 2026-10-26 ([ADR-0023](decisions/ADR-0023-strength-scale-and-progressive-disclosure.md)):
