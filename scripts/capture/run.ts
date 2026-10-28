@@ -25,7 +25,7 @@ import {
 } from "../../src/core/snapshot/anonymize.ts";
 import { serializeDocument } from "../../src/core/snapshot/serialize.ts";
 import { flagValue } from "../smoke/run.ts";
-import { waitForBadges } from "../smoke/scenes.ts";
+import { waitForBadges } from "../smoke/pageDriving.ts";
 
 const projectRoot: string = fileURLToPath(new URL("../../", import.meta.url));
 const rawOutputDir: string = join(projectRoot, ".output", "capture");
