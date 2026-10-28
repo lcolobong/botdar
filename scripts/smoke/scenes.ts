@@ -1,6 +1,7 @@
 /**
- * Scene definitions and capture helpers for the smoke runner. Every capture returns a SceneRecord
- * for the manifest instead of throwing, so one missing page or badge never stops the run.
+ * The feed capture for the smoke runner: a feed screenshot, then a hover screenshot with the card
+ * open. Every capture returns SceneRecords for the manifest instead of throwing, so one missing
+ * page or badge never stops the run.
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -10,97 +11,15 @@ import { fixtureUrl, resolveFixture } from "./fixtureFiles.ts";
 import type { CardBox, HoverTarget } from "./pageDriving.ts";
 import { findHoverTarget, openThemedPage, waitForBadges, waitForCardOpen } from "./pageDriving.ts";
 import type { SmokeFeedScene } from "./sceneTable.ts";
-import type { SceneRecord, SmokeTheme, Viewport } from "./sceneTypes.ts";
+import type { SceneRecord, SmokeTheme } from "./sceneTypes.ts";
 import { feedViewport, screenshotName } from "./sceneTypes.ts";
 
-export interface ExtensionPageScene {
-  readonly scene: "popup" | "popup-diagnostics" | "options" | "onboarding";
-  readonly file: string;
-  readonly viewport: Viewport;
-  /** Written to the extension's storage.local before the page is captured. */
-  readonly seedStorage?: Record<string, unknown>;
-  readonly note?: string;
-}
-
 const hoverSettleMs = 150;
-const pageSettleMs = 300;
 /** Each platform's primary scene keeps the short "hover" name; other scenes get "<scene>-hover". */
 const primaryFeedScene = "feed";
 
-/** Only referenced inside page.evaluate callbacks, which run in the extension page, not in Node. */
-declare const chrome: {
-  storage: {
-    local: {
-      set(items: Record<string, unknown>): Promise<void>;
-      remove(keys: string[]): Promise<void>;
-    };
-  };
-};
-
-export const extensionPageScenes: readonly ExtensionPageScene[] = [
-  { scene: "popup", file: "popup.html", viewport: { width: 340, height: 470 } },
-  {
-    scene: "popup-diagnostics",
-    file: "popup.html",
-    viewport: { width: 340, height: 640 },
-    seedStorage: { "settings.v1": { developerMode: true } },
-    note: "the popup opens as a tab here, so the diagnostics section shows its no-page state",
-  },
-  { scene: "options", file: "options.html", viewport: { width: 720, height: 1010 } },
-  { scene: "onboarding", file: "onboarding.html", viewport: { width: 640, height: 540 } },
-];
-
 export function hoverSceneName(scene: string): string {
   return scene === primaryFeedScene ? "hover" : `${scene}-hover`;
-}
-
-export async function captureExtensionPage(
-  context: BrowserContext,
-  extensionId: string,
-  buildDir: string,
-  pageScene: ExtensionPageScene,
-  theme: SmokeTheme,
-  outDir: string,
-): Promise<SceneRecord> {
-  const file: string = screenshotName("pages", pageScene.scene, theme);
-  if (!existsSync(join(buildDir, pageScene.file))) {
-    return {
-      group: "pages",
-      scene: pageScene.scene,
-      theme,
-      file,
-      status: "skipped",
-      reason: `${pageScene.file} is not in this build`,
-    };
-  }
-  const page: Page = await openThemedPage(context, theme, pageScene.viewport, false);
-  try {
-    const url = `chrome-extension://${extensionId}/${pageScene.file}`;
-    await page.goto(url, { waitUntil: "load" });
-    if (pageScene.seedStorage !== undefined) {
-      await page.evaluate((seed) => chrome.storage.local.set(seed), pageScene.seedStorage);
-      await page.goto(url, { waitUntil: "load" });
-    }
-    await page.waitForTimeout(pageSettleMs);
-    await page.screenshot({ path: join(outDir, file) });
-    if (pageScene.seedStorage !== undefined) {
-      // The profile is shared by every scene, so a seed must not leak into the next capture.
-      await page.evaluate(
-        (keys) => chrome.storage.local.remove(keys),
-        Object.keys(pageScene.seedStorage),
-      );
-    }
-    const record: SceneRecord = {
-      group: "pages",
-      scene: pageScene.scene,
-      theme,
-      file,
-      status: "captured",
-    };
-    return pageScene.note === undefined ? record : { ...record, reason: pageScene.note };
-  } finally {
-    await page.close();
-  }
 }
 
 export async function captureFeed(
