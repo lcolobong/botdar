@@ -1,6 +1,7 @@
 /**
- * Orchestration for the content scripts of platforms that look every author up on sight (ADR-0020)
- * and have no Tier 1: Reddit and Hacker News. It holds the effective config and settings, the
+ * Orchestration for the content scripts of platforms that have no Tier 1: Reddit and Hacker News,
+ * which look every author up on sight (ADR-0020), and YouTube, which looks a commenter up only when
+ * its badge is hovered (ADR-0030). It holds the effective config and settings, the
  * AccountResolver with the real scorer, one badge per discovered post and the single hover card.
  * An entrypoint only calls wireOnSight with its platform and the shadow-root stylesheet text it
  * bundled; everything with a side effect is injectable so the wiring is testable against fixture
@@ -58,6 +59,11 @@ export interface OnSightPlatform {
   adapter: PlatformAdapter;
   /** How the hover card names the account, such as "u/name" on Reddit. */
   cardHandle: (handle: string) => string;
+  /**
+   * When an author's Tier 2 lookup runs: as their post comes near the viewport (the default), or
+   * only when their badge is hovered, for a lookup too costly to make for every author on a page.
+   */
+  lookups?: "onSight" | "onHover";
 }
 
 export interface WireOnSightOptions {
@@ -129,6 +135,7 @@ export async function wireOnSight(
   const openSettings: () => void =
     options.openSettings ?? ((): void => void browser.runtime.openOptionsPage());
   let runtime: OnSightRuntime = await loadRuntime();
+  const looksUpOnSight: boolean = (platform.lookups ?? "onSight") === "onSight";
   const theme = (): "light" | "dark" => detectHostTheme(platform.platform);
 
   const resolver = new AccountResolver({
@@ -351,7 +358,7 @@ export async function wireOnSight(
     // Observers attach a post only near the viewport (ADR-0019), so this is a lookup on sight. It
     // comes after the subscription: a cache hit rescores synchronously, and a badge subscribed
     // later would keep drawing the Tier 0 verdict it read first.
-    void handle.lookupOnSight();
+    if (looksUpOnSight) void handle.lookupOnSight();
   };
 
   const detachElement = (element: Element): void => {
@@ -384,7 +391,7 @@ export async function wireOnSight(
     // already on screen at "not looked up yet" until they scroll away and back; turning it off
     // dropped their queued lookups. lookupOnSight skips every account already read or tried, and
     // runs before the redraw so the badges come back as Checking.
-    if (next.config.tiers.t2) {
+    if (next.config.tiers.t2 && looksUpOnSight) {
       for (const slot of slots.values()) void slot.handle.lookupOnSight();
     }
     for (const slot of slots.values()) syncBadge(slot);

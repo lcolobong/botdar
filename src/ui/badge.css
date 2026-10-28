@@ -93,9 +93,13 @@
   font-size: 10px;
   line-height: 12px;
 }
-/* Hacker News sets its rows in 7–9pt Verdana; its badges keep their label at the comment size. */
+/*
+ * Hacker News sets its rows in 7–9pt Verdana and YouTube its comment handles at 13px; both keep
+ * the label at the comment size.
+ */
 .bd-badge--reddit-comment,
-.bd-badge--hackernews {
+.bd-badge--hackernews,
+.bd-badge--youtube {
   height: var(--badge-height-reddit-comment);
   padding: 0 6px;
   font-size: 10px;
@@ -107,6 +111,11 @@
  */
 .bd-badge--hackernews {
   margin-right: 4px;
+}
+/* On YouTube the badge follows the handle link inside the comment's heading, with no space between. */
+.bd-badge--youtube {
+  margin-left: 4px;
+  vertical-align: middle;
 }
 .bd-badge--glyph-only {
   padding: 0 4px;

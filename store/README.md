@@ -15,7 +15,7 @@ characters and match the short description below.
 ### Short description (132 characters max)
 
 ```
-A badge on each author on X, Reddit, Bluesky and Hacker News for patterns common in automated accounts. Nothing is sent to us.
+A badge on each author on X, Reddit, Bluesky, Hacker News and YouTube for patterns common in automated accounts. Nothing sent to us.
 ```
 
 ### Full description

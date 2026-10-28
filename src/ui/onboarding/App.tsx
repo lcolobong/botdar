@@ -114,7 +114,7 @@ function ControlsPanel({ settings }: { settings: Settings | null }) {
         <div class="bd-block">
           <p>Per platform</p>
           <span class="bd-caption">
-            Turn X, Reddit, Bluesky or Hacker News off from the toolbar popup any time.
+            Turn X, Reddit, Bluesky, Hacker News or YouTube off from the toolbar popup any time.
           </span>
         </div>
         <p class="bd-caption">
