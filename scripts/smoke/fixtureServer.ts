@@ -1,7 +1,7 @@
 /**
  * Local HTTPS server that serves saved platform markup under the real hostnames so the extension's
- * content scripts, whose host permissions are limited to x.com, www.reddit.com, bsky.app and
- * news.ycombinator.com, run against it. Chrome is pointed at it with --host-resolver-rules (see
+ * content scripts, whose host permissions are limited to x.com, www.reddit.com, bsky.app,
+ * news.ycombinator.com and www.youtube.com, run against it. Chrome is pointed at it with --host-resolver-rules (see
  * hostResolverRules) and --ignore-certificate-errors; the certificate under cert/ is self-signed
  * and test-only.
  *
@@ -15,13 +15,14 @@ import type { AddressInfo } from "node:net";
 import { relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export type SmokePlatformId = "x" | "reddit" | "bluesky" | "hackernews";
+export type SmokePlatformId = "x" | "reddit" | "bluesky" | "hackernews" | "youtube";
 
 export const smokePlatformIds: readonly SmokePlatformId[] = [
   "x",
   "reddit",
   "bluesky",
   "hackernews",
+  "youtube",
 ];
 
 /** The hostnames the content scripts are allowed to run on; the server answers for all of them. */
@@ -30,6 +31,7 @@ export const smokeHostnames: Readonly<Record<SmokePlatformId, string>> = {
   reddit: "www.reddit.com",
   bluesky: "bsky.app",
   hackernews: "news.ycombinator.com",
+  youtube: "www.youtube.com",
 };
 
 /** The Hacker News Firebase API, which the content script reaches cross-origin. */
@@ -102,6 +104,15 @@ export const smokeFeedScenes: readonly SmokeFeedScene[] = [
   },
   { platform: "hackernews", scene: "thread", path: "/item", fixtureFile: "thread.html" },
   { platform: "hackernews", scene: "front", path: "/", fixtureFile: "front.html" },
+  // The recorded watch page. YouTube looks a commenter up on hover only, so the feed capture shows
+  // the page alone and the hover capture the recorded commenter's About panel.
+  {
+    platform: "youtube",
+    scene: "watch",
+    path: "/watch",
+    fixtureFile: "watch.html",
+    hoverAnchor: 'a#author-text[href="/@jonas_reads12"]',
+  },
 ];
 
 export interface FixtureSource {
@@ -258,6 +269,18 @@ export const apiFixtureRoutes: readonly ApiFixtureRoute[] = [
     path: `/v0/user/${handle}.json`,
     file: `tests/fixtures/hackernews/firebase/smoke/${handle}.json`,
   })),
+  // The innertube lookup a hover makes, answered for every handle with the recorded commenter's
+  // About panel (13 years, four videos), so whichever badge is hovered reads it.
+  {
+    platform: "youtube",
+    path: "/youtubei/v1/navigation/resolve_url",
+    file: "tests/fixtures/youtube/innertube/resolve-url.json",
+  },
+  {
+    platform: "youtube",
+    path: "/youtubei/v1/browse",
+    file: "tests/fixtures/youtube/innertube/browse-about.json",
+  },
 ];
 
 /**
@@ -284,6 +307,24 @@ const recordedPageStyles: Partial<Record<SmokePlatformId, string>> = {
     ".pagetop, .pagetop a { color: #000; } .subtext, .subline, .subtext a { font-size: 7pt; color: #828282; }",
     ".comhead, .comhead a { font-size: 8pt; color: #828282; } .commtext { font-size: 9pt; color: #000; }",
     ".titleline { font-size: 10pt; } .rank { color: #828282; } .votearrow { width: 10px; height: 10px; }",
+  ].join("\n"),
+  // YouTube's page is mostly the player and the app's chrome; the capture keeps the creator's line
+  // and the comments, in the site's type and avatar sizes.
+  youtube: [
+    "body { margin: 0; padding: 12px 16px; font: 14px Roboto, Arial, sans-serif; color: #0f0f0f; background: #fff; }",
+    "html[dark] body { color: #f1f1f1; background: #0f0f0f; } a { color: inherit; text-decoration: none; }",
+    "[hidden], ytd-masthead, #masthead-container, tp-yt-app-drawer, ytd-mini-guide-renderer, #player, #secondary,",
+    "#title, #description, #actions, #subscribe-button, #action-buttons, #action-menu, ytd-comments-header-renderer,",
+    "ytd-info-panel-content-renderer, tp-yt-paper-tooltip, #attributed-channel-name, #author-thumbnail img, #owner img,",
+    "ytd-comment-simplebox-renderer, #expander > tp-yt-paper-button, ytd-continuation-item-renderer, #more-replies,",
+    "#less-replies, ytd-button-renderer, ytd-popup-container, svg { display: none !important; }",
+    "#owner { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-weight: 500; }",
+    "#owner #avatar, #author-thumbnail-button { display: block; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: #d9d9d9; }",
+    "#owner-sub-count { color: #606060; font-size: 12px; }",
+    "#body { display: flex; gap: 12px; margin: 0 0 16px; } #author-thumbnail { flex: none; }",
+    "#header-author { display: flex; align-items: center; gap: 4px; } #header-author h3 { margin: 0; font-size: 13px; font-weight: 500; }",
+    "#published-time-text { color: #606060; font-size: 12px; } #content-text { display: block; margin-top: 2px; line-height: 20px; }",
+    "ytd-comment-replies-renderer { display: block; margin-left: 56px; }",
   ].join("\n"),
 };
 

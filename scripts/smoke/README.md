@@ -19,6 +19,11 @@ missing page or badge is logged and skipped rather than failing the run.
 | `bluesky` | `profile`  | `https://bsky.app/profile/alice.example.com` ← `feed.html` | As `feed`, plus alice's author feed; the hover opens her card | 600×820 |
 | `hackernews` | `thread` | `https://news.ycombinator.com/item` ← `thread.html` | Likely human on the OP, Unsure on the first commenter, No read on the rest | 600×820 |
 | `hackernews` | `front`  | `https://news.ycombinator.com/` ← `front.html` | Unsure on story 1, Likely human on story 3, No read or Checking on the rest | 600×820 |
+| `youtube` | `watch` | `https://www.youtube.com/watch` ← `watch.html` | No read on every commenter (YouTube looks up on hover only); the hover opens jonas_reads12's card, Likely human from the served About panel | 600×820 |
+
+YouTube's recording keeps no stylesheet either, so the server adds a short stylesheet that hides
+the player and the app's chrome and sets the comments in the site's sizes; a dark capture also gets
+YouTube's own `dark` attribute on `<html>`, which is what its content script reads.
 
 Hacker News has a single light theme, so its scenes are worth capturing with `--theme light`; a
 dark capture shows the same light badges. Its recordings keep no stylesheet, so the server adds a
@@ -32,7 +37,7 @@ badge theme. The scene table lives in `fixtureServer.ts` (`smokeFeedScenes`); a 
 expected to draw nothing carries a `note` that the manifest repeats.
 
 Feed fixtures are served over HTTPS under the real hostnames (`x.com`, `www.reddit.com`,
-`bsky.app`, `news.ycombinator.com`) by `fixtureServer.ts`, because the extension's host
+`bsky.app`, `news.ycombinator.com`, `www.youtube.com`) by `fixtureServer.ts`, because the extension's host
 permissions allow nothing else; `hacker-news.firebaseio.com` is mapped to the same server.
 Any `.html` under `tests/fixtures/<platform>/html/` can be served, so a page recorded with
 `pnpm capture` (see `scripts/capture/run.ts`) becomes a smoke scene by adding a row to
@@ -62,6 +67,7 @@ returns 404 for every other API path:
 | `https://www.reddit.com/user/<name>/about.json` for `quick_fern_2291`, `bright_sail_8803`, `tidal_quill_5530` | `tests/fixtures/smoke/reddit-about-<name>.json` (hand-written) |
 | `https://www.reddit.com/user/quiet_lantern_4821/overview.json` | `tests/fixtures/reddit/overview/short.json` (hand-written) |
 | `https://hacker-news.firebaseio.com/v0/user/<name>.json` for `tomas_bakes28`, `jonas_draws01`, `priya_draws51` | `tests/fixtures/hackernews/firebase/smoke/<name>.json` |
+| `https://www.youtube.com/youtubei/v1/navigation/resolve_url` and `/youtubei/v1/browse`, for every handle | `tests/fixtures/youtube/innertube/resolve-url.json` and `browse-about.json` |
 
 The Reddit routes answer the extension's own Tier 2 lookups for the recorded thread's OP, matched
 on the path alone (the query is ignored); every other author's lookup gets the 404, so the
