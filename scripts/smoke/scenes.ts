@@ -115,6 +115,8 @@ export async function openThemedPage(
         const root: HTMLElement | null = document.documentElement;
         if (root === null) return false;
         root.setAttribute("data-theme", hostTheme);
+        // YouTube marks its dark theme with a bare `dark` attribute instead.
+        if (hostTheme === "dark") root.setAttribute("dark", "");
         return true;
       };
       if (markRoot()) return;
