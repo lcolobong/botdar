@@ -1,11 +1,18 @@
 /**
- * One measured page load for the performance benchmark: an init script records long tasks, polls
- * the badge count and samples animation frames inside the page, and CDP's Performance domain
- * supplies the renderer's CPU and heap counters. Every run returns plain numbers; run.ts takes the
- * medians. The probe runs identically with and without the extension, so its own small cost cancels
- * out of the deltas.
+ * One measured page load for the performance benchmark: the in-page probe (probe.ts) records long
+ * tasks, the badge count and animation frames, and CDP's Performance domain supplies the
+ * renderer's CPU and heap counters. Every run returns plain numbers; report.ts takes the medians.
  */
 import type { BrowserContext, CDPSession, Page } from "playwright";
+import type { LongTask, ProbeState, ProbeWindow } from "./probe.ts";
+import {
+  badgeTimes,
+  blockingSummary,
+  installProbeScript,
+  readLongTasks,
+  readProbe,
+  waitForBadgesToSettle,
+} from "./probe.ts";
 import type { CpuProfile } from "./profile.ts";
 
 /** Flat per-run numbers; null when a run has nothing to report, such as badge times on a bare run. */
@@ -29,140 +36,12 @@ export interface MeasureOptions {
   readonly profile?: boolean;
 }
 
-interface ProbeState {
-  readonly now: number;
-  readonly count: number;
-  readonly firstChangeAt: number | null;
-  readonly lastChangeAt: number | null;
-}
-
-interface LongTask {
-  readonly start: number;
-  readonly duration: number;
-}
-
-interface PerfProbe {
-  readonly longTasks: LongTask[];
-  /** Starts a new badge window: changes are timed from the count at this moment. */
-  markBadges(): void;
-  state(): ProbeState;
-  startFrames(): void;
-  markStep(): void;
-  stopFrames(): { frames: number[]; steps: number[] };
-}
-
-type ProbeWindow = Window & { __perfProbe?: PerfProbe };
-
-const BADGE_POLL_MS = 50;
-const STABLE_FOR_MS = 1_000;
 /** The X fixture fetches its timeline body until 1.5 s after load; every run waits past that. */
 const MIN_SETTLE_AFTER_LOAD_MS = 2_500;
 const MIN_SETTLE_AFTER_INSERT_MS = 1_000;
-const SETTLE_TIMEOUT_MS = 20_000;
-const SETTLE_POLL_MS = 100;
 const SCROLL_STEPS = 10;
 const SCROLL_PAUSE_MS = 300;
-const LONG_TASK_BLOCKING_MS = 50;
 const PROFILE_SAMPLING_US = 100;
-
-/** Serialised into the page by addInitScript, so it must not reference anything outside itself. */
-function installProbe(pollMs: number): void {
-  const longTasks: LongTask[] = [];
-  new PerformanceObserver((list) => {
-    for (const entry of list.getEntries()) {
-      longTasks.push({ start: entry.startTime, duration: entry.duration });
-    }
-  }).observe({ type: "longtask", buffered: true });
-  // A Reddit badge mounted after an anchor inside a post's shadow root is invisible to a document query.
-  const countBadges = (): number => {
-    let count: number = document.querySelectorAll("botdar-badge").length;
-    for (const host of document.querySelectorAll("shreddit-post, shreddit-comment")) {
-      count += host.shadowRoot?.querySelectorAll("botdar-badge").length ?? 0;
-    }
-    return count;
-  };
-  let count = 0;
-  let baseline = 0;
-  let firstChangeAt: number | null = null;
-  let lastChangeAt: number | null = null;
-  setInterval(() => {
-    const next: number = countBadges();
-    if (next === count) return;
-    count = next;
-    lastChangeAt = performance.now();
-    if (firstChangeAt === null && next !== baseline) firstChangeAt = lastChangeAt;
-  }, pollMs);
-  let frames: number[] = [];
-  let steps: number[] = [];
-  let recording = false;
-  const onFrame = (time: number): void => {
-    if (!recording) return;
-    frames.push(time);
-    requestAnimationFrame(onFrame);
-  };
-  (window as ProbeWindow).__perfProbe = {
-    longTasks,
-    markBadges: () => {
-      baseline = count;
-      firstChangeAt = null;
-      lastChangeAt = null;
-    },
-    state: () => ({ now: performance.now(), count, firstChangeAt, lastChangeAt }),
-    startFrames: () => {
-      frames = [];
-      steps = [performance.now()];
-      recording = true;
-      requestAnimationFrame(onFrame);
-    },
-    markStep: () => void steps.push(performance.now()),
-    stopFrames: () => {
-      recording = false;
-      return { frames, steps: [...steps, performance.now()] };
-    },
-  };
-}
-
-async function readProbe(page: Page): Promise<ProbeState> {
-  const state: ProbeState | undefined = await page.evaluate(() =>
-    (window as ProbeWindow).__perfProbe?.state(),
-  );
-  if (state === undefined) throw new Error("perf probe missing: the init script did not run");
-  return state;
-}
-
-async function readLongTasks(page: Page): Promise<LongTask[]> {
-  return page.evaluate(() => (window as ProbeWindow).__perfProbe?.longTasks ?? []);
-}
-
-/** Waits until the badge count has held for a second and at least `minQuietMs` passed since `from`. */
-async function waitForBadgesToSettle(
-  page: Page,
-  from: number,
-  minQuietMs: number,
-): Promise<ProbeState> {
-  const deadline: number = Date.now() + SETTLE_TIMEOUT_MS;
-  for (;;) {
-    const state: ProbeState = await readProbe(page);
-    const quietSince: number = Math.max(state.lastChangeAt ?? from, from);
-    const settled: boolean =
-      state.now - quietSince >= STABLE_FOR_MS && state.now - from >= minQuietMs;
-    if (settled || Date.now() > deadline) return state;
-    await page.waitForTimeout(SETTLE_POLL_MS);
-  }
-}
-
-function blockingSummary(
-  tasks: readonly LongTask[],
-  from: number,
-  to: number,
-): { count: number; tbt: number } {
-  const inWindow: LongTask[] = tasks.filter((task) => task.start >= from && task.start < to);
-  const tbt: number = inWindow.reduce(
-    (sum, task) => sum + Math.max(task.duration - LONG_TASK_BLOCKING_MS, 0),
-    0,
-  );
-  return { count: inWindow.length, tbt };
-}
 
 async function cdpCounters(session: CDPSession): Promise<Record<string, number>> {
   const { metrics } = await session.send("Performance.getMetrics");
@@ -170,16 +49,6 @@ async function cdpCounters(session: CDPSession): Promise<Record<string, number>>
 }
 
 const secondsToMs = (seconds: number | undefined): number => (seconds ?? 0) * 1_000;
-
-function badgeTimes(
-  state: ProbeState,
-  from: number,
-): { first: number | null; last: number | null } {
-  return {
-    first: state.firstChangeAt === null ? null : state.firstChangeAt - from,
-    last: state.lastChangeAt === null ? null : state.lastChangeAt - from,
-  };
-}
 
 async function measureScroll(
   page: Page,
@@ -267,7 +136,7 @@ export async function measureRun(
     if (options.cpuThrottleRate > 1) {
       await session.send("Emulation.setCPUThrottlingRate", { rate: options.cpuThrottleRate });
     }
-    await page.addInitScript(installProbe, BADGE_POLL_MS);
+    await installProbeScript(page);
     if (options.profile === true) {
       await session.send("Profiler.enable");
       await session.send("Profiler.setSamplingInterval", { interval: PROFILE_SAMPLING_US });
