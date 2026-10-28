@@ -6,11 +6,9 @@
  * Bluesky can copy the shape until it is hoisted into src/ui.
  */
 import { h, render } from "preact";
-import type { ContentScriptContext } from "wxt/utils/content-script-context";
-import type { FeedbackEntry, FeedbackInput } from "@/src/core/feedback";
-import type { AccountResolver, BadgeHandle } from "@/src/core/pipeline";
+import type { BadgeHandle } from "@/src/core/pipeline";
 import type { Settings } from "@/src/core/settings";
-import type { EffectivePlatformConfig, PlatformAdapter, PostRef, Verdict } from "@/src/core/types";
+import type { PostRef, Verdict } from "@/src/core/types";
 import { Badge, type BadgeProps } from "@/src/ui/Badge";
 import { HoverCard, type HoverCardProps } from "@/src/ui/HoverCard";
 import { createHoverController, type HoverController } from "@/src/ui/hoverController";
@@ -18,45 +16,9 @@ import { shouldDrawBadge, type BadgeTier } from "@/src/ui/labels";
 import { kindOfPost, recordBadged } from "@/src/core/diagnostics";
 import { detectHostTheme, mountBadge, mountCard, type MountedUi } from "@/src/ui/mount";
 import { noReadCardProps } from "@/src/ui/noRead";
+import type { PlatformWiring, PostState, WireOptions } from "./wireTypes";
 
-export interface WireOptions {
-  ctx: ContentScriptContext;
-  adapter: PlatformAdapter;
-  resolver: AccountResolver;
-  /** Shadow-root stylesheet text: `shadowStyles` of the entrypoint's `?inline` imports. */
-  shadowCss: string;
-  settings: () => Settings;
-  config: () => EffectivePlatformConfig;
-  /** Platform-owned DOM marks that let later observer passes skip badged posts at selector level. */
-  markBadged: (element: Element) => void;
-  unmarkBadged: (element: Element) => void;
-  recordFeedback: (input: FeedbackInput) => Promise<FeedbackEntry>;
-  removeFeedback: (id: string) => Promise<boolean>;
-  openSettings: () => void;
-  /** Display prefix for the card's handle line, e.g. "@" or "u/". */
-  handlePrefix: string;
-}
-
-export interface PlatformWiring {
-  attach: (post: PostRef) => void;
-  release: (element: Element) => void;
-  /** Settings or config changed: redraw every badge and the open card. */
-  refresh: () => void;
-  stop: () => void;
-}
-
-interface PostState {
-  post: PostRef;
-  handle: BadgeHandle;
-  verdict: Verdict;
-  unsubscribe: () => void;
-  badge: MountedUi | undefined;
-  badgeContainer: HTMLElement | undefined;
-  mounting: boolean;
-  released: boolean;
-  loading: boolean;
-  feedback: FeedbackEntry | undefined;
-}
+export type { PlatformWiring, WireOptions } from "./wireTypes";
 
 export const CARD_ID = "botdar-card";
 
