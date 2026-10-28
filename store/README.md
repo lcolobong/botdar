@@ -22,8 +22,8 @@ A badge on each author on X, Reddit, Bluesky, Hacker News and YouTube for patter
 
 ```
 Botdar adds a small badge next to the author of every post, saying whether that account shows patterns
-common in automated accounts, and a hover card that explains why. It works on X, Reddit, Bluesky and
-Hacker News.
+common in automated accounts, and a hover card that explains why. It works on X, Reddit, Bluesky,
+Hacker News and YouTube comments.
 
 Botdar describes patterns, not people. The badge says that an account's public details look the way
 automated accounts often look, for example a very young account posting at a high rate, or a handle
@@ -55,7 +55,8 @@ analytics and no crash reports reach the developer.
 To read an author's public profile, Botdar asks the platform the post is on, naming that author the
 way the profile link on the page does: x.com when you hover a badge, the Reddit site you are on when a
 post comes into view, Bluesky's public service (public.api.bsky.app) when you hover a badge, and the
-official Hacker News API (hacker-news.firebaseio.com) when a story or comment comes into view. Nothing
+official Hacker News API (hacker-news.firebaseio.com) when a story or comment comes into view, and
+YouTube's own web API on www.youtube.com, without cookies, when you hover a badge on a comment. Nothing
 about you is added to these requests. Conservative mode turns them all off.
 
 Once a day the extension also downloads a small signed configuration file from this project's GitHub
@@ -73,7 +74,7 @@ Social & Communication
 ### Single-purpose statement
 
 ```
-Botdar has one purpose: to show, next to each post author on X, Reddit, Bluesky and Hacker News, a
+Botdar has one purpose: to show, next to each post author on X, Reddit, Bluesky, Hacker News and YouTube, a
 badge that says whether that account displays patterns common in automated accounts, with a hover card listing the
 observations behind it. All computation happens in the browser, and the extension has no other
 features.
@@ -136,6 +137,15 @@ hacker-news.firebaseio.com, without cookies. That API allows requests from the H
 needs no host permission of its own.
 ```
 
+**Host permission: https://www.youtube.com/\***
+
+```
+Needed to run the content script that reads the comments under a YouTube video and draws the badge
+next to each comment's author. When the user hovers a badge, it may request that channel's public About
+panel (join date, video and subscriber counts, description) from YouTube's own web API on the same
+site, without cookies. Nothing is requested for a commenter the user does not hover.
+```
+
 No other host permissions are requested. There is no `<all_urls>`, no `tabs`, no `webRequest`, and no
 `web_accessible_resources`.
 
@@ -183,7 +193,7 @@ Why Website content and not the other categories, for whoever fills in the form:
   sent so the platform can return that author's public profile. The requests and their triggers are
   listed per platform in [docs/privacy.md](../docs/privacy.md), "What leaves your browser".
 - **User activity** (clicks, mouse position, scrolling, keystrokes) is not recorded or sent. A lookup on
-  X or Bluesky starts when the user hovers a badge, so the platform could infer that the user looked at
+  X, Bluesky or YouTube starts when the user hovers a badge, so the platform could infer that the user looked at
   that author, but the request carries only the author's name, and X's own hover card asks X for
   profile details the same way. On Reddit and Hacker News the lookup follows what is on screen, which
   the platform itself served. If a reviewer reads the hover trigger as user activity, ticking User
@@ -205,7 +215,7 @@ profile facts, and it is never sold, used for advertising, or read by people.
 ### Summary (250 characters max)
 
 ```
-In-feed badges on X, Reddit, Bluesky and Hacker News when a post's author shows patterns common in
+In-feed badges on X, Reddit, Bluesky, Hacker News and YouTube when a post's author shows patterns common in
 automated accounts, with a hover card that lists the reasons. Everything is computed in your browser, and
 nothing is sent to us.
 ```
@@ -231,7 +241,8 @@ submission form, state:
 This add-on sends nothing to its developer, who runs no server. To show a badge it sends the account
 name of an author shown on the page to that platform: to x.com and reddit.com, the sites the user is
 on, and to the platforms' official public APIs at public.api.bsky.app (Bluesky) and
-hacker-news.firebaseio.com (Hacker News), so the platform can return that author's public profile. It
+hacker-news.firebaseio.com (Hacker News), and on hover to YouTube's own web API on www.youtube.com
+without cookies, so the platform can return that author's public profile. It
 declares websiteContent for this. Conservative mode and the per-platform switches turn these requests
 off. The only other request is a once-a-day download of a signed configuration file from the project's
 GitHub Pages site, which carries no information about the user or the accounts they have seen.
@@ -246,9 +257,9 @@ leave the device.
 storage: settings, the last downloaded configuration file, optional user-recorded feedback, and
 seven-day remembered lookups keyed by salted hashes (can be switched off and cleared on the options page).
 alarms: the once-a-day configuration download.
-Host permissions (x.com, twitter.com, www.reddit.com, old.reddit.com, bsky.app, news.ycombinator.com):
-the content scripts that draw the badges and may request an author's public profile from the same site
-(X on hover, Reddit as posts come into view). Bluesky and Hacker News lookups go to public.api.bsky.app
+Host permissions (x.com, twitter.com, www.reddit.com, old.reddit.com, bsky.app, news.ycombinator.com,
+www.youtube.com): the content scripts that draw the badges and may request an author's public profile
+from the same site (X and YouTube on hover, Reddit as posts come into view). Bluesky and Hacker News lookups go to public.api.bsky.app
 and hacker-news.firebaseio.com, which allow requests from those pages and need no host permission.
 ```
 

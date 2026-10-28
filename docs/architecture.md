@@ -1,7 +1,7 @@
 # Architecture
 
-Botdar is a Manifest V3 browser extension that annotates post authors in-feed on X, Reddit, Bluesky
-and Hacker News with a tier describing how many patterns common in automated accounts the account
+Botdar is a Manifest V3 browser extension that annotates post authors in-feed on X, Reddit, Bluesky,
+Hacker News and YouTube comments with a tier describing how many patterns common in automated accounts the account
 shows, plus a hover card listing the reasons. Scoring detail lives in [scoring-spec.md](scoring-spec.md); this document covers
 everything around it.
 
@@ -27,7 +27,7 @@ everything around it.
 
 ```mermaid
 flowchart LR
-  subgraph Page["Platform page (x.com / reddit.com / bsky.app / news.ycombinator.com)"]
+  subgraph Page["Platform page (x.com / reddit.com / bsky.app / news.ycombinator.com / youtube.com)"]
     PJS["Page JS fetch / XHR"]
     DOM["Rendered DOM"]
     MAIN["MAIN-world interceptor<br/>(x-main.content.ts, bluesky-main.content.ts)"]
@@ -58,7 +58,7 @@ flowchart LR
   MAIN -- "window.postMessage" --> RELAY
   RELAY --> T1
   DOM --> OBS --> T0
-  OBS -.->|"on sight (Reddit, Hacker News), hover"| T2
+  OBS -.->|"on sight (Reddit, Hacker News), hover (X, Bluesky, YouTube)"| T2
   T0 --> RES
   T1 --> RES
   T2 --> RES
@@ -89,6 +89,7 @@ botdar/
 │  ├─ bluesky.content.ts
 │  ├─ bluesky-main.content.ts    # world: MAIN, XRPC interceptor
 │  ├─ hackernews.content.ts
+│  ├─ youtube.content.ts
 │  ├─ popup/  options/  onboarding/
 ├─ src/
 │  ├─ core/
@@ -113,7 +114,8 @@ botdar/
 │  │  ├─ reddit/   adapter, observer, dom, parsers/, sources/, features, oldReddit, threadReply
 │  │  ├─ bluesky/  adapter, observer, dom, interceptor.main, parsers/, sources/, features, threadReply
 │  │  ├─ hackernews/ adapter, observer, dom, parsers/, sources/, features, threadReply
-│  │  └─ onSightWire.ts          # content-script wiring shared by Reddit and Hacker News
+│  │  ├─ youtube/  adapter, observer, dom, conventions, handles, parsers/, sources/, features, threadReply
+│  │  └─ onSightWire.ts          # content-script wiring shared by Reddit, Hacker News and YouTube
 │  └─ ui/
 │     ├─ tokens.css  Badge.tsx  HoverCard.tsx  FeedbackButton.tsx  ConfidenceNote.tsx
 │     ├─ hoverController.ts  mount.ts
@@ -128,7 +130,7 @@ botdar/
 ├─ docs/                         # this folder
 └─ tests/
    ├─ unit/**  dom/**
-   └─ fixtures/{x,reddit,bluesky,hackernews,policy}/
+   └─ fixtures/{x,reddit,bluesky,hackernews,youtube,policy}/
 ```
 
 ## Core type contracts
@@ -341,6 +343,24 @@ Every page is rendered on the server as a table of `tr.athing` rows, and navigat
 | Tier 2 | `https://hacker-news.firebaseio.com/v0/user/<id>.json` (public, no auth, credentials omitted; CORS admits the page's origin): `created`, `karma`, `submitted` (counted), `about`. On sight like Reddit, behind the same queue and limiter (30/min from the config, burst 10); cached 24 h; an unknown id (`null`) is cached as an empty stub; a 429 reaches the limiter, though the API documents no rate limit |
 | Native label | None. A first-person "I am a … bot" in `about` is a declaration (`declaredBy: "bio"`) |
 
+### YouTube (`www.youtube.com`)
+
+Comment authors on watch pages ([ADR-0030](decisions/ADR-0030-youtube-adapter.md); markup recorded
+2026-10-27 under `tests/fixtures/youtube/`). The content script runs the shared wiring
+(`src/platforms/onSightWire.ts`) with `lookups: "onHover"`.
+
+| Concern | Approach |
+|---|---|
+| Comments | Every comment and reply is a `ytd-comment-view-model`; a reply carries `is-reply`. `classify(element)` sorts each into not a comment, an author link not bound yet (read again when its markup is stamped in) or a comment |
+| Badge anchor | The `#author-text` handle link; after the creator chip on a creator's own comment (GUESS). Comment density (`youtube`), label shown, a left margin |
+| Handle | The `/@<handle>` link, percent-decoded and lowercased; a comment shows no display name |
+| Tier 0 | The handle (a last word of "bot" declares; the avatar is not read, since `ytc/` serves both the letter default and Google photos), the creator's handle and name from the watch metadata's owner link and any author carrying the creator chip |
+| Thread index | The thread is the video (`watch?v=`); a reply's parent is its thread's top-level comment (the id before the "."); the time is the relative age counted back from when the comment is read, page order (counted as comments are first read) breaking ties inside one comment thread; links undo YouTube's `/redirect?q=` wrapper (GUESS for comments); the description's links are the root's |
+| Routing | A single-page app: `yt-navigate-finish` on the document, and a check per pass of the page (path and video, so `t=` or a playlist changes nothing), report every badged comment removed (elements are reused for the next video), reset the creator, the thread order and the thread index, and scan again. Only nodes added under `ytd-comments` are scanned; an author link's `href` changing in place (a re-sort) sends its comment round again, and a comment whose author changed is reported removed and anew |
+| Tier 1 | None: the build defaults declare `t1: false` |
+| Tier 2 | On hover only. `POST /youtubei/v1/navigation/resolve_url` for `https://www.youtube.com/@<handle>/about`, then `POST /youtubei/v1/browse` with the channel id and params it returns: the About panel's join date, video and subscriber counts, country and description, and the channel title. Same-origin, credentials omitted, context `{clientName: "WEB", clientVersion, hl: "en"}` with the version from the page's `ytcfg.set` script; no API key. Limiter 10/min; cached 24 h; a 404 cached as an empty stub; bodies capped at 4 MB |
+| Native label | None. A first-person "I am a … bot" in the channel description is a declaration |
+
 ### Badge and hover card mounting
 
 `src/ui/mount.ts` wraps WXT `createShadowRootUi(ctx, { name: 'botdar-badge', position: 'inline', anchor,
@@ -350,7 +370,7 @@ adopts (`src/ui/sharedStyles.ts`); only the host layout rules go through WXT's `
 `:host` reset. Where adoption is unavailable or refused, a root gets a `<style>` copy. The hover card
 is one singleton `botdar-card` on `document.body`, positioned from `getBoundingClientRect` and flipped at
 viewport edges; opens after 150 ms hover or on focus (`<button aria-describedby>`), closes 200 ms after
-leaving both badge and card. On X and Bluesky Tier 2 fires on open; on Reddit and Hacker News it has normally run on
+leaving both badge and card. On X, Bluesky and YouTube Tier 2 fires on open; on Reddit and Hacker News it has normally run on
 sight already and the open is a cache hit. Every tier draws a badge (ADR-0020); only Likely human can be
 hidden, by the "Show Likely human" setting. While the account's lookup is queued or running
 (`BadgeHandle.lookupStatus()` is `pending`) an unknown badge reads "Checking" and the glyph pulses,
@@ -482,7 +502,8 @@ The result is frozen. Unit tests assert every "cannot enable" case. Settings the
   "host_permissions": [
     "https://x.com/*", "https://twitter.com/*",
     "https://www.reddit.com/*", "https://old.reddit.com/*",
-    "https://bsky.app/*", "https://news.ycombinator.com/*"
+    "https://bsky.app/*", "https://news.ycombinator.com/*",
+    "https://www.youtube.com/*"
   ]
 }
 ```
@@ -492,6 +513,8 @@ The result is frozen. Unit tests assert every "cannot enable" case. Settings the
   is ever needed, use `use_dynamic_url`.
 - The policy fetch, the Bluesky public AppView and the Hacker News Firebase API need no host
   permission: the first two send `access-control-allow-origin: *` and Firebase echoes the page's origin (ADR-0026).
+- YouTube's innertube API is on the page's own origin, so `https://www.youtube.com/*` covers the comment
+  pages and the lookups (ADR-0030).
 - Firefox: `browser_specific_settings.gecko.data_collection_permissions.required = ["websiteContent"]`,
   because the Tier 2 lookups send author names to each platform's site or public API (store/README.md).
 - No remote code. The policy file is data; the logic that interprets it ships in the package.
@@ -572,13 +595,13 @@ Results of these can change the design; they run before the X platform PR.
 | Scoring | Vitest (node) | Bins, caps, group caps; independence rule; confidence; low-confidence cap; `declared` override; golden table of synthetic accounts → expected tier |
 | Handle shape | Vitest | Digit patterns, Reddit generated-name regex, bigram log-likelihood on random vs natural handles |
 | Policy | Vitest | Validator per field; restrict-only merge matrix; verify with a test keypair (valid, tampered, wrong key, bad base64, rollback) |
-| Parsers | Vitest + fixtures | X GraphQL in `core` and `legacy` shapes plus a mangled one; Reddit about.json normal, suspended, HTML redirect; Bluesky feed and `getProfiles` responses; Hacker News Firebase `user` recordings (established, day-old) plus malformed bodies |
-| DOM | Vitest + happy-dom | Badge mounts on saved tweet, shreddit and Bluesky snippets and the recorded Hacker News front page, thread, `/newcomments`, `/newest` and user page; idempotent on double pass; unmount on removal; route-change reset |
+| Parsers | Vitest + fixtures | X GraphQL in `core` and `legacy` shapes plus a mangled one; Reddit about.json normal, suspended, HTML redirect; Bluesky feed and `getProfiles` responses; Hacker News Firebase `user` recordings (established, day-old) plus malformed bodies; YouTube innertube `resolve_url`, About `browse` and the page's About continuation recordings plus mangled bodies |
+| DOM | Vitest + happy-dom | Badge mounts on saved tweet, shreddit and Bluesky snippets and the recorded Hacker News front page, thread, `/newcomments`, `/newest` and user page and YouTube watch page; idempotent on double pass; unmount on removal; route-change reset |
 | Rate limiter, cache | Vitest fake timers | Bucket refill, backoff ladder, circuit open → `sourcesMissing` |
 | Background | Vitest + WXT fake browser | Alarm registration, LKG untouched on failure, `config.changed` broadcast |
 | Smoke and PR media | Playwright (`scripts/smoke/run.ts`, not a CI gate) | Built extension loaded against saved fixture pages; screenshots of each tier and the hover card |
 | Live recording | Playwright over CDP (`scripts/capture/run.ts`, manual) | Attaches to the maintainer's signed-in Chrome, serialises a live page with shadow roots, anonymises it into `tests/fixtures/`, screenshots it with the extension running (ADR-0021) |
 
-Not automatable: live X/Reddit/Bluesky/Hacker News end to end, GraphQL schema rotation (mitigated by a fixture
+Not automatable: live X/Reddit/Bluesky/Hacker News/YouTube end to end, GraphQL schema rotation (mitigated by a fixture
 re-record checklist and parsers that degrade to partials), store review, Firefox MAIN-world timing, visual
 regression against platform UI changes.

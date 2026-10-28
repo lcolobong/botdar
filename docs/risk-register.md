@@ -153,3 +153,14 @@ script fetches it with the page's origin, a narrower CORS policy that still admi
 No read; a host permission would not help a content-script fetch, so the fallback would be a
 background-worker fetch with a new `hacker-news.firebaseio.com` host permission and a store
 resubmission. Until then the policy can switch Hacker News Tier 2 off for everyone.
+
+## R-18 YouTube innertube
+
+The YouTube lookup ([ADR-0030](decisions/ADR-0030-youtube-adapter.md)) uses two undocumented endpoints
+of the page's own API (`navigation/resolve_url`, `browse`) and reads the About panel's view model and
+its English texts. A change to either endpoint, the panel's shape, the `ytcfg` script the client
+version is read from, or YouTube's tolerance of cookieless requests makes hovers fall to No read; a
+bot challenge on the API would do the same. Trigger: hovered YouTube badges stay No read in the live
+check or the diagnostics panel. Response: re-record (`tests/fixtures/youtube/innertube/`), follow the
+parser, and meanwhile the policy can switch YouTube Tier 2 off for everyone. The lookup is on hover
+only and rate-limited at 10 a minute, which keeps it close to a person opening About panels.

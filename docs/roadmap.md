@@ -12,12 +12,11 @@ and the evidence is in [research/platforms.md](research/platforms.md) and
 | Reddit | Cheap: cake day and karma in the DOM, logged-in `about.json`; official API is closing so client-side is the only route | Tier 0 DOM, Tier 2 `about.json` on sight and `overview.json` on hover |
 | Bluesky | Cheapest and lowest-risk of all: public AppView with open CORS, join date and counts, native `bot` self-label, Terms of Service that invite third-party tools | Tier 0 DOM, Tier 1 XRPC interception, Tier 2 public `getProfiles` and `getAuthorFeed` |
 | Hacker News | Pulled forward from v1.1 on 2026-10-26 ([ADR-0026](decisions/ADR-0026-hacker-news-adapter.md)): Firebase `user/<id>.json` has created date, karma, submissions and the about text, no login, no documented rate limit, and CORS admits the HN origin, so the adapter was trivial and needed one new host | Tier 0 DOM (username), Tier 2 Firebase `user/<id>.json` on sight |
+| YouTube comment authors | Pulled forward from v1.1 on 2026-10-27 ([ADR-0030](decisions/ADR-0030-youtube-adapter.md)): comments show only a handle, but the page's own innertube API answers a channel's About panel (join date, videos, description) with no key and no cookies, and scam-comment accounts that pose as the creator can be read from names alone | Tier 0 DOM (handle, the video's creator), Tier 2 innertube `resolve_url` and About `browse` on hover |
 
 ## v1.1
 
-| Platform | Notes |
-|---|---|
-| YouTube comment authors | Commenters expose nothing in the DOM; one innertube `browse` per channel for join date and video count. Scam-comment bots impersonate the creator. Client-side only; the Data API bans derived metrics. |
+No platform is left in v1.1: Hacker News and YouTube comment authors moved into v1.
 
 Scoring in v1.1 adds the remaining local countermeasures recommended in
 [adversarial-evasion.md](adversarial-evasion.md#5-cost-raising-framing): `x.agedRepurposed`, gated

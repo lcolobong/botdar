@@ -60,6 +60,10 @@ The first release, covering the MVP.
   every story and comment author, read from the public Firebase API's join date, karma, submission
   count and about text as each row comes into view. The account on its own user page gets no badge
   (ADR-0026).
+- YouTube comment authors, pulled forward from v1.1: a badge after every commenter's handle on a
+  watch page, read on hover from the channel's public About panel (join date, videos, description).
+  A handle or channel name posing as the video's creator, the scam-comment pattern, counts as a
+  strong signal; the creator's own comments never do (ADR-0030).
 
 ### Privacy
 
@@ -67,7 +71,8 @@ The first release, covering the MVP.
   profile, the extension sends that author's name to the platform: to x.com on hover and to the
   Reddit site you are on as posts come into view, both with your session; to Bluesky's public API
   at public.api.bsky.app on hover, and to the official Hacker News API at hacker-news.firebaseio.com
-  as rows come into view, both without cookies. Conservative mode, the per-platform switches and
+  as rows come into view, both without cookies; and to YouTube's own web API on www.youtube.com on
+  hover, without cookies. Conservative mode, the per-platform switches and
   the signed policy turn these lookups off. The daily policy fetch carries no user data.
 - Only the `storage` and `alarms` permissions, and host permissions for x.com, twitter.com,
-  www.reddit.com, old.reddit.com, bsky.app and news.ycombinator.com.
+  www.reddit.com, old.reddit.com, bsky.app, news.ycombinator.com and www.youtube.com.
