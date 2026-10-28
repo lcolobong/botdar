@@ -34,10 +34,13 @@ or to that platform's official public API:
   Combinator on Google's Firebase), without cookies, when a story or comment comes into view (at most
   once per author per page) and again when you hover a badge if the answer is not already remembered.
   It names the author's username.
+- **YouTube**: to YouTube's own web API on the site you are using (`www.youtube.com/youtubei/v1/`), the
+  one its pages use, without cookies, when you hover a badge next to a comment's author. Two requests
+  name the channel's handle; nothing is asked for a commenter you do not hover.
 
-A request to the site you are using carries that site's own cookies, as the site's own requests do;
-nothing about you is added to any request. What comes back is kept on your device (see below) and is
-never passed on.
+A request to the site you are using carries that site's own cookies, as the site's own requests do,
+except YouTube's, which go without them; nothing about you is added to any request. What comes back is
+kept on your device (see below) and is never passed on.
 
 To turn the lookups off: switch on "conservative mode" to stop every lookup on every platform, or switch
 a platform off to stop everything Botdar does there. The maintainer can also turn them off for everyone,
@@ -89,6 +92,8 @@ What each lookup reads from the answer:
   and verification) and the author's recent public posts, read only for when they were posted.
 - On Hacker News, the public profile: join date, karma, how many items they have submitted, and their
   about text.
+- On YouTube, the channel's public About panel: when it joined, how many videos and subscribers it has,
+  its country if listed, its description, and its name.
 
 All lookups are rate-limited and cached: an answer is reused in the open tab for up to a day and,
 unless you turn remembered lookups off, remembered on your device as described above. On Reddit, the lookups pause for ten minutes after Reddit
@@ -96,7 +101,8 @@ answers as if you were logged out.
 
 ## Permissions
 
-The extension asks for access to x.com, twitter.com, reddit.com, bsky.app and news.ycombinator.com only,
+The extension asks for access to x.com, twitter.com, reddit.com, bsky.app, news.ycombinator.com and
+www.youtube.com only,
 plus local storage and a timer for the daily configuration fetch. The Bluesky and Hacker News APIs need
 no permission of their own: they are open to requests from the Bluesky and Hacker News pages.
 

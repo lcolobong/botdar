@@ -42,6 +42,8 @@ Copy this list into the release PR and check every item.
   statement, data-use disclosure (the "Data-use disclosure" table and the note under it in
   [store/README.md](../store/README.md), which say which lookups leave the browser).
 - [ ] Justification paragraph for MAIN-world fetch interception ready for a reviewer question.
+- [ ] The www.youtube.com host permission's justification names the hover-only innertube lookups
+  ([store/README.md](../store/README.md), ADR-0030).
 - [ ] Firefox AMO submission with pre-minified source archive.
 - [ ] GitHub Release created from the tag with both zips attached.
 

@@ -1,6 +1,7 @@
 # ADR-0005: Platform roadmap
 
-Status: Accepted, amended by ADR-0026 (Hacker News moved from v1.1 into v1)
+Status: Accepted, amended by ADR-0026 (Hacker News moved from v1.1 into v1) and ADR-0030 (YouTube
+comment authors moved from v1.1 into v1)
 Date: 2026-10-22
 
 ## Context
