@@ -1,31 +1,24 @@
+/**
+ * The rewriting engine that anonymises a recorded page or its address. Which strings name an
+ * account is in accountHandles.ts, and the id and avatar patterns are in idSubstitutions.ts.
+ */
+import { distinctDigits, distinctFakes, fakeDigits, fakeId, stableHash } from "./fakeNames.ts";
 import {
-  distinctDigits,
-  distinctFakes,
-  fakeDigits,
-  fakeHandle,
-  fakeId,
-  stableHash,
-} from "./fakeNames.ts";
-import {
-  anonymizeHackerNewsUrl,
-  hackerNewsHandles,
-  hackerNewsIdSubstitutions,
-  replaceHackerNewsHandles,
-} from "./hackerNews.ts";
-import {
-  YOUTUBE_AVATAR_SUBSTITUTION,
-  YOUTUBE_ID_SUBSTITUTIONS,
-  anonymizeYouTubeUrl,
-  replaceYouTubeHandles,
-  replaceYouTubeVideoIds,
-  youTubeFakeHandle,
-  youTubeHandles,
-} from "./youTube.ts";
+  accountOf,
+  fakeFor,
+  handlesOf,
+  SYSTEM_ACCOUNTS,
+  X_RESERVED_PATHS,
+} from "./accountHandles.ts";
+import { anonymizeHackerNewsUrl, replaceHackerNewsHandles } from "./hackerNews.ts";
+import type { Substitution } from "./idSubstitutions.ts";
+import { AVATAR_SUBSTITUTIONS, idSubstitutions } from "./idSubstitutions.ts";
+import type { SnapshotPlatform } from "./accountHandles.ts";
+import { anonymizeYouTubeUrl, replaceYouTubeHandles, replaceYouTubeVideoIds } from "./youTube.ts";
 
-import type { PlatformId } from "../types.ts";
 import { PLATFORM_IDS } from "../types.ts";
 
-export type SnapshotPlatform = PlatformId;
+export type { SnapshotPlatform } from "./accountHandles.ts";
 
 export const SNAPSHOT_PLATFORMS: readonly SnapshotPlatform[] = PLATFORM_IDS;
 
@@ -37,171 +30,9 @@ export interface AnonymizedSnapshot {
   replaced: number;
 }
 
-/**
- * Accounts whose names carry meaning the tests rely on (platform-declared automation, the platform
- * itself) and which identify no person.
- */
-const SYSTEM_ACCOUNTS: ReadonlySet<string> = new Set([
-  "automoderator",
-  "reddit",
-  "deleted",
-  "removed",
-]);
-/** Top-level X paths that look like `/<handle>` but are not profiles. */
-const X_RESERVED_PATHS: ReadonlySet<string> = new Set([
-  "home",
-  "explore",
-  "i",
-  "search",
-  "settings",
-  "messages",
-  "notifications",
-  "compose",
-  "hashtag",
-  "login",
-  "signup",
-  "intent",
-  "share",
-  "about",
-  "tos",
-  "privacy",
-  "jobs",
-  "premium",
-  "download",
-]);
-const REDDIT_GENERATED_NAME = /^[A-Z][a-z]+[-_][A-Z][a-z]+[-_]?\d{1,4}$/;
-const NAME_THEN_DIGITS = /^[A-Za-z]+\d{5,}$/;
-const MIN_HANDLE_LENGTH = 3;
-
-/** Character class that bounds a handle: a handle never contains these, so they mark its edges. */
-const REDDIT_HANDLE = "[A-Za-z0-9_-]{1,20}";
-const X_HANDLE = "[A-Za-z0-9_]{1,15}";
-const BLUESKY_HANDLE = "[a-z0-9-]+(?:\\.[a-z0-9-]+)+";
-
-function collect(html: string, pattern: RegExp): Set<string> {
-  const found: Set<string> = new Set();
-  for (const match of html.matchAll(pattern)) {
-    const value: string | undefined = match[1];
-    if (value !== undefined && value.length >= MIN_HANDLE_LENGTH) found.add(value);
-  }
-  return found;
-}
-
-function handlesOf(html: string, platform: SnapshotPlatform): Set<string> {
-  switch (platform) {
-    case "reddit":
-      return new Set([
-        ...collect(html, new RegExp(`\\b(?:data-)?author="(${REDDIT_HANDLE})"`, "g")),
-        ...collect(html, new RegExp(`/(?:user|u)/(${REDDIT_HANDLE})(?=[/"?#])`, "g")),
-        ...collect(html, new RegExp(`aria-label="(${REDDIT_HANDLE})'s profile`, "g")),
-      ]);
-    case "x":
-      return new Set(
-        [
-          ...collect(html, new RegExp(`href="/(${X_HANDLE})/status/`, "g")),
-          ...collect(html, new RegExp(`href="/(${X_HANDLE})"`, "g")),
-          ...collect(html, new RegExp(`(?:^|[^\\w])@(${X_HANDLE})\\b`, "g")),
-        ].filter((handle) => !X_RESERVED_PATHS.has(handle.toLowerCase())),
-      );
-    case "bluesky":
-      return new Set([
-        ...collect(html, new RegExp(`/profile/(${BLUESKY_HANDLE})(?=[/"?#])`, "g")),
-        ...collect(html, new RegExp(`(?:^|[^\\w.])@(${BLUESKY_HANDLE})\\b`, "g")),
-      ]);
-    case "hackernews":
-      return hackerNewsHandles(html);
-    case "youtube":
-      return youTubeHandles(html);
-  }
-}
-
-function fakeFor(handle: string, platform: SnapshotPlatform, attempt = 0): string {
-  if (platform === "youtube") return youTubeFakeHandle(handle, attempt);
-  if (platform === "bluesky") {
-    const base: string = fakeHandle(handle, "plain", attempt).replace("_", "");
-    return handle.endsWith(".bsky.social") ? `${base}.bsky.social` : `${base}.example.com`;
-  }
-  if (platform === "reddit" && REDDIT_GENERATED_NAME.test(handle))
-    return fakeHandle(handle, "generated", attempt);
-  if (NAME_THEN_DIGITS.test(handle)) return fakeHandle(handle, "nameDigits", attempt);
-  return fakeHandle(handle, "plain", attempt);
-}
-
-/** Hacker News usernames are case-sensitive; every other platform folds case. */
-function accountOf(platform: SnapshotPlatform): (handle: string) => string {
-  return platform === "hackernews" ? (handle) => handle : (handle) => handle.toLowerCase();
-}
-
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-
-interface Substitution {
-  pattern: RegExp;
-  replacement: (match: string, ...groups: string[]) => string;
-}
-
-/**
- * Opaque ids per platform: thing ids and permalink ids, status ids, DIDs, record keys and Hacker
- * News item ids. `fakeNumeric` replaces the numeric ones (X status ids, item ids); when
- * anonymising a page it is distinct per snapshot.
- */
-function idSubstitutions(
-  platform: SnapshotPlatform,
-  fakeNumeric: (id: string) => string = fakeDigits,
-): Substitution[] {
-  switch (platform) {
-    case "reddit":
-      return [
-        {
-          pattern: /\bt([1-6])_([a-z0-9]{4,})\b/g,
-          replacement: (_m, kind, id) => `t${kind}_${fakeId(id)}`,
-        },
-        {
-          pattern: /\/comments\/([a-z0-9]{5,8})(?=\/)/g,
-          replacement: (_m, id) => `/comments/${fakeId(id)}`,
-        },
-      ];
-    case "x":
-      return [
-        {
-          pattern: /\/status\/(\d{15,20})\b/g,
-          replacement: (_m, id) => `/status/${fakeNumeric(id)}`,
-        },
-      ];
-    case "bluesky":
-      return [
-        { pattern: /did:plc:([a-z0-9]{24})\b/g, replacement: (_m, id) => `did:plc:${fakeId(id)}` },
-        { pattern: /\/post\/([a-z0-9]{13})\b/g, replacement: (_m, id) => `/post/${fakeId(id)}` },
-      ];
-    case "hackernews":
-      return hackerNewsIdSubstitutions(fakeNumeric);
-    case "youtube":
-      return [...YOUTUBE_ID_SUBSTITUTIONS];
-  }
-}
-
-/**
- * Uploaded avatars identify a person as surely as a name. The path after the platform's avatar
- * marker is hashed, which keeps the marker the adapters read to tell a stock avatar from an
- * uploaded one (`default_profile_images`, `redditstatic.com/avatars/defaults`) untouched.
- */
-const AVATAR_SUBSTITUTIONS: Substitution[] = [
-  {
-    pattern: /(profileIcon_)[A-Za-z0-9_-]+(\.[a-z]+)/g,
-    replacement: (_m, prefix, ext) => `${prefix}anon${ext}`,
-  },
-  {
-    pattern: /(\/profile_images\/)\d+\/[^"'\s?]+/g,
-    replacement: (_m, prefix) => `${prefix}0/anon_normal.jpg`,
-  },
-  {
-    pattern: /(\/img\/avatar(?:_thumbnail)?\/plain\/)[^"'\s]+/g,
-    replacement: (_m, prefix) => `${prefix}anon@jpeg`,
-  },
-  { pattern: /(styles\.redditmedia\.com\/[^"'\s]*?)\?[^"'\s]*/g, replacement: (_m, path) => path },
-  YOUTUBE_AVATAR_SUBSTITUTION,
-];
 
 /**
  * Replaces every username, DID, avatar path and opaque id in a serialized page with a stable fake,
@@ -291,8 +122,8 @@ export function describeAnonymization(anonymized: AnonymizedSnapshot | undefined
 
 /**
  * The address a recording came from, with the account it names replaced the way the page's
- * occurrences were. The HTML patterns above do not match a bare URL, so a profile or status
- * address is handled by path segment here; the query and fragment are dropped.
+ * occurrences were. The HTML patterns in accountHandles.ts do not match a bare URL, so a profile
+ * or status address is handled by path segment here; the query and fragment are dropped.
  */
 export function anonymizeUrl(url: string, platform: SnapshotPlatform): string {
   let parsed: URL;
