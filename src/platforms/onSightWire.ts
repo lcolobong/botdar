@@ -5,8 +5,8 @@
  * AccountResolver with the real scorer, one badge per discovered post and the single hover card.
  * An entrypoint only calls wireOnSight with its platform and the shadow-root stylesheet text it
  * bundled; everything with a side effect is injectable so the wiring is testable against fixture
- * pages with a fake scorer. The contracts are in onSight/types.ts and the runtime loading and real
- * scorer in onSight/runtime.ts.
+ * pages with a fake scorer. The contracts are in onSight/types.ts, the runtime loading and real
+ * scorer in onSight/runtime.ts, and the hover card in onSight/hoverCard.ts.
  */
 import { h, render } from "preact";
 import { kindOfPost, recordBadged } from "../core/diagnostics.ts";
@@ -14,22 +14,18 @@ import { browser } from "wxt/browser";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import { TtlLruCache } from "../core/cache";
 import { PersistedLookupStore } from "../core/persistedLookups";
-import type { FeedbackEntry } from "../core/feedback";
-import { recordFeedback, removeFeedback } from "../core/feedback";
 import { onRequest } from "../core/messaging";
 import type { BadgeHandle } from "../core/pipeline";
 import { AccountResolver, TIER2_CACHE_TTL_MS } from "../core/pipeline";
 import { RateLimiter } from "../core/ratelimit";
 import { onSettingsChanged } from "../core/settings";
-import type { PartialSignals, PlatformAdapter, PostRef, Verdict } from "../core/types";
+import type { PartialSignals, PlatformAdapter, PostRef } from "../core/types";
 import { Badge } from "../ui/Badge";
-import { HoverCard } from "../ui/HoverCard";
-import type { HoverController } from "../ui/hoverController";
-import { createHoverController } from "../ui/hoverController";
 import { shouldDrawBadge } from "../ui/labels";
-import type { MountedUi } from "../ui/mount";
-import { detectHostTheme, mountBadge, mountCard } from "../ui/mount";
-import { noReadCardProps } from "../ui/noRead";
+import type { HostTheme } from "../ui/mount";
+import { detectHostTheme, mountBadge } from "../ui/mount";
+import type { OnSightCard } from "./onSight/hoverCard";
+import { isLookingUp, mountOnSightCard } from "./onSight/hoverCard";
 import { loadOnSightRuntime, realScorer } from "./onSight/runtime";
 import type {
   BadgeSlot,
@@ -38,6 +34,7 @@ import type {
   WireOnSightOptions,
 } from "./onSight/types";
 
+export { CARD_ID } from "./onSight/hoverCard";
 export { loadOnSightRuntime } from "./onSight/runtime";
 export type {
   OnSightPlatform,
@@ -46,7 +43,6 @@ export type {
   WireOnSightOptions,
 } from "./onSight/types";
 
-export const CARD_ID = "botdar-card";
 const CACHE_CAPACITY = 500;
 /**
  * Authors are looked up as their posts come near the viewport (ADR-0020), and a first screen of a
@@ -68,7 +64,7 @@ export async function wireOnSight(
     options.openSettings ?? ((): void => void browser.runtime.openOptionsPage());
   let runtime: OnSightRuntime = await loadRuntime();
   const looksUpOnSight: boolean = (platform.lookups ?? "onSight") === "onSight";
-  const theme = (): "light" | "dark" => detectHostTheme(platform.platform);
+  const theme = (): HostTheme => detectHostTheme(platform.platform);
 
   const resolver = new AccountResolver({
     adapter,
@@ -84,116 +80,20 @@ export async function wireOnSight(
   });
   const slots = new Map<Element, BadgeSlot>();
   const slotByHost = new WeakMap<Element, BadgeSlot>();
-  const feedbackByHandle = new Map<string, Promise<FeedbackEntry>>();
-  let openSlot: BadgeSlot | null = null;
-  let legendShown = false;
-  let cardContainer: HTMLElement | null = null;
   let stopObserving: (() => void) | null = null;
 
   // MARK: - Hover card
 
-  // Set once the card has mounted. The controller is created before that, so the mount callback
-  // can bind the card's container to it, and its callbacks guard for a card not mounted yet.
-  let card: MountedUi | undefined = undefined;
-  const controller: HoverController = createHoverController({
-    render: (host) => {
-      const slot: BadgeSlot | undefined = slotByHost.get(host);
-      if (slot === undefined || card === undefined) return 0;
-      openSlot = slot;
-      renderCard();
-      legendShown = true;
-      card.setTheme(theme());
-      card.setVisible(true);
-      if (runtime.config.tiers.t2) {
-        // Usually a cache hit: the author was looked up on sight. An author still waiting in the
-        // on-sight queue moves to its front (the resolver promotes it), and one already running
-        // shares that lookup. The closing rescore redraws the badge and the card.
-        void slot.handle.lookup();
-        renderBadge(slot);
-        renderCard();
-      }
-      return cardContainer?.getBoundingClientRect().height ?? 0;
-    },
-    hide: () => {
-      const closedSlot: BadgeSlot | null = openSlot;
-      openSlot = null;
-      card?.setVisible(false);
-      if (closedSlot !== null) renderBadge(closedSlot);
-    },
-    place: ({ top, left }) => {
-      card?.setPlacement({ top, left });
-    },
+  const card: OnSightCard = await mountOnSightCard({
+    ctx,
+    shadowCss,
+    platform,
+    runtime: () => runtime,
+    theme,
+    openSettings,
   });
 
-  const mountedCard: MountedUi = await mountCard(
-    ctx,
-    (container) => {
-      cardContainer = container;
-      const unbindCard: () => void = controller.bindCard(container);
-      return () => {
-        unbindCard();
-        render(null, container);
-      };
-    },
-    theme(),
-    shadowCss,
-  );
-  card = mountedCard;
-  mountedCard.setVisible(false);
-
-  const toggleFeedback = (slot: BadgeSlot): void => {
-    const handle: string = slot.post.ref.handle;
-    const pending: Promise<FeedbackEntry> | undefined = feedbackByHandle.get(handle);
-    if (pending !== undefined) {
-      feedbackByHandle.delete(handle);
-      void pending.then((entry) => removeFeedback(entry.id));
-    } else {
-      const { tier, reasons, computedAt } = slot.verdict;
-      feedbackByHandle.set(
-        handle,
-        recordFeedback({
-          platform: platform.platform,
-          handle,
-          tier,
-          reasons: reasons.map((reason) => reason.text),
-          computedAt,
-        }),
-      );
-    }
-    renderCard();
-  };
-
-  const renderCard = (): void => {
-    const slot: BadgeSlot | null = openSlot;
-    if (slot === null || cardContainer === null) return;
-    const verdict: Verdict = slot.verdict;
-    // No tier hides an open card any more: a badge that stops being drawn (Likely human turned
-    // off) is unmounted, and unmountBadge closes the card first.
-    render(
-      h(HoverCard, {
-        id: CARD_ID,
-        opening: controller.openings(),
-        tier: verdict.tier,
-        labelStyle: runtime.settings.labelStyle,
-        handle: platform.cardHandle(slot.post.ref.handle),
-        reasons: verdict.reasons,
-        ...(verdict.confidenceNote === undefined ? {} : { confidenceNote: verdict.confidenceNote }),
-        caveat: verdict.caveat,
-        ...noReadCardProps(verdict, slot.handle),
-        loading: isLookingUp(slot),
-        lowConfidence: verdict.lowConfidence,
-        showLegend: !legendShown,
-        feedbackSent: feedbackByHandle.has(slot.post.ref.handle),
-        onFeedback: () => toggleFeedback(slot),
-        onSettings: openSettings,
-      }),
-      cardContainer,
-    );
-  };
-
   // MARK: - Badges
-
-  const isLookingUp = (slot: BadgeSlot): boolean => slot.handle.lookupStatus() === "pending";
 
   const renderBadge = (slot: BadgeSlot): void => {
     const container: HTMLElement | null = slot.container;
@@ -211,12 +111,12 @@ export async function wireOnSight(
         lowConfidence: slot.verdict.lowConfidence,
         paused: !runtime.config.tiers.t2,
         loading: isLookingUp(slot),
-        stillWhileLoading: openSlot !== slot,
+        stillWhileLoading: !card.isOpen(slot),
         glyphOnlyAtCommentDensity: runtime.settings.redditCommentLabels !== "label",
         onOpen: () => {
-          if (slot.mounted !== null) controller.requestOpen(slot.mounted.shadowHost);
+          if (slot.mounted !== null) card.controller.requestOpen(slot.mounted.shadowHost);
         },
-        onClose: () => controller.requestClose(),
+        onClose: () => card.controller.requestClose(),
       }),
       container,
     );
@@ -224,7 +124,7 @@ export async function wireOnSight(
 
   const unmountBadge = (slot: BadgeSlot): void => {
     if (slot.mounted === null) return;
-    if (openSlot === slot) controller.closeNow();
+    if (card.isOpen(slot)) card.controller.closeNow();
     slot.mounted.remove();
     slot.mounted = null;
     slot.container = null;
@@ -284,7 +184,7 @@ export async function wireOnSight(
     slot.unsubscribe = handle.subscribe((verdict) => {
       slot.verdict = verdict;
       syncBadge(slot);
-      if (openSlot === slot) renderCard();
+      if (card.isOpen(slot)) card.renderCard();
     });
     syncBadge(slot);
     // Observers attach a post only near the viewport (ADR-0019), so this is a lookup on sight. It
@@ -302,6 +202,9 @@ export async function wireOnSight(
     resolver.detach(slot.post);
     element.removeAttribute("data-botdar");
   };
+
+  // The card mounted before any badge existed; it reaches them from here on.
+  card.bindBadges({ slotAtHost: (host) => slotByHost.get(host), renderBadge });
 
   // MARK: - Runtime changes
 
@@ -327,7 +230,7 @@ export async function wireOnSight(
       for (const slot of slots.values()) void slot.handle.lookupOnSight();
     }
     for (const slot of slots.values()) syncBadge(slot);
-    renderCard();
+    card.renderCard();
   };
 
   const stopConfigChanges: () => void = onRequest("config.changed", (message) => {
@@ -347,8 +250,8 @@ export async function wireOnSight(
     stopObserving?.();
     stopObserving = null;
     for (const element of [...slots.keys()]) detachElement(element);
-    controller.dispose();
-    mountedCard.remove();
+    card.controller.dispose();
+    card.remove();
     resolver.dispose();
   };
   ctx.onInvalidated(dispose);
