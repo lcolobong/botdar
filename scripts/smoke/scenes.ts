@@ -5,8 +5,9 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { BrowserContext, Locator, Page } from "playwright";
-import type { FixtureSource, SmokeFeedScene, SmokePlatformId } from "./fixtureServer.ts";
+import type { FixtureSource } from "./fixtureServer.ts";
 import { fixtureUrl, resolveFixture } from "./fixtureServer.ts";
+import type { SmokeFeedScene, SmokePlatformId } from "./sceneTable.ts";
 
 export type SmokeTheme = "light" | "dark";
 export type SceneGroup = SmokePlatformId | "pages" | "store";

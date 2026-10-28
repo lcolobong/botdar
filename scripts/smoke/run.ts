@@ -15,12 +15,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import type { BrowserContext, Worker } from "playwright";
 import type { FixtureServer } from "./fixtureServer.ts";
-import {
-  hostResolverRules,
-  smokeFeedScenes,
-  smokePlatformIds,
-  startFixtureServer,
-} from "./fixtureServer.ts";
+import { hostResolverRules, startFixtureServer } from "./fixtureServer.ts";
+import { smokeFeedScenes, smokePlatformIds } from "./sceneTable.ts";
 import type { SceneGroup, SceneRecord, SmokeTheme, Viewport } from "./scenes.ts";
 import { captureExtensionPage, captureFeed, extensionPageScenes, feedViewport } from "./scenes.ts";
 import { captureStoreScenes, storeViewport } from "./storeScenes.ts";
