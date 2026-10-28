@@ -223,7 +223,7 @@ From the code and the 4x CPU profiles (unminified build; totals are inclusive of
 **Verified non-issue: typical and unknown verdicts never mount a badge.** `shouldDrawBadge`
 (src/ui/labels.ts) returns false for `unknown`, and for `typical` unless "Show Likely human" is
 on; the X wiring's `drawableTier` and `sync` (in src/platforms/x/wire.ts) and Reddit's
-`syncBadge` (src/platforms/onSightWire.ts:283–286) skip the mount. Those posts are still
+`syncBadge` (src/platforms/onSight/badgeSlots.ts:88–91) skip the mount. Those posts are still
 extracted and scored in full, which is where hotspots 1, 2 and 6 come from.
 
 ## Proposed fixes, ranked by payoff

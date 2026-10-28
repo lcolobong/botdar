@@ -15,6 +15,7 @@ import { createHoverController } from "@/src/ui/hoverController";
 import type { HostTheme, MountedUi } from "@/src/ui/mount";
 import { mountCard } from "@/src/ui/mount";
 import { noReadCardProps } from "@/src/ui/noRead";
+import { isLookingUp } from "./badgeSlots";
 import type { BadgeSlot, OnSightPlatform, OnSightRuntime } from "./types";
 
 export const CARD_ID = "botdar-card";
@@ -43,11 +44,6 @@ export interface OnSightCard {
   renderCard: () => void;
   bindBadges: (badges: CardBadges) => void;
   remove: () => void;
-}
-
-/** Whether the slot's author has a Tier 2 lookup in flight; the badge and the card both show it. */
-export function isLookingUp(slot: BadgeSlot): boolean {
-  return slot.handle.lookupStatus() === "pending";
 }
 
 export async function mountOnSightCard(context: OnSightCardContext): Promise<OnSightCard> {
