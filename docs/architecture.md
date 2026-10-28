@@ -116,7 +116,8 @@ botdar/
 │  │  ├─ bluesky/  adapter, observer, dom, interceptor.main, parsers/, sources/, features, threadReply
 │  │  ├─ hackernews/ adapter, observer, dom, parsers/, sources/, features, threadReply
 │  │  ├─ youtube/  adapter, observer, dom, conventions, handles, parsers/, sources/, features, threadReply
-│  │  └─ onSightWire.ts          # content-script wiring shared by Reddit, Hacker News and YouTube
+│  │  ├─ onSightWire.ts          # content-script wiring shared by Reddit, Hacker News and YouTube
+│  │  └─ onSight/                # types, runtime (config load, real scorer), hoverCard, badgeSlots
 │  └─ ui/
 │     ├─ tokens.css  Badge.tsx  HoverCard.tsx  FeedbackButton.tsx  ConfidenceNote.tsx
 │     ├─ hoverController.ts  mount.ts
