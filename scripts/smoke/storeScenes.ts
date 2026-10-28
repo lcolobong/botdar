@@ -7,7 +7,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { BrowserContext, Locator, Page } from "playwright";
-import { fixtureUrl } from "./fixtureServer.ts";
+import { fixtureUrl } from "./fixtureFiles.ts";
 import type { SmokeFeedScene, SmokePlatformId } from "./sceneTable.ts";
 import { smokeFeedScenes } from "./sceneTable.ts";
 import type { CardBox, SceneRecord, SmokeTheme, Viewport } from "./scenes.ts";
