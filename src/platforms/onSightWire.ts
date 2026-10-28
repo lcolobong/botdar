@@ -5,7 +5,8 @@
  * AccountResolver with the real scorer, one badge per discovered post and the single hover card.
  * An entrypoint only calls wireOnSight with its platform and the shadow-root stylesheet text it
  * bundled; everything with a side effect is injectable so the wiring is testable against fixture
- * pages with a fake scorer.
+ * pages with a fake scorer. The contracts are in onSight/types.ts and the runtime loading and real
+ * scorer in onSight/runtime.ts.
  */
 import { h, render } from "preact";
 import { kindOfPost, recordBadged } from "../core/diagnostics.ts";
@@ -15,27 +16,12 @@ import { TtlLruCache } from "../core/cache";
 import { PersistedLookupStore } from "../core/persistedLookups";
 import type { FeedbackEntry } from "../core/feedback";
 import { recordFeedback, removeFeedback } from "../core/feedback";
-import { onRequest, sendRequest } from "../core/messaging";
-import type { BadgeHandle, Scorer } from "../core/pipeline";
+import { onRequest } from "../core/messaging";
+import type { BadgeHandle } from "../core/pipeline";
 import { AccountResolver, TIER2_CACHE_TTL_MS } from "../core/pipeline";
-import { buildDefaults } from "../core/policy/defaults";
-import { loadLastKnownGood } from "../core/policy/loader";
-import { applyPolicy } from "../core/policy/merge";
 import { RateLimiter } from "../core/ratelimit";
-import { scoreAccount } from "../core/scoring/engine";
-import type { PlatformWeights } from "../core/scoring/types";
-import { defaultWeights } from "../core/scoring/weights";
-import type { Settings } from "../core/settings";
-import { applySettings, loadSettings, onSettingsChanged } from "../core/settings";
-import type {
-  EffectivePlatformConfig,
-  PartialSignals,
-  PlatformAdapter,
-  PlatformId,
-  PostRef,
-  SourceTier,
-  Verdict,
-} from "../core/types";
+import { onSettingsChanged } from "../core/settings";
+import type { PartialSignals, PlatformAdapter, PostRef, Verdict } from "../core/types";
 import { Badge } from "../ui/Badge";
 import { HoverCard } from "../ui/HoverCard";
 import type { HoverController } from "../ui/hoverController";
@@ -44,35 +30,21 @@ import { shouldDrawBadge } from "../ui/labels";
 import type { MountedUi } from "../ui/mount";
 import { detectHostTheme, mountBadge, mountCard } from "../ui/mount";
 import { noReadCardProps } from "../ui/noRead";
+import { loadOnSightRuntime, realScorer } from "./onSight/runtime";
+import type {
+  BadgeSlot,
+  OnSightPlatform,
+  OnSightRuntime,
+  WireOnSightOptions,
+} from "./onSight/types";
 
-export interface OnSightRuntime {
-  config: EffectivePlatformConfig;
-  weights: PlatformWeights;
-  settings: Settings;
-}
-
-export type ScorerFactory = (runtime: () => OnSightRuntime) => Scorer;
-
-/** What a platform hands the shared wiring. */
-export interface OnSightPlatform {
-  platform: PlatformId;
-  adapter: PlatformAdapter;
-  /** How the hover card names the account, such as "u/name" on Reddit. */
-  cardHandle: (handle: string) => string;
-  /**
-   * When an author's Tier 2 lookup runs: as their post comes near the viewport (the default), or
-   * only when their badge is hovered, for a lookup too costly to make for every author on a page.
-   */
-  lookups?: "onSight" | "onHover";
-}
-
-export interface WireOnSightOptions {
-  /** Replaces the platform's adapter, so tests can hand it fake sources. */
-  adapter?: PlatformAdapter;
-  loadRuntime?: () => Promise<OnSightRuntime>;
-  scorer?: ScorerFactory;
-  openSettings?: () => void;
-}
+export { loadOnSightRuntime } from "./onSight/runtime";
+export type {
+  OnSightPlatform,
+  OnSightRuntime,
+  ScorerFactory,
+  WireOnSightOptions,
+} from "./onSight/types";
 
 export const CARD_ID = "botdar-card";
 const CACHE_CAPACITY = 500;
@@ -82,46 +54,6 @@ const CACHE_CAPACITY = 500;
  * the config's sustained rate (30 a minute by default), queued in the resolver.
  */
 const LOOKUP_BURST = 10;
-
-/** Build defaults narrowed by the cached policy and the settings; the background's answer wins for the config. */
-export async function loadOnSightRuntime(platform: PlatformId): Promise<OnSightRuntime> {
-  const [cached, settings] = await Promise.all([loadLastKnownGood(), loadSettings()]);
-  const effective = applySettings(
-    applyPolicy(buildDefaults, defaultWeights, cached?.policy ?? null),
-    settings,
-  );
-  let config: EffectivePlatformConfig = effective.platforms[platform];
-  try {
-    config = (await sendRequest({ type: "config.get", platform })).config;
-  } catch {
-    // The background broker is the authority once it serves config.get; until then the local
-    // merge above is the same computation on the same stored policy.
-  }
-  return { config, weights: effective.weights[platform], settings };
-}
-
-function allowedTiers(config: EffectivePlatformConfig): SourceTier[] {
-  const tiers: SourceTier[] = [0];
-  if (config.tiers.t1) tiers.push(1);
-  if (config.tiers.t2) tiers.push(2);
-  return tiers;
-}
-
-const realScorer: ScorerFactory = (runtime) => (features, signals) =>
-  scoreAccount(features, signals, runtime().weights, {
-    policyVersion: runtime().config.policyVersion,
-    sourcesAvailable: allowedTiers(runtime().config),
-  });
-
-interface BadgeSlot {
-  post: PostRef;
-  handle: BadgeHandle;
-  verdict: Verdict;
-  mounted: MountedUi | null;
-  container: HTMLElement | null;
-  mounting: Promise<void> | null;
-  unsubscribe: () => void;
-}
 
 export async function wireOnSight(
   ctx: ContentScriptContext,
