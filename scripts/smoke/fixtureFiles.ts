@@ -7,12 +7,13 @@ import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SmokeFeedScene, SmokePlatformId } from "./sceneTable.ts";
 import { smokeHostnames } from "./sceneTable.ts";
+import type { FixtureKind } from "./sceneTypes.ts";
 
 export interface FixtureSource {
   readonly path: string;
   /** The same file relative to the repository root, for the manifest. */
   readonly file: string;
-  readonly kind: "recorded" | "placeholder" | "store";
+  readonly kind: FixtureKind;
 }
 
 /** Query parameter that makes the server answer with the store-listing page instead of the recording. */

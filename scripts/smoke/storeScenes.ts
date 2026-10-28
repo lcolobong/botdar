@@ -10,8 +10,9 @@ import type { BrowserContext, Locator, Page } from "playwright";
 import { fixtureUrl } from "./fixtureFiles.ts";
 import type { SmokeFeedScene, SmokePlatformId } from "./sceneTable.ts";
 import { smokeFeedScenes } from "./sceneTable.ts";
-import type { CardBox, SceneRecord, SmokeTheme, Viewport } from "./scenes.ts";
-import { openThemedPage, waitForCardOpen } from "./scenes.ts";
+import type { CardBox } from "./pageDriving.ts";
+import { openThemedPage, waitForCardOpen } from "./pageDriving.ts";
+import type { SceneRecord, SmokeTheme, Viewport } from "./sceneTypes.ts";
 
 export const storeViewport: Viewport = { width: 1280, height: 800 };
 

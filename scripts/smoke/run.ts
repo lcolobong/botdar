@@ -17,8 +17,9 @@ import type { BrowserContext, Worker } from "playwright";
 import type { FixtureServer } from "./fixtureServer.ts";
 import { hostResolverRules, startFixtureServer } from "./fixtureServer.ts";
 import { smokeFeedScenes, smokePlatformIds } from "./sceneTable.ts";
-import type { SceneGroup, SceneRecord, SmokeTheme, Viewport } from "./scenes.ts";
-import { captureExtensionPage, captureFeed, extensionPageScenes, feedViewport } from "./scenes.ts";
+import { captureExtensionPage, captureFeed, extensionPageScenes } from "./scenes.ts";
+import type { SceneGroup, SceneRecord, SmokeTheme, Viewport } from "./sceneTypes.ts";
+import { feedViewport } from "./sceneTypes.ts";
 import { captureStoreScenes, storeViewport } from "./storeScenes.ts";
 
 interface SmokeOptions {
