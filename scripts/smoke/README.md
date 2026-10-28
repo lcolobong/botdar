@@ -33,7 +33,7 @@ Every feed scene also has a hover capture (`hover` for the `feed` scene, `<scene
 others) with a badge hovered and the card open. Every scene is captured at 2x in light and dark.
 Extension pages get `prefers-color-scheme` through Playwright's media emulation; feed fixtures
 additionally get `data-theme` on `<html>`, which is what the content script reads to pick the
-badge theme. The scene table lives in `fixtureServer.ts` (`smokeFeedScenes`); a scene that is
+badge theme. The scene table lives in `sceneTable.ts` (`smokeFeedScenes`); a scene that is
 expected to draw nothing carries a `note` that the manifest repeats.
 
 Feed fixtures are served over HTTPS under the real hostnames (`x.com`, `www.reddit.com`,
@@ -51,7 +51,7 @@ then `timeline.html`, then the first file, and falls back to the placeholder aut
 ### API fixture routes
 
 So that Tier 1 scoring runs in the captures, the server also answers the API requests the web
-apps make with recorded bodies (`apiFixtureRoutes` in `fixtureServer.ts`), for GET or POST, and
+apps make with recorded bodies (`apiFixtureRoutes` in `apiRoutes.ts`), for GET or POST, and
 returns 404 for every other API path:
 
 | Request                                                        | Body                                            |

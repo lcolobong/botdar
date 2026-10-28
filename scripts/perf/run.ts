@@ -16,8 +16,10 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { cpus, platform, release, tmpdir, totalmem } from "node:os";
 import { join, resolve } from "node:path";
 import type { BrowserContext, CDPSession, Page } from "playwright";
-import type { FixtureRoutes, FixtureServer, SmokeFeedScene } from "../smoke/fixtureServer.ts";
-import { fixtureUrl, smokeHostnames, startFixtureServer } from "../smoke/fixtureServer.ts";
+import type { FixtureRoutes, FixtureServer } from "../smoke/fixtureServer.ts";
+import { fixtureUrl, startFixtureServer } from "../smoke/fixtureServer.ts";
+import type { SmokeFeedScene } from "../smoke/sceneTable.ts";
+import { smokeHostnames } from "../smoke/sceneTable.ts";
 import { buildDir, flagValue, launchChrome, resolveExtensionId } from "../smoke/run.ts";
 import { perfHomeTimelinePath, redditFeedPosts } from "./generateFixtures.ts";
 import type { MeasureOptions, RunMetrics, RunResult } from "./measure.ts";
