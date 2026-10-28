@@ -10,25 +10,19 @@ import type { BadgeHandle } from "@/src/core/pipeline";
 import type { Settings } from "@/src/core/settings";
 import type { PostRef, Verdict } from "@/src/core/types";
 import { Badge, type BadgeProps } from "@/src/ui/Badge";
-import { HoverCard, type HoverCardProps } from "@/src/ui/HoverCard";
-import { createHoverController, type HoverController } from "@/src/ui/hoverController";
 import { shouldDrawBadge, type BadgeTier } from "@/src/ui/labels";
 import { kindOfPost, recordBadged } from "@/src/core/diagnostics";
-import { detectHostTheme, mountBadge, mountCard, type MountedUi } from "@/src/ui/mount";
-import { noReadCardProps } from "@/src/ui/noRead";
+import { detectHostTheme, mountBadge } from "@/src/ui/mount";
+import { CARD_ID, createHoverCardLayer, type HoverCardLayer } from "./hoverCard";
 import type { PlatformWiring, PostState, WireOptions } from "./wireTypes";
 
 export type { PlatformWiring, WireOptions } from "./wireTypes";
 
-export const CARD_ID = "botdar-card";
+export { CARD_ID } from "./hoverCard";
 
 export function wirePlatform(options: WireOptions): PlatformWiring {
   const states = new Map<Element, PostState>();
   const stateByBadgeHost = new Map<Element, PostState>();
-  let card: MountedUi | undefined;
-  let cardContainer: HTMLElement | undefined;
-  let openState: PostState | undefined;
-  let legendPending = true;
   let stopped = false;
 
   const theme = () => detectHostTheme(options.adapter.id);
@@ -50,9 +44,10 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
       paused: !options.config().tiers.t2,
       loading: state.loading,
       glyphOnlyAtCommentDensity: settings.redditCommentLabels === "glyph",
-      ...(openState === state ? { describedBy: CARD_ID } : {}),
-      onOpen: () => state.badge !== undefined && hover.requestOpen(state.badge.shadowHost),
-      onClose: () => hover.requestClose(),
+      ...(cardLayer.isOpen(state) ? { describedBy: CARD_ID } : {}),
+      onOpen: () =>
+        state.badge !== undefined && cardLayer.hover.requestOpen(state.badge.shadowHost),
+      onClose: () => cardLayer.hover.requestClose(),
     };
   };
 
@@ -64,8 +59,8 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
   };
 
   const unmountBadge = (state: PostState): void => {
-    if (openState === state) {
-      hover.closeNow();
+    if (cardLayer.isOpen(state)) {
+      cardLayer.hover.closeNow();
     }
     if (state.badge === undefined) {
       return;
@@ -117,130 +112,20 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
     } else if (!state.mounting) {
       mountBadgeFor(state);
     }
-    if (openState === state) {
-      renderCard(state);
+    if (cardLayer.isOpen(state)) {
+      cardLayer.renderCard(state);
     }
   };
 
   // MARK: - Hover card
 
-  const cardProps = (state: PostState, tier: BadgeTier): HoverCardProps => ({
-    id: CARD_ID,
-    opening: hover.openings(),
-    tier,
-    labelStyle: options.settings().labelStyle,
-    handle: `${options.handlePrefix}${state.post.ref.handle}`,
-    reasons: state.verdict.reasons,
-    ...(state.verdict.confidenceNote === undefined
-      ? {}
-      : { confidenceNote: state.verdict.confidenceNote }),
-    caveat: state.verdict.caveat,
-    ...noReadCardProps(state.verdict, state.handle),
-    loading: state.loading,
-    lowConfidence: state.verdict.lowConfidence,
-    showLegend: legendPending,
-    feedbackSent: state.feedback !== undefined,
-    onFeedback: () => void toggleFeedback(state),
-    onSettings: options.openSettings,
-  });
-
-  const renderCard = (state: PostState): void => {
-    const tier: BadgeTier | undefined = drawableTier(state.verdict);
-    if (cardContainer === undefined || tier === undefined) {
-      return;
-    }
-    render(h(HoverCard, cardProps(state, tier)), cardContainer);
-  };
-
-  const toggleFeedback = async (state: PostState): Promise<void> => {
-    if (state.feedback !== undefined) {
-      await options.removeFeedback(state.feedback.id);
-      state.feedback = undefined;
-    } else {
-      const { platform, handle } = state.post.ref;
-      const { tier, reasons, computedAt } = state.verdict;
-      state.feedback = await options.recordFeedback({
-        platform,
-        handle,
-        tier,
-        reasons: reasons.map((reason) => reason.text),
-        computedAt,
-      });
-    }
-    if (openState === state) {
-      renderCard(state);
-    }
-  };
-
-  const lookupWhileOpen = (state: PostState): void => {
-    if (!options.config().tiers.t2 || state.loading) {
-      return;
-    }
-    // The hover's render pass draws the badge and card right after this, already loading.
-    state.loading = true;
-    void state.handle.lookup().finally(() => {
-      state.loading = false;
-      renderBadge(state);
-      if (openState === state) {
-        renderCard(state);
-      }
-    });
-  };
-
-  const hover: HoverController = createHoverController({
-    render: (anchor) => {
-      const state: PostState | undefined = stateByBadgeHost.get(anchor);
-      if (state === undefined || card === undefined) {
-        return 0;
-      }
-      openState = state;
-      card.setTheme(theme());
-      card.setVisible(true);
-      // The lookup starts first so the card's first render already shows its checking state.
-      lookupWhileOpen(state);
-      renderCard(state);
-      renderBadge(state);
-      return cardContainer?.getBoundingClientRect().height ?? 0;
-    },
-    place: (placement) => {
-      if (card !== undefined) {
-        card.setPlacement(placement);
-        card.setVisible(true);
-      }
-    },
-    hide: () => {
-      const wasOpen: PostState | undefined = openState;
-      openState = undefined;
-      legendPending = false;
-      if (card !== undefined) {
-        card.setVisible(false);
-      }
-      if (wasOpen !== undefined) {
-        renderBadge(wasOpen);
-      }
-    },
-  });
-
-  // The card host is mounted once, hidden, so opening it later never waits on an async mount.
-  void mountCard(
-    options.ctx,
-    (container) => {
-      cardContainer = container;
-      const unbindCard: () => void = hover.bindCard(container);
-      return () => {
-        unbindCard();
-        render(null, container);
-      };
-    },
-    theme(),
-    options.shadowCss,
-  ).then((mounted) => {
-    if (stopped) {
-      mounted.remove();
-      return;
-    }
-    card = mounted;
-    mounted.setVisible(false);
+  const cardLayer: HoverCardLayer = createHoverCardLayer({
+    options,
+    theme,
+    badgeStateAt: (anchor) => stateByBadgeHost.get(anchor),
+    renderBadge,
+    drawableTier,
+    isStopped: () => stopped,
   });
 
   // MARK: - Wiring
@@ -288,12 +173,11 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
     },
     stop(): void {
       stopped = true;
-      hover.dispose();
+      cardLayer.hover.dispose();
       for (const element of [...states.keys()]) {
         this.release(element);
       }
-      card?.remove();
-      card = undefined;
+      cardLayer.removeCard();
     },
   };
 }

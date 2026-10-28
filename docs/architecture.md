@@ -107,7 +107,7 @@ botdar/
 │  │  ├─ persistedLookups.ts     # PersistedLookupStore: salted keys, read/write, sweep, clear (ADR-0025, ADR-0028)
 │  │  ├─ persistedLookups/       # schema.ts: stored-field checks, signal conversions, entry and index parsers
 │  ├─ platforms/
-│  │  ├─ x/        adapter, observer, dom, interceptor.main, parsers/, sources/, features, queryIds, threadReply, wire (+ wireTypes)
+│  │  ├─ x/        adapter, observer, dom, interceptor.main, parsers/, sources/, features, queryIds, threadReply, wire, wireTypes, hoverCard
 │  │  │             # parsers/graphqlUsers.ts re-exports parsers/graphql/: types, userFields, automatedLabel,
 │  │  │             #   posts, walk, ownerPosts, signals, aboutAccount
 │  │  ├─ reddit/   adapter, observer, dom, parsers/, sources/, features, oldReddit, threadReply
