@@ -4,7 +4,7 @@
  */
 import type { FixtureRoutes } from "../smoke/fixtureServer.ts";
 import type { SmokeFeedScene } from "../smoke/sceneTable.ts";
-import { perfHomeTimelinePath } from "./generateFixtures.ts";
+import { perfHomeTimelinePath } from "./fixtures/x.ts";
 
 export type Condition = "extension" | "bare";
 
