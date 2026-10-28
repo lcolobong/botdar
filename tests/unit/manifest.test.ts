@@ -19,6 +19,7 @@ const DOCUMENTED_HOST_PERMISSIONS: readonly string[] = [
   "https://old.reddit.com/*",
   "https://bsky.app/*",
   "https://news.ycombinator.com/*",
+  "https://www.youtube.com/*",
 ];
 
 const builtManifestMissing: boolean = !existsSync(MANIFEST_PATH);
@@ -79,6 +80,24 @@ describe("built manifest", () => {
       expect(manifest.browser_specific_settings?.gecko?.data_collection_permissions).toEqual({
         required: ["websiteContent"],
       });
+    },
+  );
+
+  it.skipIf(builtManifestMissing)(
+    "runs a content script on www.youtube.com only, whose innertube lookups are same-origin (ADR-0030)",
+    () => {
+      const manifest: {
+        content_scripts?: Array<{ matches?: string[] }>;
+        host_permissions?: string[];
+      } = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"));
+      const matches: string[] = (manifest.content_scripts ?? []).flatMap(
+        (script) => script.matches ?? [],
+      );
+      expect(matches).toContain("https://www.youtube.com/*");
+      const youTubeHosts: string[] = [...matches, ...(manifest.host_permissions ?? [])].filter(
+        (pattern) => pattern.includes("youtube") || pattern.includes("youtu.be"),
+      );
+      expect(new Set(youTubeHosts)).toEqual(new Set(["https://www.youtube.com/*"]));
     },
   );
 });

@@ -10,7 +10,7 @@ export default defineConfig({
   manifest: {
     name: "Botdar",
     description:
-      "A badge on each author on X, Reddit, Bluesky and Hacker News for patterns common in automated accounts. Nothing is sent to us.",
+      "A badge on each author on X, Reddit, Bluesky, Hacker News and YouTube for patterns common in automated accounts. Nothing sent to us.",
     icons: {
       16: "icon/16.png",
       32: "icon/32.png",
@@ -35,6 +35,9 @@ export default defineConfig({
       // The Hacker News Firebase API (hacker-news.firebaseio.com) needs no entry: it answers the
       // page's origin with access-control-allow-origin, so the content script reaches it as is.
       "https://news.ycombinator.com/*",
+      // YouTube's channel lookups go to the same origin's innertube API (/youtubei/v1/), so this one
+      // entry covers the comment pages and the lookups.
+      "https://www.youtube.com/*",
     ],
     browser_specific_settings: {
       gecko: {

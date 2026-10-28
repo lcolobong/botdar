@@ -249,7 +249,8 @@ export interface SignalSource {
   hoverOnly?: boolean;
 }
 
-export type BadgeDensity = "x" | "reddit-post" | "reddit-comment" | "bluesky" | "hackernews";
+export type BadgeDensity =
+  "x" | "reddit-post" | "reddit-comment" | "bluesky" | "hackernews" | "youtube";
 
 export interface PostRef {
   /** The post container (article, shreddit-post, shreddit-comment, Bluesky post). */
