@@ -104,6 +104,8 @@ botdar/
 │  │  │                          #   eviction), mainLookups + hoverLookups (Tier 2), lookupSources,
 │  │  │                          #   lookupStorage (ADR-0025 bridge), lookupStatus
 │  │  ├─ cache.ts  ratelimit.ts  settings.ts  messaging.ts  feedback.ts  relay.ts
+│  │  ├─ persistedLookups.ts     # PersistedLookupStore: salted keys, read/write, sweep, clear (ADR-0025, ADR-0028)
+│  │  ├─ persistedLookups/       # schema.ts: stored-field checks, signal conversions, entry and index parsers
 │  ├─ platforms/
 │  │  ├─ x/        adapter, observer, dom, interceptor.main, parsers/, sources/, features, queryIds, threadReply
 │  │  ├─ reddit/   adapter, observer, dom, parsers/, sources/, features, oldReddit, threadReply
