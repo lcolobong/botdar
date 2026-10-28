@@ -3,33 +3,21 @@ import { browser } from "wxt/browser";
 import { clearFeedback, exportFeedbackJson, listFeedback } from "@/src/core/feedback";
 import { sendRequest } from "@/src/core/messaging";
 import { LOOKUP_KEY_PREFIX, PersistedLookupStore } from "@/src/core/persistedLookups";
-import { platformIds } from "@/src/core/policy/defaults";
 import { defaultSettings, loadSettings, onSettingsChanged } from "@/src/core/settings";
-import type { LabelStyle, RedditCommentLabels, Settings } from "@/src/core/settings";
-import { Segmented } from "../controls/Segmented";
-import type { SegmentedOption } from "../controls/Segmented";
+import type { Settings } from "@/src/core/settings";
 import { Toggle } from "../controls/Toggle";
 import { downloadText } from "../download";
 import { Mark } from "../Mark";
 import { patchSettings } from "../patchSettings";
-import { PLATFORM_DOMAINS, PLATFORM_NAMES } from "../platforms";
 import { loadPolicyStatus, policyFetchedLine, policyVersionLine } from "../policyStatus";
 import type { PolicyStatus } from "../policyStatus";
 import { PRIVACY_SENTENCE } from "../popup/App";
+import { BadgesSection } from "./BadgesSection";
+import { DeveloperSection } from "./DeveloperSection";
+import { PlatformsSection } from "./PlatformsSection";
 
 export const FEEDBACK_FILE_NAME = "botdar-feedback.json";
 export const PRIVACY_URL = "https://lcolobong.github.io/botdar/privacy.html";
-
-const LABEL_STYLES: readonly SegmentedOption<LabelStyle>[] = [
-  { value: "plain", label: "Plain" },
-  { value: "sus", label: "Sus scale" },
-  { value: "icon", label: "Icon only" },
-];
-
-const REDDIT_COMMENT_LABELS: readonly SegmentedOption<RedditCommentLabels>[] = [
-  { value: "glyph", label: "Glyph only" },
-  { value: "label", label: "Glyph and label" },
-];
 
 const lookupStore: PersistedLookupStore = new PersistedLookupStore();
 /** How long "Cleared." stays up if no new lookup is stored first. */
@@ -150,22 +138,7 @@ export function App({ now = Date.now }: AppProps) {
         </span>
       </div>
 
-      <h2>Platforms</h2>
-      {platformIds.map((platform) => (
-        <div class="bd-row" key={platform}>
-          <div class="bd-row__text">
-            <p>{PLATFORM_NAMES[platform]}</p>
-            <span class="bd-caption">{PLATFORM_DOMAINS[platform]}</span>
-          </div>
-          <Toggle
-            checked={settings.platforms[platform]}
-            label={PLATFORM_NAMES[platform]}
-            onChange={(enabled) =>
-              update({ platforms: { ...settings.platforms, [platform]: enabled } })
-            }
-          />
-        </div>
-      ))}
+      <PlatformsSection settings={settings} update={update} />
 
       <h2>Lookups</h2>
       <div class="bd-row">
@@ -223,64 +196,9 @@ export function App({ now = Date.now }: AppProps) {
         </div>
       </div>
 
-      <h2>Badges</h2>
-      <div class="bd-row">
-        <div class="bd-row__text">
-          <p>Label style</p>
-          <span class="bd-caption">
-            Plain is the default. Sus scale swaps the words for internet lingo. Icon only drops the
-            words.
-          </span>
-        </div>
-        <Segmented
-          label="Label style"
-          options={LABEL_STYLES}
-          value={settings.labelStyle}
-          onChange={(labelStyle) => update({ labelStyle })}
-        />
-      </div>
-      <div class="bd-row">
-        <div class="bd-row__text">
-          <p>Show Likely human</p>
-          <span class="bd-caption">
-            A green badge on accounts that look ordinary. Turn it off for a quieter feed that only
-            marks accounts worth a look.
-          </span>
-        </div>
-        <Toggle
-          checked={settings.showLikelyHuman}
-          label="Show Likely human"
-          onChange={(showLikelyHuman) => update({ showLikelyHuman })}
-        />
-      </div>
-      <div class="bd-row">
-        <div class="bd-row__text">
-          <p>Labels in Reddit comments</p>
-          <span class="bd-caption">Glyph only keeps comment rows tidy.</span>
-        </div>
-        <Segmented
-          label="Labels in Reddit comments"
-          options={REDDIT_COMMENT_LABELS}
-          value={settings.redditCommentLabels}
-          onChange={(redditCommentLabels) => update({ redditCommentLabels })}
-        />
-      </div>
+      <BadgesSection settings={settings} update={update} />
 
-      <h2>Developer</h2>
-      <div class="bd-row">
-        <div class="bd-row__text">
-          <p>Diagnostics in the popup</p>
-          <span class="bd-caption">
-            Shows what Botdar found on the current page and lets you save its markup for a bug
-            report. Off is fine for everyday use.
-          </span>
-        </div>
-        <Toggle
-          checked={settings.developerMode}
-          label="Diagnostics in the popup"
-          onChange={(developerMode) => update({ developerMode })}
-        />
-      </div>
+      <DeveloperSection settings={settings} update={update} />
 
       <h2>Feedback</h2>
       <div class="bd-row">
