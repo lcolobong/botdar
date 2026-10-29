@@ -1,4 +1,5 @@
 import { h, render } from "preact";
+import type { FeedbackEntry } from "@/src/core/feedback";
 import type { Verdict } from "@/src/core/types";
 import { HoverCard, type HoverCardProps } from "@/src/ui/HoverCard";
 import { createHoverController, type HoverController } from "@/src/ui/hoverController";
@@ -36,6 +37,9 @@ export function createHoverCardLayer(context: HoverCardContext): HoverCardLayer 
   let cardContainer: HTMLElement | undefined;
   let openState: PostState | undefined;
   let legendPending = true;
+  // Feedback is about the account, so it is kept per handle for the page's lifetime: a second post
+  // by the same author, or the same post scrolled away and back, shows it as sent.
+  const feedbackByHandle = new Map<string, Promise<FeedbackEntry>>();
 
   const cardProps = (state: PostState, tier: BadgeTier): HoverCardProps => ({
     id: CARD_ID,
@@ -52,8 +56,8 @@ export function createHoverCardLayer(context: HoverCardContext): HoverCardLayer 
     loading: state.loading,
     lowConfidence: state.verdict.lowConfidence,
     showLegend: legendPending,
-    feedbackSent: state.feedback !== undefined,
-    onFeedback: () => void toggleFeedback(state),
+    feedbackSent: feedbackByHandle.has(state.post.ref.handle),
+    onFeedback: () => toggleFeedback(state),
     onSettings: options.openSettings,
   });
 
@@ -65,19 +69,32 @@ export function createHoverCardLayer(context: HoverCardContext): HoverCardLayer 
     render(h(HoverCard, cardProps(state, tier)), cardContainer);
   };
 
-  const toggleFeedback = async (state: PostState): Promise<void> => {
-    if (state.feedback !== undefined) {
-      await options.removeFeedback(state.feedback.id);
-      state.feedback = undefined;
+  // The sent state flips at once and the storage write follows; a removal waits on the write it undoes.
+  const toggleFeedback = (state: PostState): void => {
+    const { platform, handle } = state.post.ref;
+    const pending: Promise<FeedbackEntry> | undefined = feedbackByHandle.get(handle);
+    if (pending !== undefined) {
+      feedbackByHandle.delete(handle);
+      // A write that failed stored nothing, so there is nothing to remove.
+      void pending.then(
+        (entry) => options.removeFeedback(entry.id),
+        () => undefined,
+      );
     } else {
-      const { platform, handle } = state.post.ref;
       const { tier, reasons, computedAt } = state.verdict;
-      state.feedback = await options.recordFeedback({
+      const recording: Promise<FeedbackEntry> = options.recordFeedback({
         platform,
         handle,
         tier,
         reasons: reasons.map((reason) => reason.text),
         computedAt,
+      });
+      feedbackByHandle.set(handle, recording);
+      // A write that failed was never sent: the card offers the report again.
+      recording.catch(() => {
+        if (feedbackByHandle.get(handle) !== recording) return;
+        feedbackByHandle.delete(handle);
+        if (openState !== undefined) renderCard(openState);
       });
     }
     if (openState === state) {

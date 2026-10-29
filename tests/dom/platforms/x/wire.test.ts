@@ -268,6 +268,70 @@ describe("wirePlatform hover card", () => {
     }
   });
 
+  it("shows feedback as sent on every post by the same author", async () => {
+    await badgesSettled(3);
+    await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());
+    const maria: Element | undefined = timelineArticles().find(
+      (article) => toPostRef(article)?.ref.handle === "maria_dev",
+    );
+    if (maria === undefined) throw new Error("fixture post missing");
+    const secondPost: Element = maria.cloneNode(true) as Element;
+    secondPost.querySelectorAll(BADGE_ELEMENT_NAME).forEach((host) => host.remove());
+    secondPost.removeAttribute(BADGED_ATTRIBUTE);
+    maria.after(secondPost);
+    const secondRef: PostRef | undefined = toPostRef(secondPost);
+    if (secondRef === undefined) throw new Error("cloned post has no ref");
+    harness.wiring.attach(secondRef);
+    await badgesSettled(4);
+    const cardHost: HTMLElement | null = document.querySelector(CARD_ELEMENT_NAME);
+    const badgeIn = (post: Element): HTMLElement => {
+      const host: HTMLElement | null = post.querySelector(BADGE_ELEMENT_NAME);
+      if (host === null) throw new Error("post has no badge");
+      return host;
+    };
+
+    vi.useFakeTimers();
+    try {
+      badgeButton(badgeIn(maria)).dispatchEvent(new Event("mouseenter"));
+      await vi.advanceTimersByTimeAsync(150);
+      cardHost?.shadowRoot?.querySelector<HTMLButtonElement>(".bd-btn")?.click();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(cardHost?.shadowRoot?.querySelector(".bd-btn--sent")).not.toBeNull();
+      badgeButton(badgeIn(maria)).dispatchEvent(new Event("mouseleave"));
+      await vi.advanceTimersByTimeAsync(200);
+
+      badgeButton(badgeIn(secondPost)).dispatchEvent(new Event("mouseenter"));
+      await vi.advanceTimersByTimeAsync(150);
+      expect(cardHost?.style.getPropertyValue("--botdar-display")).toBe("block");
+      expect(cardHost?.shadowRoot?.querySelector(".bd-btn--sent")).not.toBeNull();
+      expect(harness.recordFeedback).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("offers the report again when storing it fails", async () => {
+    await badgesSettled(3);
+    await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());
+    const cardHost: HTMLElement | null = document.querySelector(CARD_ELEMENT_NAME);
+    const [, many] = badgeHosts();
+    if (cardHost === null || many === undefined) throw new Error("fixture missing");
+    harness.recordFeedback.mockRejectedValueOnce(new Error("storage quota"));
+
+    vi.useFakeTimers();
+    try {
+      badgeButton(many).dispatchEvent(new Event("mouseenter"));
+      await vi.advanceTimersByTimeAsync(150);
+      cardHost.shadowRoot?.querySelector<HTMLButtonElement>(".bd-btn")?.click();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(harness.recordFeedback).toHaveBeenCalledTimes(1);
+      expect(cardHost.shadowRoot?.querySelector(".bd-btn--sent")).toBeNull();
+      expect(cardHost.shadowRoot?.querySelector(".bd-btn")).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("keeps the card open when a click on its text takes the focus from the badge", async () => {
     await badgesSettled(3);
     await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());

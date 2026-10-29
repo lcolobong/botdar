@@ -141,7 +141,6 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
         unsubscribe: () => undefined,
         badge: undefined,
         badgeContainer: undefined,
-        feedback: undefined,
         mounting: false,
         released: false,
         loading: false,

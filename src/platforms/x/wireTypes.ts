@@ -41,5 +41,4 @@ export interface PostState {
   mounting: boolean;
   released: boolean;
   loading: boolean;
-  feedback: FeedbackEntry | undefined;
 }
