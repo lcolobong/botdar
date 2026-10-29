@@ -284,6 +284,29 @@ describe("wireOnSight on Reddit", () => {
     harness.dispose();
   });
 
+  it("keeps the source legend through the first opening's lookup, and only that opening", async () => {
+    const harness: Harness = await wire("comments.html");
+    const button: HTMLButtonElement = buttonOf(badgeFor("deal_scout_90210"));
+    const legend = (): Element | null | undefined =>
+      card().shadowRoot?.querySelector(".bd-card__legend");
+
+    button.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+    await vi.advanceTimersByTimeAsync(150);
+    expect(legend()).not.toBeNull();
+    await vi.waitFor(() =>
+      expect(card().shadowRoot?.querySelector('[aria-busy="true"]')).toBeNull(),
+    );
+    expect(legend()).not.toBeNull();
+
+    button.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
+    await vi.advanceTimersByTimeAsync(200);
+    button.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+    await vi.advanceTimersByTimeAsync(150);
+    expect(card().style.getPropertyValue("--botdar-display")).toBe("block");
+    expect(legend()).toBeNull();
+    harness.dispose();
+  });
+
   it("skips the lookup when Tier 2 is off", async () => {
     const harness: Harness = await wire("comments.html", { t2: false });
     buttonOf(badgeFor("mossy_teapot")).dispatchEvent(new MouseEvent("mouseenter"));
