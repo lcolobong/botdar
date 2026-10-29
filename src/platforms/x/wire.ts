@@ -2,8 +2,8 @@
  * Post → badge → hover card orchestration for one platform (docs/architecture.md, "Badge and hover
  * card mounting"). Each attached post gets a resolver handle and a badge that is drawn only for the
  * tiers the badge rules allow (docs/design.md); the single hover card follows the badge under the
- * pointer and triggers the Tier 2 lookup on open. Written against PlatformAdapter so Reddit and
- * Bluesky can copy the shape until it is hoisted into src/ui.
+ * pointer and triggers the Tier 2 lookup on open. The card is the shared layer in
+ * src/ui/hoverCardLayer.ts, given X's badge states, badge rules and "@" handles.
  */
 import { h, render } from "preact";
 import type { BadgeHandle } from "@/src/core/pipeline";
@@ -12,8 +12,8 @@ import type { PostRef, Verdict } from "@/src/core/types";
 import { Badge, type BadgeProps } from "@/src/ui/Badge";
 import { shouldDrawBadge, type BadgeTier } from "@/src/ui/labels";
 import { kindOfPost, recordBadged } from "@/src/core/diagnostics";
+import { createHoverCardLayer, isLookingUp, type HoverCardLayer } from "@/src/ui/hoverCardLayer";
 import { CARD_ID, detectHostTheme, mountBadge } from "@/src/ui/mount";
-import { createHoverCardLayer, type HoverCardLayer } from "./hoverCard";
 import type { PlatformWiring, PostState, WireOptions } from "./wireTypes";
 
 export type { PlatformWiring, WireOptions } from "./wireTypes";
@@ -41,12 +41,12 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
       lowConfidence: state.verdict.lowConfidence,
       paused: !options.config().tiers.t2,
       // The account's lookup status, not this post's: one lookup serves every post by the author.
-      loading: state.handle.lookupStatus() === "pending",
+      loading: isLookingUp(state),
       glyphOnlyAtCommentDensity: settings.redditCommentLabels === "glyph",
       ...(cardLayer.isOpen(state) ? { describedBy: CARD_ID } : {}),
       onOpen: () =>
-        state.badge !== undefined && cardLayer.hover.requestOpen(state.badge.shadowHost),
-      onClose: () => cardLayer.hover.requestClose(),
+        state.badge !== undefined && cardLayer.controller.requestOpen(state.badge.shadowHost),
+      onClose: () => cardLayer.controller.requestClose(),
     };
   };
 
@@ -59,7 +59,7 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
 
   const unmountBadge = (state: PostState): void => {
     if (cardLayer.isOpen(state)) {
-      cardLayer.hover.closeNow();
+      cardLayer.controller.closeNow();
     }
     if (state.badge === undefined) {
       return;
@@ -112,19 +112,26 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
       mountBadgeFor(state);
     }
     if (cardLayer.isOpen(state)) {
-      cardLayer.renderCard(state);
+      cardLayer.renderCard();
     }
   };
 
   // MARK: - Hover card
 
-  const cardLayer: HoverCardLayer = createHoverCardLayer({
-    options,
+  const cardLayer: HoverCardLayer<PostState> = createHoverCardLayer<PostState>({
+    ctx: options.ctx,
+    shadowCss: options.shadowCss,
     theme,
-    badgeStateAt: (anchor) => stateByBadgeHost.get(anchor),
-    renderBadge,
+    targetAt: (anchor) => stateByBadgeHost.get(anchor),
+    isTargetLive: (state) => !state.released,
     drawableTier,
-    isStopped: () => stopped,
+    cardHandle: (handle) => `${options.handlePrefix}${handle}`,
+    labelStyle: () => options.settings().labelStyle,
+    lookupsEnabled: () => options.config().tiers.t2,
+    renderBadge,
+    recordFeedback: options.recordFeedback,
+    removeFeedback: options.removeFeedback,
+    openSettings: options.openSettings,
   });
 
   // MARK: - Wiring
@@ -170,11 +177,10 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
     },
     stop(): void {
       stopped = true;
-      cardLayer.hover.dispose();
+      cardLayer.dispose();
       for (const element of [...states.keys()]) {
         this.release(element);
       }
-      cardLayer.removeCard();
     },
   };
 }
