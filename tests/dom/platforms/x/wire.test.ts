@@ -425,6 +425,49 @@ describe("wirePlatform hover card", () => {
     }
   });
 
+  it("draws Checking from the account's lookup, on every post by that author", async () => {
+    await badgesSettled(3);
+    await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());
+    const mila: Element | undefined = timelineArticles().find(
+      (article) => toPostRef(article)?.ref.handle === "mila48213907",
+    );
+    if (mila === undefined) throw new Error("fixture post missing");
+    const secondPost: Element = mila.cloneNode(true) as Element;
+    secondPost.querySelectorAll(BADGE_ELEMENT_NAME).forEach((host) => host.remove());
+    secondPost.removeAttribute(BADGED_ATTRIBUTE);
+    mila.after(secondPost);
+    const secondRef: PostRef | undefined = toPostRef(secondPost);
+    if (secondRef === undefined) throw new Error("cloned post has no ref");
+    harness.wiring.attach(secondRef);
+    await badgesSettled(4);
+    const badgeIn = (post: Element): HTMLElement => {
+      const host: HTMLElement | null = post.querySelector(BADGE_ELEMENT_NAME);
+      if (host === null) throw new Error("post has no badge");
+      return host;
+    };
+    let finish: (partial: PartialSignals | null) => void = () => undefined;
+    harness.lookup.mockImplementationOnce(
+      () => new Promise<PartialSignals | null>((resolvePartial) => (finish = resolvePartial)),
+    );
+
+    vi.useFakeTimers();
+    try {
+      badgeButton(badgeIn(mila)).dispatchEvent(new Event("mouseenter"));
+      await vi.advanceTimersByTimeAsync(150);
+      expect(badgeButton(badgeIn(mila)).getAttribute("aria-label")).toBe("Checking");
+      // Any redraw while the lookup runs, such as a settings change, draws the account's state.
+      harness.wiring.refresh();
+      expect(badgeButton(badgeIn(secondPost)).getAttribute("aria-label")).toBe("Checking");
+
+      finish(null);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(badgeButton(badgeIn(mila)).getAttribute("aria-label")).toBe("No read");
+      expect(badgeButton(badgeIn(secondPost)).getAttribute("aria-label")).toBe("No read");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("skips the lookup while Tier 2 is off", async () => {
     await badgesSettled(3);
     await vi.waitFor(() => expect(document.querySelector(CARD_ELEMENT_NAME)).not.toBeNull());

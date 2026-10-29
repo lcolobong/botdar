@@ -158,7 +158,8 @@ export async function wireBluesky(
     density: deps.adapter.badgeDensity,
     lowConfidence: entry.verdict.lowConfidence,
     paused: !config.tiers.t2,
-    loading: card.isLoadingFor(entry.post.element),
+    // The account's lookup status, not this post's: one lookup serves every post by the author.
+    loading: entry.handle.lookupStatus() === "pending",
     glyphOnlyAtCommentDensity: false,
     ...(card.isOpenFor(entry.post.element) ? { describedBy: CARD_ID } : {}),
     onOpen: () => {
