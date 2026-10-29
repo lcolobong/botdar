@@ -228,7 +228,7 @@ describe("wireBluesky", () => {
 
     expect(styleOf(badgeAfter("alice.example.com"))).toContain(SHADOW_CSS);
 
-    // The card mounts on first open.
+    // The card host is mounted up front; open the card to read its shadow root.
     badgeButton("alice.example.com").dispatchEvent(new MouseEvent("mouseenter"));
     await flush();
     await vi.advanceTimersByTimeAsync(200);

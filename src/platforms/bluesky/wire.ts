@@ -1,7 +1,7 @@
 /**
  * Orchestration for the Bluesky content script: effective config and settings in, the
- * AccountResolver over the adapter, one badge per attached post, one hover card, and the
- * subscriptions that keep every verdict and badge in step with policy and settings changes. The
+ * AccountResolver over the adapter, one badge per attached post, the shared hover card
+ * (src/ui/hoverCardLayer.ts), and the subscriptions that keep every verdict and badge in step with policy and settings changes. The
  * entrypoint passes the shadow-root stylesheet text it bundled; everything else external is
  * injected through WireDependencies so the flow is testable with a fake scorer under happy-dom.
  */
@@ -33,12 +33,12 @@ import type {
 } from "../../core/types";
 import { Badge } from "../../ui/Badge";
 import type { BadgeProps } from "../../ui/Badge";
+import { createHoverCardLayer, isLookingUp } from "../../ui/hoverCardLayer";
+import type { HoverCardLayer } from "../../ui/hoverCardLayer";
 import { shouldDrawBadge } from "../../ui/labels";
 import { CARD_ID, detectHostTheme, mountBadge } from "../../ui/mount";
 import type { MountedUi } from "../../ui/mount";
 import { createBlueskyAdapter } from "./adapter";
-import { createCardPresenter } from "./cardPresenter";
-import type { CardPresenter } from "./cardPresenter";
 
 const PLATFORM = "bluesky";
 /** Three hovered authors back to back; each lookup spends two tokens (getProfiles, getAuthorFeed). */
@@ -119,6 +119,7 @@ export async function wireBluesky(
   let weights: PlatformWeights = initialWeights;
   let settings: Settings = initialSettings;
   const entries = new Map<Element, BadgeEntry>();
+  const entryByHost = new Map<Element, BadgeEntry>();
   let stopObserving: (() => void) | undefined;
 
   const scorer: Scorer = (features, signals) =>
@@ -136,20 +137,22 @@ export async function wireBluesky(
     persistence: { store: new PersistedLookupStore(), enabled: () => settings.persistLookups },
   });
 
-  const card: CardPresenter = createCardPresenter({
+  const card: HoverCardLayer<BadgeEntry> = createHoverCardLayer<BadgeEntry>({
     ctx,
-    theme: () => detectHostTheme(PLATFORM),
     shadowCss,
+    theme: () => detectHostTheme(PLATFORM),
+    targetAt: (anchor) => entryByHost.get(anchor),
+    // A dropped post must not be redrawn: renderBadge would mount its badge again.
+    isTargetLive: (entry) => entries.get(entry.post.element) === entry,
+    drawableTier: (verdict) =>
+      shouldDrawBadge(verdict.tier, settings.showLikelyHuman) ? verdict.tier : undefined,
+    cardHandle: (handle) => `@${handle}`,
     labelStyle: () => settings.labelStyle,
-    showLikelyHuman: () => settings.showLikelyHuman,
     lookupsEnabled: () => config.tiers.t2,
+    renderBadge: (entry) => renderBadge(entry),
     recordFeedback: deps.recordFeedback,
     removeFeedback: deps.removeFeedback,
-    openOptionsPage: deps.openOptionsPage,
-    onBadgeStateChange: (element) => {
-      const entry: BadgeEntry | undefined = entries.get(element);
-      if (entry !== undefined) renderBadge(entry);
-    },
+    openSettings: deps.openOptionsPage,
   });
 
   const badgeProps = (entry: BadgeEntry, tier: BadgeProps["tier"]): BadgeProps => ({
@@ -158,19 +161,17 @@ export async function wireBluesky(
     density: deps.adapter.badgeDensity,
     lowConfidence: entry.verdict.lowConfidence,
     paused: !config.tiers.t2,
-    // The account's lookup status, not this post's: one lookup serves every post by the author.
-    loading: entry.handle.lookupStatus() === "pending",
+    loading: isLookingUp(entry),
     glyphOnlyAtCommentDensity: false,
-    ...(card.isOpenFor(entry.post.element) ? { describedBy: CARD_ID } : {}),
+    ...(card.isOpen(entry) ? { describedBy: CARD_ID } : {}),
     onOpen: () => {
-      if (entry.mounted !== undefined) {
-        card.open({ post: entry.post, handle: entry.handle, anchor: entry.mounted.shadowHost });
-      }
+      if (entry.mounted !== undefined) card.controller.requestOpen(entry.mounted.shadowHost);
     },
-    onClose: card.requestClose,
+    onClose: () => card.controller.requestClose(),
   });
 
   const unmountBadge = (entry: BadgeEntry): void => {
+    if (entry.mounted !== undefined) entryByHost.delete(entry.mounted.shadowHost);
     entry.mounted?.remove();
     entry.mounted = undefined;
     entry.container = undefined;
@@ -210,6 +211,7 @@ export async function wireBluesky(
       entry.mounting = undefined;
       entry.mounted = mounted;
       if (entries.get(entry.post.element) === entry) {
+        entryByHost.set(mounted.shadowHost, entry);
         recordBadged(kindOfPost(entry.post), entry.post.element);
         renderBadge(entry);
       } else {
@@ -236,7 +238,7 @@ export async function wireBluesky(
     entry.unsubscribe = handle.subscribe((verdict: Verdict) => {
       entry.verdict = verdict;
       renderBadge(entry);
-      if (card.isOpenFor(post.element)) card.refresh();
+      if (card.isOpen(entry)) card.renderCard();
     });
     entries.set(post.element, entry);
     renderBadge(entry);
@@ -252,13 +254,13 @@ export async function wireBluesky(
     element.removeAttribute(BADGED_ATTRIBUTE);
     entry.unsubscribe();
     resolver.detach(entry.post);
-    if (card.isOpenFor(element)) card.closeNow();
+    if (card.isOpen(entry)) card.controller.closeNow();
     unmountBadge(entry);
   };
 
   const renderAll = (): void => {
     for (const entry of entries.values()) renderBadge(entry);
-    card.refresh();
+    card.renderCard();
   };
 
   const applyConfig = (next: EffectivePlatformConfig): void => {
