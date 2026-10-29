@@ -35,7 +35,8 @@ import { Badge } from "../../ui/Badge";
 import type { BadgeProps } from "../../ui/Badge";
 import { createHoverCardLayer, isLookingUp } from "../../ui/hoverCardLayer";
 import type { HoverCardLayer } from "../../ui/hoverCardLayer";
-import { shouldDrawBadge } from "../../ui/labels";
+import { drawableTier as drawableTierUnderSettings } from "../../ui/labels";
+import type { BadgeTier } from "../../ui/labels";
 import { CARD_ID, detectHostTheme, mountBadge } from "../../ui/mount";
 import type { MountedUi } from "../../ui/mount";
 import { createBlueskyAdapter } from "./adapter";
@@ -137,6 +138,9 @@ export async function wireBluesky(
     persistence: { store: new PersistedLookupStore(), enabled: () => settings.persistLookups },
   });
 
+  const drawableTier = (verdict: Verdict): BadgeTier | undefined =>
+    config.enabled ? drawableTierUnderSettings(verdict, settings.showLikelyHuman) : undefined;
+
   const card: HoverCardLayer<BadgeEntry> = createHoverCardLayer<BadgeEntry>({
     ctx,
     shadowCss,
@@ -144,8 +148,7 @@ export async function wireBluesky(
     targetAt: (anchor) => entryByHost.get(anchor),
     // A dropped post must not be redrawn: renderBadge would mount its badge again.
     isTargetLive: (entry) => entries.get(entry.post.element) === entry,
-    drawableTier: (verdict) =>
-      shouldDrawBadge(verdict.tier, settings.showLikelyHuman) ? verdict.tier : undefined,
+    drawableTier,
     cardHandle: (handle) => `@${handle}`,
     labelStyle: () => settings.labelStyle,
     lookupsEnabled: () => config.tiers.t2,
@@ -178,8 +181,8 @@ export async function wireBluesky(
   };
 
   const renderBadge = (entry: BadgeEntry): void => {
-    const tier: Verdict["tier"] = entry.verdict.tier;
-    if (!config.enabled || !shouldDrawBadge(tier, settings.showLikelyHuman)) {
+    const tier: BadgeTier | undefined = drawableTier(entry.verdict);
+    if (tier === undefined) {
       unmountBadge(entry);
       return;
     }

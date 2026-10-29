@@ -51,3 +51,14 @@ export function glyphFor(tier: BadgeTier): Glyph {
 export function shouldDrawBadge(tier: VerdictTier, showLikelyHuman: boolean): boolean {
   return tier !== "typical" || showLikelyHuman;
 }
+
+/**
+ * The tier a verdict draws its badge (and hover card) under, or undefined when the current
+ * settings hide it. Wiring layers that also gate on a platform switch combine it with that switch.
+ */
+export function drawableTier(
+  verdict: { tier: VerdictTier },
+  showLikelyHuman: boolean,
+): BadgeTier | undefined {
+  return shouldDrawBadge(verdict.tier, showLikelyHuman) ? verdict.tier : undefined;
+}

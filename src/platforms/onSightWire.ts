@@ -21,7 +21,7 @@ import { onSettingsChanged } from "../core/settings";
 import type { PartialSignals, PlatformAdapter } from "../core/types";
 import { createHoverCardLayer } from "../ui/hoverCardLayer";
 import type { HoverCardLayer } from "../ui/hoverCardLayer";
-import { shouldDrawBadge } from "../ui/labels";
+import { drawableTier } from "../ui/labels";
 import type { HostTheme } from "../ui/mount";
 import { detectHostTheme } from "../ui/mount";
 import type { BadgeSlots } from "./onSight/badgeSlots";
@@ -88,8 +88,7 @@ export async function wireOnSight(
     targetAt: (host) => boundBadges?.slotAtHost(host),
     // A detached slot has no mounted badge left to redraw.
     isTargetLive: (slot) => slot.mounted !== null,
-    drawableTier: (verdict) =>
-      shouldDrawBadge(verdict.tier, runtime.settings.showLikelyHuman) ? verdict.tier : undefined,
+    drawableTier: (verdict) => drawableTier(verdict, runtime.settings.showLikelyHuman),
     cardHandle: platform.cardHandle,
     labelStyle: () => runtime.settings.labelStyle,
     lookupsEnabled: () => runtime.config.tiers.t2,

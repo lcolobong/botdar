@@ -1,4 +1,11 @@
-import { accessibleLabel, glyphFor, shouldDrawBadge, visibleLabel } from "@/src/ui/labels";
+import type { BadgeTier } from "@/src/ui/labels";
+import {
+  accessibleLabel,
+  drawableTier,
+  glyphFor,
+  shouldDrawBadge,
+  visibleLabel,
+} from "@/src/ui/labels";
 
 describe("badge labels", () => {
   it("maps every drawn tier to plain and sus wording", () => {
@@ -42,5 +49,13 @@ describe("badge labels", () => {
     expect(shouldDrawBadge("typical", false)).toBe(false);
     expect(shouldDrawBadge("typical", true)).toBe(true);
     expect(shouldDrawBadge("many", false)).toBe(true);
+  });
+
+  it("returns the verdict's tier unless Likely human is hidden", () => {
+    const tiers: BadgeTier[] = ["many", "some", "declared", "typical", "unknown"];
+    for (const tier of tiers) {
+      expect(drawableTier({ tier }, true)).toBe(tier);
+      expect(drawableTier({ tier }, false)).toBe(tier === "typical" ? undefined : tier);
+    }
   });
 });

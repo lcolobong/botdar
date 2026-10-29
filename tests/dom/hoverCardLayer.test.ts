@@ -7,7 +7,7 @@ import type { BadgeHandle, LookupStatus } from "@/src/core/pipeline";
 import type { Verdict, VerdictTier } from "@/src/core/types";
 import { createHoverCardLayer, isLookingUp } from "@/src/ui/hoverCardLayer";
 import type { HoverCardLayer, HoverCardTarget } from "@/src/ui/hoverCardLayer";
-import { shouldDrawBadge } from "@/src/ui/labels";
+import { drawableTier } from "@/src/ui/labels";
 import type { BadgeTier } from "@/src/ui/labels";
 import { CARD_ELEMENT_NAME } from "@/src/ui/mount";
 import { fakeReason } from "../fakeReasons";
@@ -110,8 +110,7 @@ function makeHarness(targets: FakeTarget[]): Harness {
     theme: () => "dark",
     targetAt: (anchor) => targets.find((target) => target.badgeHost === anchor),
     isTargetLive: (target) => target.attached,
-    drawableTier: (verdict): BadgeTier | undefined =>
-      shouldDrawBadge(verdict.tier, showLikelyHuman.value) ? verdict.tier : undefined,
+    drawableTier: (verdict): BadgeTier | undefined => drawableTier(verdict, showLikelyHuman.value),
     cardHandle: (handle) => `u/${handle}`,
     labelStyle: () => "plain",
     lookupsEnabled: () => lookupsOn.value,
