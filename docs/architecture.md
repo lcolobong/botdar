@@ -373,13 +373,17 @@ adopts (`src/ui/sharedStyles.ts`); only the host layout rules go through WXT's `
 `:host` reset. Where adoption is unavailable or refused, a root gets a `<style>` copy. The hover card
 is one singleton `botdar-card` on `document.body`, positioned from `getBoundingClientRect` and flipped at
 viewport edges; opens after 150 ms hover or on focus (`<button aria-describedby>`), closes 200 ms after
-leaving both badge and card. On X, Bluesky and YouTube Tier 2 fires on open; on Reddit and Hacker News it has normally run on
-sight already and the open is a cache hit. Every tier draws a badge (ADR-0020); only Likely human can be
+leaving both badge and card. `src/ui/hoverCardLayer.ts` owns that card for every platform: the host,
+the controller, the source legend (shown through the first opening only), the feedback toggle (kept per
+account for the page's lifetime) and the render; a wiring passes in how a badge host maps to its post,
+which tiers it draws, the handle's display form and the theme. On X, Bluesky and YouTube Tier 2 fires
+when the card shows, so a pointer that only passes over a badge spends no request; on Reddit and Hacker
+News it has normally run on sight already and the open is a cache hit. Every tier draws a badge (ADR-0020); only Likely human can be
 hidden, by the "Show Likely human" setting. While the account's lookup is queued or running
 (`BadgeHandle.lookupStatus()` is `pending`) an unknown badge reads "Checking" and the glyph pulses,
 except on Reddit and Hacker News, where every waiting badge but the hovered one holds a still, dimmed glyph
 (`stillWhileLoading`); the card shows the same loading state and re-renders when the lookup settles. A No read
-card takes its explanation from the lookup status (`src/ui/noRead.ts`), shared by the three wirings. All
+card takes its explanation from the lookup status (`src/ui/noRead.ts`). All
 timers and observers register on `ctx` so an extension update invalidates cleanly. WXT registers one
 invalidation listener per UI and drops its unsubscribe; `mount.ts` keeps it and releases it when the
 badge is removed, so a removed post is not kept alive by the context.
