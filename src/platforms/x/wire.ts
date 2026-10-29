@@ -40,7 +40,8 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
       density: options.adapter.badgeDensity,
       lowConfidence: state.verdict.lowConfidence,
       paused: !options.config().tiers.t2,
-      loading: state.loading,
+      // The account's lookup status, not this post's: one lookup serves every post by the author.
+      loading: state.handle.lookupStatus() === "pending",
       glyphOnlyAtCommentDensity: settings.redditCommentLabels === "glyph",
       ...(cardLayer.isOpen(state) ? { describedBy: CARD_ID } : {}),
       onOpen: () =>
@@ -143,7 +144,6 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
         badgeContainer: undefined,
         mounting: false,
         released: false,
-        loading: false,
       };
       state.unsubscribe = handle.subscribe((verdict) => {
         state.verdict = verdict;

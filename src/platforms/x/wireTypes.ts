@@ -40,5 +40,4 @@ export interface PostState {
   badgeContainer: HTMLElement | undefined;
   mounting: boolean;
   released: boolean;
-  loading: boolean;
 }

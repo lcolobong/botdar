@@ -1,7 +1,7 @@
 /**
  * The single hover card for the Bluesky feed: mounted once on the body, driven by the shared hover
  * controller, and rendered from whichever badge the pointer is on. Showing the card is what
- * triggers the Tier 2 lookup, so the card owns the loading state and tells the badge to redraw.
+ * triggers the Tier 2 lookup, so the card tells the badge to redraw when it starts and settles.
  */
 import { h, render } from "preact";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
@@ -45,7 +45,6 @@ export interface CardPresenter {
   requestClose: () => void;
   closeNow: () => void;
   isOpenFor: (element: Element) => boolean;
-  isLoadingFor: (element: Element) => boolean;
   /** Re-renders when the verdict, settings or config behind an open card changed. */
   refresh: () => void;
   dispose: () => void;
@@ -56,7 +55,6 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
   let current: CardTarget | undefined;
   let container: HTMLElement | undefined;
   let card: MountedUi | undefined;
-  let lookupPending = false;
   // Cleared when the first opening closes, so the lookup landing while the card is open keeps it.
   let legendPending = true;
   /** The post whose card is on screen; the controller only knows once its show pass has returned. */
@@ -107,7 +105,7 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
       ...(verdict.confidenceNote === undefined ? {} : { confidenceNote: verdict.confidenceNote }),
       caveat: verdict.caveat,
       ...noReadCardProps(verdict, target.handle),
-      loading: lookupPending,
+      loading: target.handle.lookupStatus() === "pending",
       lowConfidence: verdict.lowConfidence,
       showLegend: legendPending,
       feedbackSent: feedbackIdByHandle.has(target.post.ref.handle),
@@ -166,16 +164,15 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
       options.shadowCss,
     );
 
+  // Every opening asks; the resolver shares a lookup already running for the account rather than
+  // repeating it. The show pass redraws the badge right after this, already loading.
   const startLookup = (target: CardTarget): void => {
-    if (!options.lookupsEnabled() || lookupPending) {
+    if (!options.lookupsEnabled()) {
       return;
     }
-    lookupPending = true;
-    notifyBadge();
     void target.handle.lookup().finally(() => {
-      lookupPending = false;
       renderCurrent();
-      notifyBadge();
+      options.onBadgeStateChange(target.post.element);
     });
   };
 
@@ -199,7 +196,6 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
     },
     closeNow: controller.closeNow,
     isOpenFor: (element: Element): boolean => shownFor === element,
-    isLoadingFor: (element: Element): boolean => lookupPending && current?.post.element === element,
     refresh: renderCurrent,
     dispose: (): void => {
       controller.dispose();

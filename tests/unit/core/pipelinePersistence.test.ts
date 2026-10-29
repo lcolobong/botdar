@@ -239,6 +239,45 @@ describe("AccountResolver while a storage read is in flight", () => {
     expect(handle.lookupStatus()).toBe("off");
   });
 
+  it("reads pending while storage is read, and settled by the rescore a storage hit makes", async () => {
+    const store = new PersistedLookupStore();
+    await store.write("x", "someone", { followers: 99 });
+    const read = store.read.bind(store);
+    const waiting: Array<() => void> = [];
+    vi.spyOn(store, "read").mockImplementation(
+      (...args) => new Promise((resolve) => waiting.push(() => resolve(read(...args)))),
+    );
+    const { resolver, resolve } = makeHarness(true, { store });
+    const handle = resolver.attach(post());
+    const statusesHeard: string[] = [];
+    handle.subscribe(() => statusesHeard.push(handle.lookupStatus()));
+
+    const lookup: Promise<void> = handle.lookup();
+    expect(handle.lookupStatus()).toBe("pending");
+    waiting.splice(0).forEach((resume) => resume());
+    await lookup;
+
+    expect(resolve).not.toHaveBeenCalled();
+    expect(statusesHeard.at(-1)).toBe("delivered");
+    expect(handle.lookupStatus()).toBe("delivered");
+  });
+
+  it("reads pending through a storage miss and the fetch after it", async () => {
+    const { store, release } = slowStore();
+    const { resolver, resolve } = makeHarness(true, { store });
+    const handle = resolver.attach(post());
+    const statusesHeard: string[] = [];
+    handle.subscribe(() => statusesHeard.push(handle.lookupStatus()));
+
+    const lookup: Promise<void> = handle.lookup();
+    expect(handle.lookupStatus()).toBe("pending");
+    release();
+    await lookup;
+
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(statusesHeard.at(-1)).toBe("delivered");
+  });
+
   it("does not fetch when the resolver is disposed during the read", async () => {
     const { store, release } = slowStore();
     const { resolver, resolve } = makeHarness(true, { store });

@@ -53,7 +53,7 @@ export function createHoverCardLayer(context: HoverCardContext): HoverCardLayer 
       : { confidenceNote: state.verdict.confidenceNote }),
     caveat: state.verdict.caveat,
     ...noReadCardProps(state.verdict, state.handle),
-    loading: state.loading,
+    loading: state.handle.lookupStatus() === "pending",
     lowConfidence: state.verdict.lowConfidence,
     showLegend: legendPending,
     feedbackSent: feedbackByHandle.has(state.post.ref.handle),
@@ -103,13 +103,13 @@ export function createHoverCardLayer(context: HoverCardContext): HoverCardLayer 
   };
 
   const lookupWhileOpen = (state: PostState): void => {
-    if (!options.config().tiers.t2 || state.loading) {
+    if (!options.config().tiers.t2) {
       return;
     }
-    // The hover's render pass draws the badge and card right after this, already loading.
-    state.loading = true;
+    // Every opening asks; the resolver shares a lookup already running for the account rather than
+    // repeating it. The hover's render pass draws the badge and card right after this, already
+    // loading.
     void state.handle.lookup().finally(() => {
-      state.loading = false;
       renderBadge(state);
       if (openState === state) {
         renderCard(state);
