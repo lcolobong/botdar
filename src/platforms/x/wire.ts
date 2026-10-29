@@ -10,7 +10,7 @@ import type { BadgeHandle } from "@/src/core/pipeline";
 import type { Settings } from "@/src/core/settings";
 import type { PostRef, Verdict } from "@/src/core/types";
 import { Badge, type BadgeProps } from "@/src/ui/Badge";
-import { shouldDrawBadge, type BadgeTier } from "@/src/ui/labels";
+import { drawableTier as drawableTierUnderSettings, type BadgeTier } from "@/src/ui/labels";
 import { kindOfPost, recordBadged } from "@/src/core/diagnostics";
 import { createHoverCardLayer, isLookingUp, type HoverCardLayer } from "@/src/ui/hoverCardLayer";
 import { CARD_ID, detectHostTheme, mountBadge } from "@/src/ui/mount";
@@ -26,8 +26,8 @@ export function wirePlatform(options: WireOptions): PlatformWiring {
   const theme = () => detectHostTheme(options.adapter.id);
 
   const drawableTier = (verdict: Verdict): BadgeTier | undefined =>
-    options.config().enabled && shouldDrawBadge(verdict.tier, options.settings().showLikelyHuman)
-      ? verdict.tier
+    options.config().enabled
+      ? drawableTierUnderSettings(verdict, options.settings().showLikelyHuman)
       : undefined;
 
   // MARK: - Badge
