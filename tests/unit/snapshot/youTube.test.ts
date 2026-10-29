@@ -36,6 +36,16 @@ describe("anonymizeSnapshot on YouTube markup", () => {
     );
   });
 
+  it("measures a handle in characters, so two letters outside the BMP are still too short", () => {
+    // Each of these letters is two UTF-16 units; by length they would count as four characters.
+    expect(youTubeHandles('<a href="/@\u{1D49C}\u{1D4B7}">x</a>')).toEqual(new Set());
+    expect(youTubeHandles('<a href="/@\u{1D49C}\u{1D4B7}\u{1D4B8}">x</a>')).toEqual(
+      new Set(["\u{1D49C}\u{1D4B7}\u{1D4B8}"]),
+    );
+    // Emoji are not handle characters at all, so a two-emoji name is never collected.
+    expect(youTubeHandles('<a href="/@\u{1F600}\u{1F600}">x</a>')).toEqual(new Set());
+  });
+
   it("replaces every @handle, in any case and script, in links, labels, text and mentions", () => {
     for (const real of ["BBCNews", "LarryH-h6q", "Ασσουρμπανιπάλ", "%CE%91", "zk8ed4kd2b"]) {
       expect(result.html).not.toContain(real);
