@@ -2,6 +2,7 @@ import { useState } from "preact/hooks";
 import { sendRequest } from "@/src/core/messaging";
 import { policyFetchedLine, policyVersionLine } from "@/src/ui/policyStatus";
 import type { PolicyStatus } from "@/src/ui/policyStatus";
+import { SettingsRow } from "./SettingsRow";
 
 export interface PolicySectionProps {
   status: PolicyStatus;
@@ -27,15 +28,11 @@ export function PolicySection({ status, now, reload }: PolicySectionProps) {
   return (
     <>
       <h2>Policy</h2>
-      <div class="bd-row">
-        <div class="bd-row__text">
-          <p>{policyVersionLine(status)}</p>
-          <span class="bd-caption">{policyFetchedLine(status, now())}</span>
-        </div>
+      <SettingsRow title={policyVersionLine(status)} caption={policyFetchedLine(status, now())}>
         <button type="button" class="bd-btn" disabled={checking} onClick={checkPolicyNow}>
           Check now
         </button>
-      </div>
+      </SettingsRow>
     </>
   );
 }

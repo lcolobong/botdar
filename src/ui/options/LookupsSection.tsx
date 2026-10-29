@@ -3,6 +3,8 @@ import { browser } from "wxt/browser";
 import { LOOKUP_KEY_PREFIX } from "@/src/core/persistedLookups";
 import { Toggle } from "@/src/ui/controls/Toggle";
 import type { SettingsSectionProps } from "./sectionProps";
+import { ConfirmButtons } from "./ConfirmButtons";
+import { SettingsRow } from "./SettingsRow";
 
 /** How long "Cleared." stays up if no new lookup is stored first. */
 const CLEARED_CAPTION_MS = 5000;
@@ -56,49 +58,40 @@ export function LookupsSection({ settings, update, clearLookupStore }: LookupsSe
   return (
     <>
       <h2>Lookups</h2>
-      <div class="bd-row">
-        <div class="bd-row__text">
-          <p>Conservative mode</p>
-          <span class="bd-caption">
-            Use only what the page already shows. More badges will read "No read".
-          </span>
-        </div>
+      <SettingsRow
+        title="Conservative mode"
+        caption={'Use only what the page already shows. More badges will read "No read".'}
+      >
         <Toggle
           checked={settings.conservativeMode}
           label="Conservative mode"
           onChange={(conservativeMode) => update({ conservativeMode })}
         />
-      </div>
+      </SettingsRow>
 
-      <div class="bd-row">
-        <div class="bd-row__text">
-          <p>Remember lookups for 7 days</p>
-          <span class="bd-caption">
+      <SettingsRow
+        title="Remember lookups for 7 days"
+        caption={
+          <>
             Keeps what a lookup found on this device so the same account is not fetched again. It
             stores no names or handles in readable form and never leaves this device.
-          </span>
-        </div>
+          </>
+        }
+      >
         <Toggle
           checked={settings.persistLookups}
           label="Remember lookups for 7 days"
           onChange={(persistLookups) => update({ persistLookups })}
         />
-      </div>
-      <div class="bd-row">
-        <div class="bd-row__text">
-          <p>Clear cached lookups</p>
-          <span class="bd-caption">{LOOKUPS_CLEAR_CAPTIONS[lookupsClear]}</span>
-        </div>
+      </SettingsRow>
+      <SettingsRow title="Clear cached lookups" caption={LOOKUPS_CLEAR_CAPTIONS[lookupsClear]}>
         <div class="bd-row__actions">
           {lookupsClear === "confirming" ? (
-            <>
-              <button type="button" class="bd-btn" onClick={() => setLookupsClear("idle")}>
-                Cancel
-              </button>
-              <button type="button" class="bd-btn bd-btn--danger" onClick={clearLookups}>
-                Confirm clear cache
-              </button>
-            </>
+            <ConfirmButtons
+              confirmLabel="Confirm clear cache"
+              onCancel={() => setLookupsClear("idle")}
+              onConfirm={clearLookups}
+            />
           ) : (
             <button
               type="button"
@@ -109,7 +102,7 @@ export function LookupsSection({ settings, update, clearLookupStore }: LookupsSe
             </button>
           )}
         </div>
-      </div>
+      </SettingsRow>
     </>
   );
 }
