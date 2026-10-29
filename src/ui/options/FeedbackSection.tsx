@@ -1,6 +1,8 @@
 import { useState } from "preact/hooks";
 import { clearFeedback, exportFeedbackJson } from "@/src/core/feedback";
 import { downloadText } from "@/src/ui/download";
+import { ConfirmButtons } from "./ConfirmButtons";
+import { SettingsRow } from "./SettingsRow";
 
 export const FEEDBACK_FILE_NAME = "botdar-feedback.json";
 
@@ -32,25 +34,21 @@ export function FeedbackSection({ feedbackCount, reload }: FeedbackSectionProps)
   return (
     <>
       <h2>Feedback</h2>
-      <div class="bd-row">
-        <div class="bd-row__text">
-          <p>{feedbackCountLine(feedbackCount)}</p>
-          <span class="bd-caption">
-            {confirmingClear
-              ? "This removes every report from this device."
-              : "Export is a JSON file you can attach to a bug report."}
-          </span>
-        </div>
+      <SettingsRow
+        title={feedbackCountLine(feedbackCount)}
+        caption={
+          confirmingClear
+            ? "This removes every report from this device."
+            : "Export is a JSON file you can attach to a bug report."
+        }
+      >
         <div class="bd-row__actions">
           {confirmingClear ? (
-            <>
-              <button type="button" class="bd-btn" onClick={() => setConfirmingClear(false)}>
-                Cancel
-              </button>
-              <button type="button" class="bd-btn bd-btn--danger" onClick={confirmClear}>
-                Confirm clear
-              </button>
-            </>
+            <ConfirmButtons
+              confirmLabel="Confirm clear"
+              onCancel={() => setConfirmingClear(false)}
+              onConfirm={confirmClear}
+            />
           ) : (
             <>
               <button
@@ -72,7 +70,7 @@ export function FeedbackSection({ feedbackCount, reload }: FeedbackSectionProps)
             </>
           )}
         </div>
-      </div>
+      </SettingsRow>
     </>
   );
 }
