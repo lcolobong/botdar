@@ -3,12 +3,12 @@
  * lives here so a markup change is a one-file fix (docs/architecture.md, "X", Tier 0). X's class
  * names are hashed and rotate; only `data-testid` attributes, link hrefs and visible text are read.
  */
+import { BADGED_ATTRIBUTE, UNBADGED } from "@/src/core/botdarMarks";
 import type { PartialSignals, PostRef } from "@/src/core/types";
 
 export const POST_SELECTOR = 'article[data-testid="tweet"]';
-/** Marked by the wiring layer once a badge is mounted, so later passes skip the post at selector level. */
-export const BADGED_ATTRIBUTE = "data-botdar";
-export const UNBADGED_POST_SELECTOR = `${POST_SELECTOR}:not([${BADGED_ATTRIBUTE}])`;
+export { BADGED_ATTRIBUTE };
+export const UNBADGED_POST_SELECTOR = `${POST_SELECTOR}${UNBADGED}`;
 
 const USER_NAME_SELECTOR = '[data-testid="User-Name"]';
 const PROFILE_LINK_SELECTOR = 'a[href^="/"]';

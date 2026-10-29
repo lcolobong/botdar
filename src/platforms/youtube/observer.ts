@@ -17,6 +17,7 @@
  * whole address, so a timestamp or a playlist position on the same video changes nothing. On
  * navigation every badged comment is reported removed and the document is scanned again.
  */
+import { UNBADGED } from "../../core/botdarMarks";
 import type { ShouldYield, SliceScheduler } from "../../core/idleSlices";
 import { IDLE_TIMEOUT_MS, createSliceScheduler, drainQueue } from "../../core/idleSlices";
 import type { NearViewportGate } from "../../core/nearViewport";
@@ -41,8 +42,8 @@ export interface YouTubeCommentObserverOptions {
 
 /** The app's own event when it has moved to another page. */
 export const NAVIGATE_FINISH_EVENT = "yt-navigate-finish";
-/** `data-botdar` marks a comment whose badge mounted; the wiring sets it so a reinjected script skips it. */
-export const UNDISCOVERED_SELECTOR = `${COMMENT_SELECTOR}:not([data-botdar])`;
+/** `BADGED_ATTRIBUTE` marks a comment whose badge mounted; the wiring sets it so a reinjected script skips it. */
+export const UNDISCOVERED_SELECTOR = `${COMMENT_SELECTOR}${UNBADGED}`;
 /** The comment section; nodes added anywhere else (the player, tooltips) are never scanned. */
 const COMMENT_SECTION_SELECTOR = "ytd-comments";
 const WATCH_PATH = "/watch";

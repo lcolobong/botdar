@@ -8,6 +8,7 @@ import type { SnapshotExportResponse } from "./messaging.ts";
 import { onRequest } from "./messaging.ts";
 import { anonymizeSnapshot, anonymizeUrl, describeAnonymization } from "./snapshot/anonymize.ts";
 import type { AnonymizedSnapshot } from "./snapshot/anonymize.ts";
+import { OWN_MARKUP } from "./botdarMarks.ts";
 import { serializeDocument } from "./snapshot/serialize.ts";
 import type { PlatformId } from "./types.ts";
 
@@ -30,7 +31,7 @@ export function exportSnapshot(
   anonymize: boolean,
   now: number = Date.now(),
 ): SnapshotExportResponse {
-  const raw: string = serializeDocument(document);
+  const raw: string = serializeDocument(document, OWN_MARKUP);
   const date: string = new Date(now).toISOString().slice(0, 10);
   const anonymized: AnonymizedSnapshot | undefined = anonymize
     ? anonymizeSnapshot(raw, platform)

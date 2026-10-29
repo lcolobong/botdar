@@ -3,6 +3,7 @@
  * page, waiting for badges to mount, finding the badge to hover and waiting for its card to open.
  */
 import type { BrowserContext, Locator, Page } from "playwright";
+import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME } from "../../src/core/botdarMarks.ts";
 import type { SmokeTheme, Viewport } from "./sceneTypes.ts";
 
 export interface HoverTarget {
@@ -10,9 +11,9 @@ export interface HoverTarget {
   readonly name: string;
 }
 
-/** Match BADGE_ELEMENT_NAME and CARD_ELEMENT_NAME in src/ui/mount.ts; the scripts avoid WXT client code. */
-const badgeSelector = "botdar-badge";
-const cardSelector = "botdar-card";
+// botdarMarks.ts imports nothing, so the harness reads the host names without pulling in WXT client code.
+const badgeSelector: string = BADGE_ELEMENT_NAME;
+const cardSelector: string = CARD_ELEMENT_NAME;
 /**
  * The badge host lays out as a block, so hovering it lands on empty row space; the control inside
  * its open shadow root is what opens the card. Playwright selectors pierce open shadow roots.

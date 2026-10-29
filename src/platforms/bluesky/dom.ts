@@ -4,10 +4,8 @@
  * markup change is a one-file fix. The fixture at tests/fixtures/bluesky/html/feed.html mirrors
  * the assumed structure.
  */
+import { UNBADGED } from "../../core/botdarMarks";
 import type { PartialSignals, PostRef } from "../../core/types";
-
-/** Set on a post container once a badge was attached; the observer skips marked posts. */
-export const BOTDAR_MARK_ATTRIBUTE = "data-botdar";
 
 /**
  * Guess: feed rows and thread rows carry a test id whose suffix is the author's handle
@@ -20,7 +18,7 @@ export const POST_SELECTOR: string = POST_TEST_ID_PREFIXES.map(
 ).join(", ");
 
 export const UNMARKED_POST_SELECTOR: string = POST_TEST_ID_PREFIXES.map(
-  (prefix) => `div[data-testid^="${prefix}"]:not([${BOTDAR_MARK_ATTRIBUTE}])`,
+  (prefix) => `div[data-testid^="${prefix}"]${UNBADGED}`,
 ).join(", ");
 
 /** Guess: every link to an account is `/profile/<handle>`; the avatar, name and handle share it. */

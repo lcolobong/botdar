@@ -13,12 +13,10 @@ import { HoverCard } from "@/src/ui/HoverCard";
 import type { HoverController } from "@/src/ui/hoverController";
 import { createHoverController } from "@/src/ui/hoverController";
 import type { HostTheme, MountedUi } from "@/src/ui/mount";
-import { mountCard } from "@/src/ui/mount";
+import { CARD_ID, mountCard } from "@/src/ui/mount";
 import { noReadCardProps } from "@/src/ui/noRead";
 import { isLookingUp } from "./badgeSlots";
 import type { BadgeSlot, OnSightPlatform, OnSightRuntime } from "./types";
-
-export const CARD_ID = "botdar-card";
 
 /** What the card needs from the rest of the wiring when it mounts. */
 export interface OnSightCardContext {

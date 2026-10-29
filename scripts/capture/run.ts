@@ -23,6 +23,7 @@ import {
   anonymizeUrl,
   describeAnonymization,
 } from "../../src/core/snapshot/anonymize.ts";
+import { BADGE_ELEMENT_NAME, OWN_MARKUP } from "../../src/core/botdarMarks.ts";
 import { serializeDocument } from "../../src/core/snapshot/serialize.ts";
 import { flagValue } from "../smoke/run.ts";
 import { waitForBadges } from "../smoke/pageDriving.ts";
@@ -42,7 +43,7 @@ const countedSelectors: Readonly<Record<string, string>> = {
   "hacker news stories": "tr.athing.submission",
   "hacker news comments": "tr.athing:has(.comment)",
   "youtube comments": "ytd-comment-view-model",
-  "botdar-badge hosts": "botdar-badge",
+  [`${BADGE_ELEMENT_NAME} hosts`]: BADGE_ELEMENT_NAME,
 };
 
 interface CaptureOptions {
@@ -188,8 +189,11 @@ async function main(): Promise<void> {
 
   const recordedAt: string = new Date().toISOString().slice(0, 10);
   const counts: Record<string, number> = await countOnPage(page);
-  // The serializer is self-contained, so its source can run inside the page.
-  const rawHtml: string = await page.evaluate(`(${serializeDocument.toString()})(document)`);
+  // The serializer is self-contained, so its source can run inside the page; Botdar's markup goes
+  // in as a JSON argument.
+  const rawHtml: string = await page.evaluate(
+    `(${serializeDocument.toString()})(document, ${JSON.stringify(OWN_MARKUP)})`,
+  );
   mkdirSync(rawOutputDir, { recursive: true });
   const stem = `${options.platform}-${options.name}`;
   const rawPath: string = join(rawOutputDir, `${stem}-raw.html`);
