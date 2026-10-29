@@ -6,26 +6,33 @@
  * An entrypoint only calls wireOnSight with its platform and the shadow-root stylesheet text it
  * bundled; everything with a side effect is injectable so the wiring is testable against fixture
  * pages with a fake scorer. Its parts live in src/platforms/onSight/: the contracts in types.ts,
- * the runtime loading and real scorer in runtime.ts, the hover card in hoverCard.ts and the badge
- * slot lifecycle in badgeSlots.ts.
+ * the runtime loading and real scorer in runtime.ts and the badge slot lifecycle in badgeSlots.ts;
+ * the hover card is the shared layer in src/ui/hoverCardLayer.ts.
  */
 import { browser } from "wxt/browser";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import { TtlLruCache } from "../core/cache";
 import { PersistedLookupStore } from "../core/persistedLookups";
+import { recordFeedback, removeFeedback } from "../core/feedback";
 import { onRequest } from "../core/messaging";
 import { AccountResolver, TIER2_CACHE_CAPACITY, TIER2_CACHE_TTL_MS } from "../core/pipeline";
 import { RateLimiter } from "../core/ratelimit";
 import { onSettingsChanged } from "../core/settings";
 import type { PartialSignals, PlatformAdapter } from "../core/types";
+import { createHoverCardLayer } from "../ui/hoverCardLayer";
+import type { HoverCardLayer } from "../ui/hoverCardLayer";
+import { shouldDrawBadge } from "../ui/labels";
 import type { HostTheme } from "../ui/mount";
 import { detectHostTheme } from "../ui/mount";
 import type { BadgeSlots } from "./onSight/badgeSlots";
 import { createBadgeSlots } from "./onSight/badgeSlots";
-import type { OnSightCard } from "./onSight/hoverCard";
-import { mountOnSightCard } from "./onSight/hoverCard";
 import { loadOnSightRuntime, realScorer } from "./onSight/runtime";
-import type { OnSightPlatform, OnSightRuntime, WireOnSightOptions } from "./onSight/types";
+import type {
+  BadgeSlot,
+  OnSightPlatform,
+  OnSightRuntime,
+  WireOnSightOptions,
+} from "./onSight/types";
 
 export { loadOnSightRuntime } from "./onSight/runtime";
 export type {
@@ -71,16 +78,27 @@ export async function wireOnSight(
   });
   let stopObserving: (() => void) | null = null;
 
-  // The card mounts first and the badges are built on it; the card is then bound to the badges,
-  // before the feed is observed and so before any badge can be hovered.
-  const card: OnSightCard = await mountOnSightCard({
+  // The card is built first and the badges on it, so the card reaches the badges through this
+  // binding. It is set before the feed is observed, and so before any badge can be hovered.
+  let boundBadges: BadgeSlots | undefined = undefined;
+  const card: HoverCardLayer<BadgeSlot> = createHoverCardLayer<BadgeSlot>({
     ctx,
     shadowCss,
-    platform,
-    runtime: () => runtime,
     theme,
+    targetAt: (host) => boundBadges?.slotAtHost(host),
+    // A detached slot has no mounted badge left to redraw.
+    isTargetLive: (slot) => slot.mounted !== null,
+    drawableTier: (verdict) =>
+      shouldDrawBadge(verdict.tier, runtime.settings.showLikelyHuman) ? verdict.tier : undefined,
+    cardHandle: platform.cardHandle,
+    labelStyle: () => runtime.settings.labelStyle,
+    lookupsEnabled: () => runtime.config.tiers.t2,
+    renderBadge: (slot) => boundBadges?.renderBadge(slot),
+    recordFeedback,
+    removeFeedback,
     openSettings,
   });
+  await card.ready;
   const badges: BadgeSlots = createBadgeSlots({
     ctx,
     shadowCss,
@@ -91,7 +109,7 @@ export async function wireOnSight(
     card,
     looksUpOnSight,
   });
-  card.bindBadges(badges);
+  boundBadges = badges;
 
   // MARK: - Runtime changes
 
@@ -137,8 +155,7 @@ export async function wireOnSight(
     stopObserving?.();
     stopObserving = null;
     badges.detachAll();
-    card.controller.dispose();
-    card.remove();
+    card.dispose();
     resolver.dispose();
   };
   ctx.onInvalidated(dispose);
