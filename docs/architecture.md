@@ -121,7 +121,7 @@ botdar/
 │  │  └─ onSight/                # types, runtime (config load, real scorer), hoverCard, badgeSlots
 │  └─ ui/
 │     ├─ tokens.css  Badge.tsx  HoverCard.tsx  FeedbackButton.tsx  ConfidenceNote.tsx
-│     ├─ hoverController.ts  mount.ts
+│     ├─ hoverController.ts  hoverCardLayer.ts  mount.ts
 │     └─ popup/  options/  onboarding/
 ├─ policy/
 │  ├─ src/v1.json                # unsigned, human-edited

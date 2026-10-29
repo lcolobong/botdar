@@ -56,7 +56,7 @@ describe("createHoverController", () => {
   function setup(cardHeight = 180) {
     const anchor: HTMLButtonElement = document.createElement("button");
     document.body.append(anchor);
-    const render = vi.fn(() => cardHeight);
+    const render = vi.fn((): number | undefined => cardHeight);
     const hide = vi.fn();
     const place = vi.fn();
     const controller = createHoverController({ render, hide, place });
@@ -76,6 +76,25 @@ describe("createHoverController", () => {
     vi.advanceTimersByTime(1);
     expect(hide).toHaveBeenCalled();
     expect(controller.isOpen()).toBe(false);
+  });
+
+  it("stays closed when the render displays nothing, and waits out the delay again", () => {
+    const { anchor, render, hide, place, controller } = setup();
+    render.mockReturnValueOnce(undefined);
+    controller.requestOpen(anchor);
+    vi.advanceTimersByTime(150);
+    expect(controller.isOpen()).toBe(false);
+    expect(place).not.toHaveBeenCalled();
+    controller.closeNow();
+    expect(hide).not.toHaveBeenCalled();
+
+    const openingsBefore: number = controller.openings();
+    controller.requestOpen(anchor);
+    vi.advanceTimersByTime(149);
+    expect(render).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(1);
+    expect(controller.isOpen()).toBe(true);
+    expect(controller.openings()).toBe(openingsBefore + 1);
   });
 
   it("does not open when the pointer leaves before the delay", () => {
