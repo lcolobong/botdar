@@ -7,13 +7,13 @@
  * rewrites prose. Video and comment ids, channel ids, avatar paths and the session values the
  * innertube bodies carry are replaced too; display names and comment text are prose and stay.
  */
+import { NAME_THEN_DIGITS, fakeHandle, fakeId, stableHash } from "./fakeNames.ts";
 import {
-  NAME_THEN_DIGITS,
-  fakeHandle,
-  fakeId,
+  USER_PREFIX,
+  isAssignedCodeHandle,
   isHandleLongEnough,
-  stableHash,
-} from "./fakeNames.ts";
+  isUserPrefixedHandle,
+} from "../handleRules.ts";
 
 const LOWERCASE_A = 97;
 
@@ -33,7 +33,6 @@ const HANDLE_SOURCES: readonly RegExp[] = [
 ];
 /** The handle YouTube assigns a channel that never chose one: its name, "-" and a short code. */
 const ASSIGNED_SUFFIX = /^(.+)-([\p{Ll}\p{N}]{3,5})$/u;
-const USER_PREFIX_HANDLE = /^user-([a-z0-9]{8,})$/;
 
 function decoded(handle: string): string {
   try {
@@ -75,10 +74,13 @@ function fakeCode(code: string, seed: string): string {
 export function youTubeFakeHandle(handle: string, attempt: number): string {
   const lowercase: string = handle.toLowerCase();
   const seed: string = attempt === 0 ? lowercase : `${lowercase}#${attempt}`;
-  const userPrefixed: RegExpExecArray | null = USER_PREFIX_HANDLE.exec(lowercase);
-  if (userPrefixed !== null) return `user-${fakeId(seed, userPrefixed[1]?.length)}`;
-  const assigned: RegExpExecArray | null = ASSIGNED_SUFFIX.exec(handle);
-  if (assigned !== null && /\p{N}/u.test(assigned[2] ?? "")) {
+  if (isUserPrefixedHandle(handle)) {
+    return `${USER_PREFIX}${fakeId(seed, lowercase.length - USER_PREFIX.length)}`;
+  }
+  const assigned: RegExpExecArray | null = isAssignedCodeHandle(handle)
+    ? ASSIGNED_SUFFIX.exec(lowercase)
+    : null;
+  if (assigned !== null) {
     return `${fakeHandle(assigned[1] ?? "", "plain", attempt)}-${fakeCode(assigned[2] ?? "", seed)}`;
   }
   return fakeHandle(handle, NAME_THEN_DIGITS.test(handle) ? "nameDigits" : "plain", attempt);

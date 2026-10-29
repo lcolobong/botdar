@@ -3,7 +3,8 @@
  * Hacker News and YouTube read their handles in hackerNews.ts and youTube.ts; the rest are matched
  * here by the characters a handle may hold.
  */
-import { NAME_THEN_DIGITS, fakeHandle, isHandleLongEnough } from "./fakeNames.ts";
+import { isHandleLongEnough } from "../handleRules.ts";
+import { NAME_THEN_DIGITS, fakeHandle } from "./fakeNames.ts";
 import { hackerNewsHandles } from "./hackerNews.ts";
 import { youTubeFakeHandle, youTubeHandles } from "./youTube.ts";
 

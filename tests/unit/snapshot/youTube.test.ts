@@ -67,6 +67,16 @@ describe("anonymizeSnapshot on YouTube markup", () => {
     expect(result.html).toContain("news is news");
   });
 
+  it("keeps the name-and-code shape of an assigned handle written in capitals", () => {
+    expect(fakeHandleFor("LarryH-H6Q", "youtube")).toMatch(/^[a-z]+_[a-z]+\d{2}-[a-z]\d[a-z]$/);
+  });
+
+  it("treats a digits-only tail as a chosen handle, as the platform reader does", () => {
+    for (const chosen of ["club-007", "euro-2024"]) {
+      expect(fakeHandleFor(chosen, "youtube")).not.toMatch(/-[a-z0-9]{3,5}$/);
+    }
+  });
+
   it("replaces channel, video and comment ids, a reply keeping its thread's id", () => {
     for (const id of [
       "UCsK9xWRDlBucpXBkL9pHaww",
