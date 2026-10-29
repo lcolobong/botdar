@@ -1,6 +1,6 @@
 /**
  * The single hover card for the Bluesky feed: mounted once on the body, driven by the shared hover
- * controller, and rendered from whichever badge the pointer is on. Opening the card is what
+ * controller, and rendered from whichever badge the pointer is on. Showing the card is what
  * triggers the Tier 2 lookup, so the card owns the loading state and tells the badge to redraw.
  */
 import { h, render } from "preact";
@@ -120,6 +120,10 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
   const controller: HoverController = createHoverController({
     render: (): number => {
       shownFor = current?.post.element;
+      // Started when the card shows, after the open delay, not when the pointer reaches the badge:
+      // a pointer passing over a badge on its way down the feed spends no request. Started before
+      // the render so the card's first frame already shows its checking state.
+      if (current !== undefined) startLookup(current);
       renderCurrent();
       if (card !== undefined) {
         card.setTheme(options.theme());
@@ -184,7 +188,6 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
           return;
         }
         controller.requestOpen(target.anchor);
-        startLookup(target);
       });
     },
     requestClose: (): void => {
