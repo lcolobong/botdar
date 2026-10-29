@@ -14,11 +14,9 @@ import type { HoverCardProps } from "../../ui/HoverCard";
 import { createHoverController } from "../../ui/hoverController";
 import type { HoverCardPlacement, HoverController } from "../../ui/hoverController";
 import { shouldDrawBadge } from "../../ui/labels";
-import { mountCard } from "../../ui/mount";
+import { CARD_ID, mountCard } from "../../ui/mount";
 import { noReadCardProps } from "../../ui/noRead";
 import type { HostTheme, MountedUi } from "../../ui/mount";
-
-export const CARD_ID = "botdar-card";
 
 export interface CardTarget {
   post: PostRef;

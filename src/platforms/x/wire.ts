@@ -12,13 +12,11 @@ import type { PostRef, Verdict } from "@/src/core/types";
 import { Badge, type BadgeProps } from "@/src/ui/Badge";
 import { shouldDrawBadge, type BadgeTier } from "@/src/ui/labels";
 import { kindOfPost, recordBadged } from "@/src/core/diagnostics";
-import { detectHostTheme, mountBadge } from "@/src/ui/mount";
-import { CARD_ID, createHoverCardLayer, type HoverCardLayer } from "./hoverCard";
+import { CARD_ID, detectHostTheme, mountBadge } from "@/src/ui/mount";
+import { createHoverCardLayer, type HoverCardLayer } from "./hoverCard";
 import type { PlatformWiring, PostState, WireOptions } from "./wireTypes";
 
 export type { PlatformWiring, WireOptions } from "./wireTypes";
-
-export { CARD_ID } from "./hoverCard";
 
 export function wirePlatform(options: WireOptions): PlatformWiring {
   const states = new Map<Element, PostState>();

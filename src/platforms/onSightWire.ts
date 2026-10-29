@@ -27,7 +27,6 @@ import { mountOnSightCard } from "./onSight/hoverCard";
 import { loadOnSightRuntime, realScorer } from "./onSight/runtime";
 import type { OnSightPlatform, OnSightRuntime, WireOnSightOptions } from "./onSight/types";
 
-export { CARD_ID } from "./onSight/hoverCard";
 export { loadOnSightRuntime } from "./onSight/runtime";
 export type {
   OnSightPlatform,

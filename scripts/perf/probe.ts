@@ -5,6 +5,7 @@
  * deltas.
  */
 import type { Page } from "playwright";
+import { BADGE_ELEMENT_NAME } from "../../src/core/botdarMarks.ts";
 
 export interface ProbeState {
   readonly now: number;
@@ -36,8 +37,14 @@ const SETTLE_TIMEOUT_MS = 20_000;
 const SETTLE_POLL_MS = 100;
 const LONG_TASK_BLOCKING_MS = 50;
 
+interface ProbeOptions {
+  pollMs: number;
+  /** BADGE_ELEMENT_NAME, passed in because the probe cannot import it. */
+  badgeElementName: string;
+}
+
 /** Serialised into the page by addInitScript, so it must not reference anything outside itself. */
-function installProbe(pollMs: number): void {
+function installProbe({ pollMs, badgeElementName }: ProbeOptions): void {
   const longTasks: LongTask[] = [];
   new PerformanceObserver((list) => {
     for (const entry of list.getEntries()) {
@@ -46,9 +53,9 @@ function installProbe(pollMs: number): void {
   }).observe({ type: "longtask", buffered: true });
   // A Reddit badge mounted after an anchor inside a post's shadow root is invisible to a document query.
   const countBadges = (): number => {
-    let count: number = document.querySelectorAll("botdar-badge").length;
+    let count: number = document.querySelectorAll(badgeElementName).length;
     for (const host of document.querySelectorAll("shreddit-post, shreddit-comment")) {
-      count += host.shadowRoot?.querySelectorAll("botdar-badge").length ?? 0;
+      count += host.shadowRoot?.querySelectorAll(badgeElementName).length ?? 0;
     }
     return count;
   };
@@ -95,7 +102,8 @@ function installProbe(pollMs: number): void {
 
 /** Registers the probe to run in every document the page loads, before the page's own scripts. */
 export async function installProbeScript(page: Page): Promise<void> {
-  await page.addInitScript(installProbe, BADGE_POLL_MS);
+  const options: ProbeOptions = { pollMs: BADGE_POLL_MS, badgeElementName: BADGE_ELEMENT_NAME };
+  await page.addInitScript(installProbe, options);
 }
 
 export async function readProbe(page: Page): Promise<ProbeState> {

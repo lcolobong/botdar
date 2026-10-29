@@ -10,6 +10,7 @@
 
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import { createShadowRootUi } from "wxt/utils/content-script-ui/shadow-root";
+import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME } from "@/src/core/botdarMarks";
 import type { PlatformId } from "@/src/core/types";
 import type { SharedStyles } from "./sharedStyles";
 import { applySharedStyles, sharedStylesFor } from "./sharedStyles";
@@ -52,8 +53,10 @@ function placementControls(host: HTMLElement): Pick<MountedUi, "setPlacement" | 
   };
 }
 
-export const BADGE_ELEMENT_NAME = "botdar-badge";
-export const CARD_ELEMENT_NAME = "botdar-card";
+export { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME };
+
+/** The hover card's element id, which a badge's `aria-describedby` names; it reuses the host's name. */
+export const CARD_ID: string = CARD_ELEMENT_NAME;
 
 /**
  * Layout of the host elements themselves. These rules go into the shadow stylesheet right after

@@ -8,6 +8,7 @@
 import { h, render } from "preact";
 import { browser } from "wxt/browser";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
+import { BADGED_ATTRIBUTE } from "../../core/botdarMarks";
 import { TtlLruCache } from "../../core/cache";
 import { PersistedLookupStore } from "../../core/persistedLookups";
 import { kindOfPost, recordBadged } from "../../core/diagnostics.ts";
@@ -33,12 +34,11 @@ import type {
 import { Badge } from "../../ui/Badge";
 import type { BadgeProps } from "../../ui/Badge";
 import { shouldDrawBadge } from "../../ui/labels";
-import { detectHostTheme, mountBadge } from "../../ui/mount";
+import { CARD_ID, detectHostTheme, mountBadge } from "../../ui/mount";
 import type { MountedUi } from "../../ui/mount";
 import { createBlueskyAdapter } from "./adapter";
-import { CARD_ID, createCardPresenter } from "./cardPresenter";
+import { createCardPresenter } from "./cardPresenter";
 import type { CardPresenter } from "./cardPresenter";
-import { BOTDAR_MARK_ATTRIBUTE } from "./dom";
 
 const PLATFORM = "bluesky";
 const CACHE_CAPACITY = 500;
@@ -223,7 +223,7 @@ export async function wireBluesky(
       return;
     }
     const handle: BadgeHandle = resolver.attach(post);
-    post.element.setAttribute(BOTDAR_MARK_ATTRIBUTE, "1");
+    post.element.setAttribute(BADGED_ATTRIBUTE, "1");
     const entry: BadgeEntry = {
       post,
       handle,
@@ -249,7 +249,7 @@ export async function wireBluesky(
     }
     entries.delete(element);
     // Clearing the mark lets the observer rediscover the post if the platform is switched back on.
-    element.removeAttribute(BOTDAR_MARK_ATTRIBUTE);
+    element.removeAttribute(BADGED_ATTRIBUTE);
     entry.unsubscribe();
     resolver.detach(entry.post);
     if (card.isOpenFor(element)) card.closeNow();

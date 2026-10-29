@@ -6,6 +6,7 @@
  * the viewport (src/core/nearViewport.ts), in budgeted slices (src/core/idleSlices.ts), so a
  * thread of a thousand comments never blocks.
  */
+import { UNBADGED } from "../../core/botdarMarks";
 import type { ShouldYield, SliceScheduler } from "../../core/idleSlices";
 import { IDLE_TIMEOUT_MS, createSliceScheduler, drainQueue } from "../../core/idleSlices";
 import type { NearViewportGate } from "../../core/nearViewport";
@@ -26,8 +27,8 @@ export interface HackerNewsFeedObserverOptions {
 
 export { IDLE_TIMEOUT_MS };
 
-/** `data-botdar` marks a row whose badge mounted; the wiring sets it so a reinjected script skips it. */
-export const UNDISCOVERED_SELECTOR = `${FEED_ITEM_SELECTOR}:not([data-botdar])`;
+/** `BADGED_ATTRIBUTE` marks a row whose badge mounted; the wiring sets it so a reinjected script skips it. */
+export const UNDISCOVERED_SELECTOR = `${FEED_ITEM_SELECTOR}${UNBADGED}`;
 
 function* rowsWithin(subtree: Element, selector: string): Generator<Element> {
   if (subtree.matches(selector)) yield subtree;

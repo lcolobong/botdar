@@ -7,6 +7,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { BrowserContext, Locator, Page } from "playwright";
+import { BADGE_ELEMENT_NAME } from "../../src/core/botdarMarks.ts";
 import { fixtureUrl } from "./fixtureFiles.ts";
 import type { SmokeFeedScene, SmokePlatformId } from "./sceneTable.ts";
 import { smokeFeedScenes } from "./sceneTable.ts";
@@ -85,7 +86,7 @@ async function captureFeedWithCard(
   try {
     await page.goto(fixtureUrl(feedScene, true), { waitUntil: "domcontentloaded" });
     const badgeControl: Locator = page
-      .locator("botdar-badge")
+      .locator(BADGE_ELEMENT_NAME)
       .getByRole("button", { name: storeScene.badgeName, exact: true })
       .first();
     const badgeMounted: boolean = await badgeControl

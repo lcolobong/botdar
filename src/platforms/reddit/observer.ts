@@ -9,6 +9,7 @@
  * Reddit's SPA navigation uses pushState, which the isolated world cannot hook, so every pass
  * compares the location to the last one seen and `popstate` covers the back button.
  */
+import { UNBADGED } from "../../core/botdarMarks";
 import type { ShouldYield, SliceScheduler } from "../../core/idleSlices";
 import { IDLE_TIMEOUT_MS, createSliceScheduler, drainQueue } from "../../core/idleSlices";
 import type { NearViewportGate } from "../../core/nearViewport";
@@ -28,9 +29,9 @@ export interface RedditFeedObserverOptions {
 
 export { IDLE_TIMEOUT_MS };
 
-/** `data-botdar` marks a post whose badge mounted; the wiring sets it so a reinjected script skips it. */
+/** `BADGED_ATTRIBUTE` marks a post whose badge mounted; the wiring sets it so a reinjected script skips it. */
 export const UNDISCOVERED_SELECTOR: string = FEED_ITEM_SELECTOR.split(", ")
-  .map((selector) => `${selector}:not([data-botdar])`)
+  .map((selector) => `${selector}${UNBADGED}`)
   .join(", ");
 
 function* feedItemsWithin(subtree: Element, selector: string): Generator<Element> {

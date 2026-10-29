@@ -3,11 +3,9 @@ import type { Verdict } from "@/src/core/types";
 import { HoverCard, type HoverCardProps } from "@/src/ui/HoverCard";
 import { createHoverController, type HoverController } from "@/src/ui/hoverController";
 import type { BadgeTier } from "@/src/ui/labels";
-import { mountCard, type HostTheme, type MountedUi } from "@/src/ui/mount";
+import { CARD_ID, mountCard, type HostTheme, type MountedUi } from "@/src/ui/mount";
 import { noReadCardProps } from "@/src/ui/noRead";
 import type { PostState, WireOptions } from "./wireTypes";
-
-export const CARD_ID = "botdar-card";
 
 /**
  * What the hover card needs from the badge side of the wiring, passed in once so the card code owns

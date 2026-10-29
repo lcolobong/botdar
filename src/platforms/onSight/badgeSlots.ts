@@ -5,6 +5,7 @@
  */
 import { h, render } from "preact";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
+import { BADGED_ATTRIBUTE } from "@/src/core/botdarMarks";
 import { kindOfPost, recordBadged } from "@/src/core/diagnostics";
 import type { AccountResolver, BadgeHandle } from "@/src/core/pipeline";
 import type { PlatformAdapter, PostRef } from "@/src/core/types";
@@ -113,7 +114,7 @@ export function createBadgeSlots(context: BadgeSlotsContext): BadgeSlots {
         // A host adopted from an earlier script instance never ran the render callback.
         slot.container ??= mounted.shadowHost.shadowRoot?.querySelector("body") ?? null;
         slotByHost.set(mounted.shadowHost, slot);
-        slot.post.element.setAttribute("data-botdar", "1");
+        slot.post.element.setAttribute(BADGED_ATTRIBUTE, "1");
         recordBadged(kindOfPost(slot.post), slot.post.element);
         syncBadge(slot);
       })
@@ -154,7 +155,7 @@ export function createBadgeSlots(context: BadgeSlotsContext): BadgeSlots {
     slot.unsubscribe();
     unmountBadge(slot);
     resolver.detach(slot.post);
-    element.removeAttribute("data-botdar");
+    element.removeAttribute(BADGED_ATTRIBUTE);
   };
 
   return {

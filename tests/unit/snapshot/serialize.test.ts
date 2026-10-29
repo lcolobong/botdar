@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 
 import { serializeDocument } from "../../../src/core/snapshot/serialize";
-import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME } from "../../../src/ui/mount";
+import { BADGE_ELEMENT_NAME, CARD_ELEMENT_NAME, OWN_MARKUP } from "../../../src/core/botdarMarks";
 import { hydrateDeclarativeShadowRoots } from "../../dom/reddit/fixtures";
 
 function documentWithBody(body: string): Document {
@@ -20,6 +20,7 @@ describe("serializeDocument", () => {
           <template shadowrootmode="open"><div class="inner"><slot name="credit-bar"></slot></div></template>
           <div slot="credit-bar"><a href="/user/Quiet_Lantern_4821/">u/Quiet_Lantern_4821</a></div>
         </shreddit-post>`),
+      OWN_MARKUP,
     );
     expect(html.startsWith("<!doctype html>\n<html>")).toBe(true);
     expect(html).toContain(
@@ -40,10 +41,12 @@ describe("serializeDocument", () => {
         <script>alert(1)</script><style>body{}</style><link rel="stylesheet" href="x.css">
         <iframe src="about:blank"></iframe><noscript>no</noscript>
         <span>kept</span><${BADGE_ELEMENT_NAME}>b</${BADGE_ELEMENT_NAME}><${CARD_ELEMENT_NAME}>c</${CARD_ELEMENT_NAME}>`),
+      OWN_MARKUP,
     );
     expect(
       serializeDocument(
         documentWithBody('<shreddit-post author="x" data-botdar="1" id="t3_a"></shreddit-post>'),
+        OWN_MARKUP,
       ),
     ).toContain('<shreddit-post author="x" id="t3_a">');
     for (const dropped of [
@@ -63,6 +66,7 @@ describe("serializeDocument", () => {
   it("escapes text and attribute values and keeps void elements unclosed", () => {
     const html: string = serializeDocument(
       documentWithBody(`<p title='a "b" &amp; <c>'>x &lt; y &amp; z</p><img src="/a.png" alt="">`),
+      OWN_MARKUP,
     );
     expect(html).toContain('<p title="a &quot;b&quot; &amp; &lt;c&gt;">x &lt; y &amp; z</p>');
     expect(html).toContain('<img src="/a.png" alt="">');
@@ -73,7 +77,10 @@ describe("serializeDocument", () => {
     const source: string = serializeDocument.toString();
     expect(source).not.toMatch(/\bimport\b|\brequire\(/);
     expect(
-      new Function("root", `return (${source})(root)`)(documentWithBody("<b>ok</b>")),
+      new Function("root", "ownMarkup", `return (${source})(root, ownMarkup)`)(
+        documentWithBody("<b>ok</b>"),
+        OWN_MARKUP,
+      ),
     ).toContain("<b>ok</b>");
   });
 });
