@@ -22,7 +22,7 @@ import { adoptedCssOf } from "../adoptedCss";
 import { fakeReason } from "../../fakeReasons";
 import { createBlueskyAdapter } from "@/src/platforms/bluesky/adapter";
 import { wireBluesky } from "@/src/platforms/bluesky/wire";
-import type { WireDependencies } from "@/src/platforms/bluesky/wire";
+import type { WireDependencies } from "@/src/platforms/bluesky/wireDependencies";
 
 const SHADOW_CSS = ":host { --botdar-test: bluesky; }";
 

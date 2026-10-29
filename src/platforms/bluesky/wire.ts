@@ -6,31 +6,17 @@
  * injected through WireDependencies so the flow is testable with a fake scorer under happy-dom.
  */
 import { h, render } from "preact";
-import { browser } from "wxt/browser";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import { BADGED_ATTRIBUTE } from "../../core/botdarMarks";
 import { TtlLruCache } from "../../core/cache";
 import { PersistedLookupStore } from "../../core/persistedLookups";
 import { kindOfPost, recordBadged } from "../../core/diagnostics.ts";
-import { recordFeedback, removeFeedback } from "../../core/feedback";
-import { onRequest, sendRequest } from "../../core/messaging";
 import { AccountResolver, TIER2_CACHE_CAPACITY, TIER2_CACHE_TTL_MS } from "../../core/pipeline";
 import type { BadgeHandle, Scorer } from "../../core/pipeline";
-import { getEffectiveConfig } from "../../core/policy/loader";
 import { RateLimiter } from "../../core/ratelimit";
-import { scoreAccount } from "../../core/scoring/engine";
 import type { PlatformWeights } from "../../core/scoring/types";
-import { defaultWeights } from "../../core/scoring/weights";
-import { loadSettings, onSettingsChanged } from "../../core/settings";
 import type { Settings } from "../../core/settings";
-import type {
-  EffectivePlatformConfig,
-  PartialSignals,
-  PlatformAdapter,
-  PostRef,
-  SourceTier,
-  Verdict,
-} from "../../core/types";
+import type { EffectivePlatformConfig, PartialSignals, PostRef, Verdict } from "../../core/types";
 import { Badge } from "../../ui/Badge";
 import type { BadgeProps } from "../../ui/Badge";
 import { createHoverCardLayer, isLookingUp } from "../../ui/hoverCardLayer";
@@ -39,24 +25,11 @@ import { drawableTier as drawableTierUnderSettings } from "../../ui/labels";
 import type { BadgeTier } from "../../ui/labels";
 import { CARD_ID, detectHostTheme, mountBadge } from "../../ui/mount";
 import type { MountedUi } from "../../ui/mount";
-import { createBlueskyAdapter } from "./adapter";
+import { PLATFORM, defaultDependencies, enabledTiers } from "./wireDependencies";
+import type { WireDependencies } from "./wireDependencies";
 
-const PLATFORM = "bluesky";
 /** Three hovered authors back to back; each lookup spends two tokens (getProfiles, getAuthorFeed). */
 const LIMITER_BURST = 6;
-
-export interface WireDependencies {
-  adapter: PlatformAdapter;
-  score: typeof scoreAccount;
-  loadConfig: () => Promise<EffectivePlatformConfig>;
-  loadWeights: () => Promise<PlatformWeights>;
-  loadSettings: () => Promise<Settings>;
-  onConfigChanged: (listener: (config: EffectivePlatformConfig) => void) => () => void;
-  onSettingsChanged: (listener: (settings: Settings) => void) => () => void;
-  recordFeedback: typeof recordFeedback;
-  removeFeedback: typeof removeFeedback;
-  openOptionsPage: () => void;
-}
 
 interface BadgeEntry {
   post: PostRef;
@@ -66,44 +39,6 @@ interface BadgeEntry {
   mounted: MountedUi | undefined;
   mounting: Promise<void> | undefined;
   container: HTMLElement | undefined;
-}
-
-/**
- * The background answers config.get once its settings broker lands; until then, and whenever the
- * worker cannot answer, the content script runs the same restrict-only merge over the cached policy.
- */
-async function requestConfig(): Promise<EffectivePlatformConfig> {
-  try {
-    return (await sendRequest({ type: "config.get", platform: PLATFORM })).config;
-  } catch {
-    return (await getEffectiveConfig(defaultWeights)).platforms[PLATFORM];
-  }
-}
-
-export function defaultDependencies(): WireDependencies {
-  return {
-    adapter: createBlueskyAdapter(),
-    score: scoreAccount,
-    loadConfig: requestConfig,
-    loadWeights: async () => (await getEffectiveConfig(defaultWeights)).weights[PLATFORM],
-    loadSettings,
-    onConfigChanged: (listener) =>
-      onRequest("config.changed", (message) => {
-        listener(message.configs[PLATFORM]);
-        return undefined;
-      }),
-    onSettingsChanged,
-    recordFeedback,
-    removeFeedback,
-    openOptionsPage: () => void browser.runtime.openOptionsPage(),
-  };
-}
-
-function enabledTiers(config: EffectivePlatformConfig): SourceTier[] {
-  const tiers: SourceTier[] = [0];
-  if (config.tiers.t1) tiers.push(1);
-  if (config.tiers.t2) tiers.push(2);
-  return tiers;
 }
 
 export async function wireBluesky(

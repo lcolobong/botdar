@@ -114,7 +114,7 @@ botdar/
 │  │  │             # parsers/graphqlUsers.ts re-exports parsers/graphql/: types, userFields, automatedLabel,
 │  │  │             #   posts, walk, ownerPosts, signals, aboutAccount
 │  │  ├─ reddit/   adapter, observer, dom, parsers/, sources/, features, oldReddit, threadReply
-│  │  ├─ bluesky/  adapter, observer, dom, interceptor.main, parsers/, sources/, features, threadReply
+│  │  ├─ bluesky/  adapter, observer, dom, interceptor.main, parsers/, sources/, features, threadReply, wire, wireDependencies
 │  │  ├─ hackernews/ adapter, observer, dom, parsers/, sources/, features, threadReply
 │  │  ├─ youtube/  adapter, observer, dom, conventions, handles, parsers/, sources/, features, threadReply
 │  │  ├─ onSightWire.ts          # content-script wiring shared by Reddit, Hacker News and YouTube
