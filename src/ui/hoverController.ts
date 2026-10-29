@@ -15,8 +15,11 @@ export interface HoverControllerOptions {
   coveredCloseDelayMs?: number;
   viewportInsetPx?: number;
   cardWidthPx?: number;
-  /** Mounts or updates card content for the given anchor; returns the card's rendered height. */
-  render: (anchor: Element) => number;
+  /**
+   * Mounts or updates card content for the given anchor; returns the card's rendered height, or
+   * undefined when it displayed nothing, which leaves the card closed.
+   */
+  render: (anchor: Element) => number | undefined;
   hide: () => void;
   place: (placement: HoverCardPlacement) => void;
   now?: () => number;
@@ -153,7 +156,13 @@ export function createHoverController(options: HoverControllerOptions): HoverCon
     pointerInCard = false;
     openPlacement = undefined;
     openingCount += 1;
-    const cardHeight: number = options.render(anchor);
+    const cardHeight: number | undefined = options.render(anchor);
+    if (cardHeight === undefined) {
+      // Nothing was displayed, so nothing is open: no hide follows, and the next hover of this
+      // anchor waits out the intent delay and renders again.
+      openingCount -= 1;
+      return;
+    }
     place(anchor, cardHeight, undefined);
     openAnchor = anchor;
   };
