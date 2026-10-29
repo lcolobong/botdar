@@ -1,22 +1,8 @@
 /**
  * Word lists for stable fake handles, shared by the fixture anonymizer and the perf fixture
- * generator so recordings and generated pages read the same way, and the handle rules every
- * platform's handle reader shares.
+ * generator so recordings and generated pages read the same way. The handle rules live in
+ * ../handleRules.ts.
  */
-
-/**
- * The shortest captured name the anonymizer treats as a handle, counted in characters. A shorter
- * capture is more likely a stray match on ordinary markup than an account.
- */
-const MIN_HANDLE_LENGTH = 3;
-
-/**
- * Whether a captured name is long enough to be a handle. Counted in code points, not UTF-16 units,
- * so a handle written outside the Basic Multilingual Plane is not measured at twice its length.
- */
-export function isHandleLongEnough(handle: string): boolean {
-  return [...handle].length >= MIN_HANDLE_LENGTH;
-}
 
 /** A name and then five or more digits ("maria48213907"), the shape the "nameDigits" fake keeps. */
 export const NAME_THEN_DIGITS: RegExp = /^[A-Za-z]+\d{5,}$/;

@@ -3,6 +3,7 @@
  * YouTube assigned the handle, and whether it poses as the creator. Both are read from names only,
  * never from what a comment says (docs/scoring-spec.md, "Creator imitation").
  */
+import { ASSIGNED_CODE, isAssignedCodeHandle, isUserPrefixedHandle } from "@/src/core/handleRules";
 
 /** The channel that owns the video on the page. */
 export interface VideoCreator {
@@ -15,18 +16,8 @@ export interface VideoCreator {
   names: readonly string[];
 }
 
-/**
- * A channel that never chose a handle gets its name, a hyphen and a short code of letters and
- * digits, at least one of each ("@LarryH-h6q", "@MK-to4et", in any script), or before that "user-"
- * and a random string. A tail of digits alone ("@euro-2024") is a chosen handle, often a year. The
- * 2022 batch that gave every existing channel a handle used its name and four digits; those are
- * not matched, because they mark a channel older than handles rather than one left as created.
- */
-const ASSIGNED_CODE = /-(?=[\p{Ll}\p{N}]*\p{N})(?=[\p{Ll}\p{N}]*\p{Ll})[\p{Ll}\p{N}]{3,5}$/u;
-const USER_PREFIXED = /^user-[a-z0-9]{8,}$/;
-
 export function isAssignedHandle(handle: string): boolean {
-  return USER_PREFIXED.test(handle) || ASSIGNED_CODE.test(handle);
+  return isUserPrefixedHandle(handle) || isAssignedCodeHandle(handle);
 }
 
 /**
