@@ -10,16 +10,12 @@ import { kindOfPost, recordBadged } from "@/src/core/diagnostics";
 import type { AccountResolver, BadgeHandle } from "@/src/core/pipeline";
 import type { PlatformAdapter, PostRef } from "@/src/core/types";
 import { Badge } from "@/src/ui/Badge";
+import { isLookingUp } from "@/src/ui/hoverCardLayer";
+import type { HoverCardLayer } from "@/src/ui/hoverCardLayer";
 import { shouldDrawBadge } from "@/src/ui/labels";
 import type { HostTheme } from "@/src/ui/mount";
 import { mountBadge } from "@/src/ui/mount";
-import type { OnSightCard } from "./hoverCard";
 import type { BadgeSlot, OnSightRuntime } from "./types";
-
-/** Whether the slot's author has a Tier 2 lookup in flight; the badge and the card both show it. */
-export function isLookingUp(slot: BadgeSlot): boolean {
-  return slot.handle.lookupStatus() === "pending";
-}
 
 export interface BadgeSlotsContext {
   ctx: ContentScriptContext;
@@ -29,7 +25,7 @@ export interface BadgeSlotsContext {
   runtime: () => OnSightRuntime;
   theme: () => HostTheme;
   /** The parts of the hover card a badge opens, closes and redraws. */
-  card: Pick<OnSightCard, "controller" | "isOpen" | "renderCard">;
+  card: Pick<HoverCardLayer<BadgeSlot>, "controller" | "isOpen" | "renderCard">;
   /** Look an author up as their post is attached (ADR-0020), or leave it to the hover (ADR-0030). */
   looksUpOnSight: boolean;
 }
