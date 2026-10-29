@@ -6,7 +6,7 @@ import { PersistedLookupStore } from "../src/core/persistedLookups.ts";
 import { recordFeedback, removeFeedback } from "../src/core/feedback.ts";
 import { registerDiagnosticsHandlers } from "../src/core/diagnosticsHandlers.ts";
 import { onRequest, sendRequest } from "../src/core/messaging.ts";
-import { AccountResolver, TIER2_CACHE_TTL_MS } from "../src/core/pipeline.ts";
+import { AccountResolver, TIER2_CACHE_CAPACITY, TIER2_CACHE_TTL_MS } from "../src/core/pipeline.ts";
 import type { Scorer } from "../src/core/pipeline.ts";
 import { getEffectiveConfig } from "../src/core/policy/loader.ts";
 import type { EffectiveConfig } from "../src/core/policy/merge.ts";
@@ -24,7 +24,6 @@ import { QueryIdRegistry } from "../src/platforms/x/queryIds.ts";
 import { wirePlatform } from "../src/platforms/x/wire.ts";
 import type { PlatformWiring } from "../src/platforms/x/wire.ts";
 
-const TIER2_CACHE_ENTRIES = 500;
 const LOOKUP_BURST = 3;
 
 interface EffectiveX {
@@ -76,7 +75,7 @@ export default defineContentScript({
         perMinute: effective.config.rateLimitPerMinute,
         burst: LOOKUP_BURST,
       }),
-      cache: new TtlLruCache<string, PartialSignals>(TIER2_CACHE_ENTRIES, TIER2_CACHE_TTL_MS),
+      cache: new TtlLruCache<string, PartialSignals>(TIER2_CACHE_CAPACITY, TIER2_CACHE_TTL_MS),
       persistence: { store: new PersistedLookupStore(), enabled: () => settings.persistLookups },
     });
     const wiring: PlatformWiring = wirePlatform({

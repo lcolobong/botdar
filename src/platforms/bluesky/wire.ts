@@ -14,7 +14,7 @@ import { PersistedLookupStore } from "../../core/persistedLookups";
 import { kindOfPost, recordBadged } from "../../core/diagnostics.ts";
 import { recordFeedback, removeFeedback } from "../../core/feedback";
 import { onRequest, sendRequest } from "../../core/messaging";
-import { AccountResolver, TIER2_CACHE_TTL_MS } from "../../core/pipeline";
+import { AccountResolver, TIER2_CACHE_CAPACITY, TIER2_CACHE_TTL_MS } from "../../core/pipeline";
 import type { BadgeHandle, Scorer } from "../../core/pipeline";
 import { getEffectiveConfig } from "../../core/policy/loader";
 import { RateLimiter } from "../../core/ratelimit";
@@ -41,7 +41,6 @@ import { createCardPresenter } from "./cardPresenter";
 import type { CardPresenter } from "./cardPresenter";
 
 const PLATFORM = "bluesky";
-const CACHE_CAPACITY = 500;
 /** Three hovered authors back to back; each lookup spends two tokens (getProfiles, getAuthorFeed). */
 const LIMITER_BURST = 6;
 
@@ -133,7 +132,7 @@ export async function wireBluesky(
     config,
     // The limiter is sized once: a lowered policy limit applies from the next page load.
     limiter: new RateLimiter({ perMinute: config.rateLimitPerMinute, burst: LIMITER_BURST }),
-    cache: new TtlLruCache<string, PartialSignals>(CACHE_CAPACITY, TIER2_CACHE_TTL_MS),
+    cache: new TtlLruCache<string, PartialSignals>(TIER2_CACHE_CAPACITY, TIER2_CACHE_TTL_MS),
     persistence: { store: new PersistedLookupStore(), enabled: () => settings.persistLookups },
   });
 

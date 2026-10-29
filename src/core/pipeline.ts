@@ -46,7 +46,7 @@ export type {
 export type { MergeableSignals } from "./pipeline/mergeSignals";
 export { mergeSignals } from "./pipeline/mergeSignals";
 export { MAX_TRACKED_ACCOUNTS } from "./pipeline/trackedAccounts";
-export { TIER2_CACHE_TTL_MS } from "./pipeline/lookupStorage";
+export { TIER2_CACHE_CAPACITY, TIER2_CACHE_TTL_MS } from "./pipeline/lookupStorage";
 
 interface AttachedPost {
   entry: AccountEntry;

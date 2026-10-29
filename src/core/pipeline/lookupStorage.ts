@@ -12,6 +12,15 @@ import type { LookupPersistence } from "./types";
 /** ADR-0012 ceiling for Tier 2 results held in memory; callers size their cache with it. */
 export const TIER2_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * How many Tier 2 results each tab's memory cache holds. Lookups are rate-limited to a few tens a
+ * minute (30 on Reddit by default), so 500 covers well over a quarter of an hour of back-to-back
+ * lookups, longer than a reader stays among one page's authors, and an entry is only a few small
+ * fields. An account evicted sooner is read back from the persisted store when the user keeps
+ * lookups (ADR-0025), and costs a new request only otherwise.
+ */
+export const TIER2_CACHE_CAPACITY = 500;
+
 /** Reddit and Hacker News handles never contain ":", so a source id prefix cannot meet a plain handle. */
 export function hoverCacheKey(handle: string, source: SignalSource): string {
   return `${source.id}:${handle}`;
