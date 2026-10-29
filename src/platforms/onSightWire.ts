@@ -14,7 +14,7 @@ import type { ContentScriptContext } from "wxt/utils/content-script-context";
 import { TtlLruCache } from "../core/cache";
 import { PersistedLookupStore } from "../core/persistedLookups";
 import { onRequest } from "../core/messaging";
-import { AccountResolver, TIER2_CACHE_TTL_MS } from "../core/pipeline";
+import { AccountResolver, TIER2_CACHE_CAPACITY, TIER2_CACHE_TTL_MS } from "../core/pipeline";
 import { RateLimiter } from "../core/ratelimit";
 import { onSettingsChanged } from "../core/settings";
 import type { PartialSignals, PlatformAdapter } from "../core/types";
@@ -35,7 +35,6 @@ export type {
   WireOnSightOptions,
 } from "./onSight/types";
 
-const CACHE_CAPACITY = 500;
 /**
  * Authors are looked up as their posts come near the viewport (ADR-0020), and a first screen of a
  * thread holds ten or so distinct authors, so a burst of ten serves it at once; the rest follow at
@@ -64,7 +63,7 @@ export async function wireOnSight(
     config: runtime.config,
     // A lowered rate limit applies on the next page load; switching Tier 2 off applies at once.
     limiter: new RateLimiter({ perMinute: runtime.config.rateLimitPerMinute, burst: LOOKUP_BURST }),
-    cache: new TtlLruCache<string, PartialSignals>(CACHE_CAPACITY, TIER2_CACHE_TTL_MS),
+    cache: new TtlLruCache<string, PartialSignals>(TIER2_CACHE_CAPACITY, TIER2_CACHE_TTL_MS),
     persistence: {
       store: new PersistedLookupStore(),
       enabled: () => runtime.settings.persistLookups,
