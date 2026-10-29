@@ -49,7 +49,9 @@ export async function mountOnSightCard(context: OnSightCardContext): Promise<OnS
   const feedbackByHandle = new Map<string, Promise<FeedbackEntry>>();
   let badges: CardBadges | undefined = undefined;
   let openSlot: BadgeSlot | null = null;
-  let legendShown = false;
+  // Cleared when the first opening closes, not after its first render: with Tier 2 on, the open
+  // pass renders again in the same task, which would drop the legend before it was ever painted.
+  let legendPending = true;
   let cardContainer: HTMLElement | null = null;
 
   // Set once the card has mounted. The controller is created before that, so the mount callback
@@ -61,7 +63,6 @@ export async function mountOnSightCard(context: OnSightCardContext): Promise<OnS
       if (slot === undefined || card === undefined) return 0;
       openSlot = slot;
       renderCard();
-      legendShown = true;
       card.setTheme(theme());
       card.setVisible(true);
       if (runtime().config.tiers.t2) {
@@ -77,6 +78,8 @@ export async function mountOnSightCard(context: OnSightCardContext): Promise<OnS
     hide: () => {
       const closedSlot: BadgeSlot | null = openSlot;
       openSlot = null;
+      // Only an opening that showed a card used up the legend.
+      if (closedSlot !== null) legendPending = false;
       card?.setVisible(false);
       if (closedSlot !== null) badges?.renderBadge(closedSlot);
     },
@@ -143,7 +146,7 @@ export async function mountOnSightCard(context: OnSightCardContext): Promise<OnS
         ...noReadCardProps(verdict, slot.handle),
         loading: isLookingUp(slot),
         lowConfidence: verdict.lowConfidence,
-        showLegend: !legendShown,
+        showLegend: legendPending,
         feedbackSent: feedbackByHandle.has(slot.post.ref.handle),
         onFeedback: () => toggleFeedback(slot),
         onSettings: openSettings,

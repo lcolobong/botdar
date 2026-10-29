@@ -291,6 +291,28 @@ describe("wireBluesky", () => {
     expect(badgeButton("alice.example.com").getAttribute("aria-describedby")).toBeNull();
   });
 
+  it("keeps the source legend for the whole first opening and drops it after", async () => {
+    const harness: Harness = makeHarness();
+    stop = await wireBluesky(new ContentScriptContext("bluesky"), SHADOW_CSS, harness.deps);
+    await flush();
+    const legend = (): Element | null | undefined =>
+      cardHost()?.shadowRoot?.querySelector(".bd-card__legend");
+
+    badgeButton("alice.example.com").dispatchEvent(new MouseEvent("mouseenter"));
+    await flush();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(harness.resolve).toHaveBeenCalledTimes(1);
+    expect(legend()).not.toBeNull();
+
+    badgeButton("alice.example.com").dispatchEvent(new MouseEvent("mouseleave"));
+    await vi.advanceTimersByTimeAsync(250);
+    badgeButton("alice.example.com").dispatchEvent(new MouseEvent("mouseenter"));
+    await flush();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(cardHost()?.style.getPropertyValue("--botdar-display")).toBe("block");
+    expect(legend()).toBeNull();
+  });
+
   it("does not run the lookup when Tier 2 is off", async () => {
     const harness: Harness = makeHarness(config({ tiers: { t1: true, t2: false } }));
     stop = await wireBluesky(new ContentScriptContext("bluesky"), SHADOW_CSS, harness.deps);

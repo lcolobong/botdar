@@ -57,7 +57,8 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
   let container: HTMLElement | undefined;
   let card: MountedUi | undefined;
   let lookupPending = false;
-  let legendShown = false;
+  // Cleared when the first opening closes, so the lookup landing while the card is open keeps it.
+  let legendPending = true;
   /** The post whose card is on screen; the controller only knows once its show pass has returned. */
   let shownFor: Element | undefined;
 
@@ -108,7 +109,7 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
       ...noReadCardProps(verdict, target.handle),
       loading: lookupPending,
       lowConfidence: verdict.lowConfidence,
-      showLegend: !legendShown,
+      showLegend: legendPending,
       feedbackSent: feedbackIdByHandle.has(target.post.ref.handle),
       onFeedback: () => void toggleFeedback(target, verdict),
       onSettings: options.openOptionsPage,
@@ -120,7 +121,6 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
     render: (): number => {
       shownFor = current?.post.element;
       renderCurrent();
-      legendShown = true;
       if (card !== undefined) {
         card.setTheme(options.theme());
         card.setVisible(true);
@@ -135,6 +135,8 @@ export function createCardPresenter(options: CardPresenterOptions): CardPresente
       card.setPlacement(placement);
     },
     hide: (): void => {
+      // Only an opening that showed a card used up the legend.
+      if (shownFor !== undefined) legendPending = false;
       if (card !== undefined) {
         card.setVisible(false);
       }
