@@ -13,6 +13,7 @@ import {
   fakeHandle,
   fakeId,
 } from "../../../src/core/snapshot/fakeNames";
+import { handlesOf } from "../../../src/core/snapshot/accountHandles";
 import { isDefaultAvatarUrl } from "../../../src/platforms/reddit/conventions";
 
 describe("fakeHandle", () => {
@@ -78,6 +79,16 @@ describe("anonymizeSnapshot on Reddit markup", () => {
     expect(result.html).toContain("avatars/defaults/v2/avatar_default_3.png");
     expect(result.handles).toBeGreaterThanOrEqual(4);
     expect(result.replaced).toBeGreaterThan(result.handles);
+  });
+});
+
+describe("handlesOf", () => {
+  // Reddit, X and Bluesky handles are ASCII, so their readers never capture an emoji; the rule they
+  // share with YouTube's reader still counts characters, and two are too few.
+  it("skips a two-character name and keeps a three-character one", () => {
+    expect(handlesOf('<a href="/user/ab/">ab</a>', "reddit")).toEqual(new Set());
+    expect(handlesOf('<a href="/user/abc/">abc</a>', "reddit")).toEqual(new Set(["abc"]));
+    expect(handlesOf('<a href="/user/\u{1F600}\u{1F600}/">x</a>', "reddit")).toEqual(new Set());
   });
 });
 

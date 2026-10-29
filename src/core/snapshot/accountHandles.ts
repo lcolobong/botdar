@@ -3,7 +3,7 @@
  * Hacker News and YouTube read their handles in hackerNews.ts and youTube.ts; the rest are matched
  * here by the characters a handle may hold.
  */
-import { fakeHandle } from "./fakeNames.ts";
+import { NAME_THEN_DIGITS, fakeHandle, isHandleLongEnough } from "./fakeNames.ts";
 import { hackerNewsHandles } from "./hackerNews.ts";
 import { youTubeFakeHandle, youTubeHandles } from "./youTube.ts";
 
@@ -45,8 +45,6 @@ export const X_RESERVED_PATHS: ReadonlySet<string> = new Set([
   "download",
 ]);
 const REDDIT_GENERATED_NAME = /^[A-Z][a-z]+[-_][A-Z][a-z]+[-_]?\d{1,4}$/;
-const NAME_THEN_DIGITS = /^[A-Za-z]+\d{5,}$/;
-const MIN_HANDLE_LENGTH = 3;
 
 /** Character class that bounds a handle: a handle never contains these, so they mark its edges. */
 const REDDIT_HANDLE = "[A-Za-z0-9_-]{1,20}";
@@ -57,7 +55,7 @@ function collect(html: string, pattern: RegExp): Set<string> {
   const found: Set<string> = new Set();
   for (const match of html.matchAll(pattern)) {
     const value: string | undefined = match[1];
-    if (value !== undefined && value.length >= MIN_HANDLE_LENGTH) found.add(value);
+    if (value !== undefined && isHandleLongEnough(value)) found.add(value);
   }
   return found;
 }

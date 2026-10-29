@@ -7,7 +7,13 @@
  * rewrites prose. Video and comment ids, channel ids, avatar paths and the session values the
  * innertube bodies carry are replaced too; display names and comment text are prose and stay.
  */
-import { fakeHandle, fakeId, stableHash } from "./fakeNames.ts";
+import {
+  NAME_THEN_DIGITS,
+  fakeHandle,
+  fakeId,
+  isHandleLongEnough,
+  stableHash,
+} from "./fakeNames.ts";
 
 const LOWERCASE_A = 97;
 
@@ -25,11 +31,9 @@ const HANDLE_SOURCES: readonly RegExp[] = [
   ),
   new RegExp(`aria-label="@(${HANDLE_CHAR}*${HANDLE_WORD_CHAR})${HANDLE_END}`, "gu"),
 ];
-const MIN_HANDLE_LENGTH = 3;
 /** The handle YouTube assigns a channel that never chose one: its name, "-" and a short code. */
 const ASSIGNED_SUFFIX = /^(.+)-([\p{Ll}\p{N}]{3,5})$/u;
 const USER_PREFIX_HANDLE = /^user-([a-z0-9]{8,})$/;
-const NAME_THEN_DIGITS = /^[A-Za-z]+\d{5,}$/;
 
 function decoded(handle: string): string {
   try {
@@ -45,7 +49,7 @@ export function youTubeHandles(text: string): Set<string> {
   for (const pattern of HANDLE_SOURCES) {
     for (const match of text.matchAll(pattern)) {
       const handle: string = decoded(match[1] ?? "");
-      if ([...handle].length >= MIN_HANDLE_LENGTH) handles.add(handle);
+      if (isHandleLongEnough(handle)) handles.add(handle);
     }
   }
   return handles;
