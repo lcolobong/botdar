@@ -4,7 +4,7 @@ In-feed badges that show whether a post's author displays patterns common in aut
 hover card that explains why. For X, Reddit, Bluesky, Hacker News and YouTube comments. Everything runs in your browser; nothing about
 the accounts you see leaves it.
 
-Working title. Status: pre-alpha, under construction.
+Working title. Status: pre-alpha, under construction. [docs/handoff.md](docs/handoff.md) says where things stand and what is left.
 
 ## What it does
 
@@ -78,6 +78,7 @@ published at [lcolobong.github.io/botdar/privacy.html](https://lcolobong.github.
 | ------------------------------------------------------------ | ------------------------------------------------------- |
 | [docs/product-brief.md](docs/product-brief.md)               | Problem, goals, non-goals, scope, success measures      |
 | [docs/roadmap.md](docs/roadmap.md)                           | Platforms by release and why                            |
+| [docs/handoff.md](docs/handoff.md)                           | Where the project stands and what only the maintainer can do next |
 | [docs/architecture.md](docs/architecture.md)                 | System design, type contracts, policy system, threat model |
 | [docs/scoring-spec.md](docs/scoring-spec.md)                 | Features, weights, bucketing, wording                   |
 | [docs/design.md](docs/design.md)                             | Design principles, surfaces, states, copy               |
